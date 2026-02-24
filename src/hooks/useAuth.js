@@ -73,7 +73,22 @@ export function useAuth() {
     setUser({ username: "Guest", isGuest: true });
   };
 
-  const loginWithGoogle = () => {
+  const loginWithGoogle = (googlePayload) => {
+    if (googlePayload && (googlePayload.email || googlePayload.sub)) {
+      const profile = {
+        username: googlePayload.name || googlePayload.email?.split("@")[0] || "Google User",
+        email: googlePayload.email || null,
+        picture: googlePayload.picture || null,
+        sub: googlePayload.sub,
+        isGoogle: true,
+        createdAt: new Date().toISOString(),
+      };
+      try {
+        localStorage.setItem("vc:session", JSON.stringify(profile));
+      } catch (_) {}
+      setUser(profile);
+      return;
+    }
     setUser({ username: "Google User", email: "user@gmail.com", isGoogle: true });
   };
 

@@ -3,9 +3,10 @@ import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
-export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem }) {
+export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem, onLogout, username }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [userMenuOpen, setMenuOpen] = useState(false);
 
   const cats = ["All", ...Array.from(new Set(PROB_LIST.map(p => p.category)))];
   const list = PROB_LIST.filter(p =>
@@ -19,7 +20,31 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
       <style>{`* { box-sizing: border-box; } ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:${t.border};border-radius:3px}`}</style>
 
       <NavBar page="problems" onNavigate={onNavigate} t={t} themeMode={themeMode}
-        right={<ThemeToggle mode={themeMode} setMode={setThemeMode} t={t} />} />
+        right={
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <ThemeToggle mode={themeMode} setMode={setThemeMode} t={t} />
+            <div style={{ width: 1, height: 28, background: t.border, opacity: 0.3 }} />
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setMenuOpen(o => !o)}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", border: `2px solid ${t.border}`, borderRadius: 8, background: "transparent", color: t.ink, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700, boxShadow: t.shadowSm }}>
+                <div style={{ width: 26, height: 26, borderRadius: "50%", background: t.blue, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "0.8rem" }}>
+                  {username?.[0]?.toUpperCase() || "G"}
+                </div>
+                {username ?? "User"} ▾
+              </button>
+              {userMenuOpen && (
+                <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, boxShadow: t.shadow, zIndex: 300, minWidth: 160, overflow: "hidden" }}>
+                  <div style={{ padding: "10px 16px", fontFamily: "'Caveat',cursive", fontSize: "0.9rem", color: t.inkMuted, borderBottom: `1.5px solid ${t.border}` }}>{username ?? "User"}</div>
+                  <button onClick={() => { setMenuOpen(false); onNavigate("profile"); }}
+                    style={{ width: "100%", padding: "10px 16px", textAlign: "left", border: "none", background: "transparent", color: t.ink, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700 }}>Profile</button>
+                  <button onClick={() => { setMenuOpen(false); onLogout(); }}
+                    style={{ width: "100%", padding: "10px 16px", textAlign: "left", border: "none", background: "transparent", color: t.red, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700 }}>Sign out</button>
+                </div>
+              )}
+            </div>
+          </div>
+        }
+      />
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px 60px" }}>
         <div style={{ marginBottom: 32 }}>

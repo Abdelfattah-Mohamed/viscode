@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import LogoMark from "./LogoMark";
+import { decodeGoogleIdToken, getGoogleClientId } from "../../utils/googleAuth";
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -9,7 +10,39 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
   const [verifyCode, setVerifyCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy]   = useState(false);
+  const googleButtonRef = useRef(null);
+  const googleRendered  = useRef(false);
   const pending = onAuth.pendingVerification;
+  const clientId = getGoogleClientId();
+
+  useEffect(() => {
+    if (!clientId || googleRendered.current) return;
+    const init = () => {
+      if (typeof window === "undefined" || !window.google?.accounts?.id) return false;
+      try {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response) => {
+            const payload = decodeGoogleIdToken(response?.credential);
+            if (payload) onAuth.loginWithGoogle(payload);
+          },
+        });
+        if (googleButtonRef.current && !googleRendered.current) {
+          window.google.accounts.id.renderButton(googleButtonRef.current, {
+            type: "standard",
+            theme: "outline",
+            size: "large",
+            width: 384,
+          });
+          googleRendered.current = true;
+        }
+      } catch (_) {}
+      return true;
+    };
+    if (init()) return;
+    const id = setInterval(() => { if (init()) clearInterval(id); }, 150);
+    return () => clearInterval(id);
+  }, [clientId, onAuth]);
 
   const handle = async e => {
     e.preventDefault();
@@ -185,16 +218,23 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
               {busy ? "…" : tab === "login" ? "Sign In" : "Create Account"}
             </button>
 
-            <button type="button" onClick={onAuth.loginWithGoogle}
-              style={{
-                padding: "10px 0", width: "100%",
-                fontFamily: "'DM Sans',sans-serif", fontSize: "0.9rem", fontWeight: 600,
-                border: `2px solid ${t.border}`, borderRadius: 9,
-                background: t.surface, color: t.ink,
-                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              }}>
-              <span style={{ fontSize: "1.2rem" }}>G</span> Sign in with Google
-            </button>
+            {clientId ? (
+              <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center", minHeight: 44 }} />
+            ) : (
+              <>
+                <button type="button" onClick={() => onAuth.loginWithGoogle()}
+                  style={{
+                    padding: "10px 0", width: "100%",
+                    fontFamily: "'DM Sans',sans-serif", fontSize: "0.9rem", fontWeight: 600,
+                    border: `2px solid ${t.border}`, borderRadius: 9,
+                    background: t.surface, color: t.ink,
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  }}>
+                  <span style={{ fontSize: "1.2rem" }}>G</span> Sign in with Google (mock)
+                </button>
+                <p style={{ margin: 0, fontSize: "0.75rem", color: t.inkMuted }}>Add VITE_GOOGLE_CLIENT_ID to .env to use real Google sign-in</p>
+              </>
+            )}
 
             <div style={{ textAlign: "center" }}>
               <span style={{ color: t.inkMuted, fontSize: "0.85rem" }}>or </span>

@@ -6,6 +6,7 @@ import AuthScreen   from "./components/ui/AuthScreen";
 import HomePage     from "./pages/HomePage";
 import ProblemsPage from "./pages/ProblemsPage";
 import AppPage      from "./pages/AppPage";
+import ProfilePage  from "./pages/ProfilePage";
 
 const DEFAULT_PROBLEM = "two-sum";
 
@@ -37,7 +38,13 @@ export default function App() {
   };
 
   if (page === "home") {
-    return <HomePage t={t} themeMode={themeMode} setThemeMode={setThemeMode} onNavigate={navigate} />;
+    return (
+      <HomePage
+        t={t} themeMode={themeMode} setThemeMode={setThemeMode}
+        onNavigate={navigate} onLogout={auth.logout}
+        username={auth.user?.username}
+      />
+    );
   }
 
   if (page === "problems") {
@@ -45,6 +52,21 @@ export default function App() {
       <ProblemsPage
         t={t} themeMode={themeMode} setThemeMode={setThemeMode}
         onNavigate={navigate} onSelectProblem={selectProblem}
+        onLogout={auth.logout}
+        username={auth.user?.username}
+      />
+    );
+  }
+
+  if (page === "profile") {
+    return (
+      <ProfilePage
+        user={auth.user}
+        t={t}
+        themeMode={themeMode}
+        setThemeMode={setThemeMode}
+        onNavigate={navigate}
+        onLogout={auth.logout}
       />
     );
   }
