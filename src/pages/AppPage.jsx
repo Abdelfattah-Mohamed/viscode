@@ -123,17 +123,7 @@ export default function AppPage({
           </Card>
 
           {/* Code panel */}
-          <Card
-            t={t}
-            style={{
-              flexShrink: 0,
-              height: "clamp(340px, 45vh, 560px)",
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-              overflow: "hidden",
-            }}
-          >
+          <Card t={t} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt, flexShrink: 0, paddingLeft: 4, paddingRight: 10 }}>
               {["Solution", "Explanation"].map(tab => (
                 <button key={tab} onClick={() => setSolTab(tab)}
@@ -161,16 +151,8 @@ export default function AppPage({
           </Card>
         </div>
 
-        {/* RIGHT — Visualizer (Whiteboard) */}
-        <Card
-          t={t}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            minHeight: 0,
-          }}
-        >
+        {/* RIGHT — Visualizer */}
+        <Card t={t} style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
           <CardHeader
             icon="🎨"
             title="Whiteboard"
@@ -219,99 +201,20 @@ export default function AppPage({
               </div>
             }
           />
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              transform: `scale(${whiteboardFontScale})`,
-              transformOrigin: "top left",
-            }}
-          >
-            <div style={{ padding: "10px 14px", flexShrink: 0 }}>
-              <div
-                style={{
-                  fontFamily: "'Caveat',cursive",
-                  fontSize: "1.1rem",
-                  fontWeight: 600,
-                  padding: "9px 14px",
-                  background:
-                    stepDescColor + (themeMode === "dark" ? "33" : "cc"),
-                  border: `2px solid ${t.border}`,
-                  borderRadius: 8,
-                  minHeight: 42,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  color: t.ink,
-                  transition: "background 0.3s",
-                }}
-              >
-                <span>💡</span>
-                <span>
-                  {currentStep?.description ||
-                    "Press ▶ to start the visualization"}
-                </span>
-              </div>
+          <div style={{ padding: "10px 14px", flexShrink: 0 }}>
+            <div style={{ fontFamily: "'Caveat',cursive", fontSize: `${1.1 * whiteboardFontScale}rem`, fontWeight: 600, padding: "9px 14px", background: stepDescColor + (themeMode === "dark" ? "33" : "cc"), border: `2px solid ${t.border}`, borderRadius: 8, minHeight: 42, display: "flex", alignItems: "center", gap: 8, color: t.ink, transition: "background 0.3s" }}>
+              <span>💡</span>
+              <span>{currentStep?.description || "Press ▶ to start the visualization"}</span>
             </div>
-            <div
-              style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: "4px 18px 18px",
-              }}
-            >
-              {problem.visualizer === "array" && (
-                <ArrayVisualizer
-                  nums={input.nums || []}
-                  stepState={{ ...currentStep?.state, target: input.target }}
-                  t={t}
-                />
-              )}
-              {problem.visualizer === "consecutive" && (
-                <ConsecutiveVisualizer
-                  nums={input.nums || []}
-                  stepState={currentStep?.state ?? {}}
-                  t={t}
-                />
-              )}
-              {problem.visualizer === "duplicate" && (
-                <DuplicateViz
-                  nums={input.nums || []}
-                  stepState={currentStep?.state}
-                  t={t}
-                />
-              )}
-              {problem.visualizer === "anagram" && (
-                <AnagramViz
-                  s={input.s || ""}
-                  tStr={input.t || ""}
-                  stepState={currentStep?.state}
-                  t={t}
-                />
-              )}
-              {problem.visualizer === "stock" && (
-                <StockViz
-                  prices={input.prices || []}
-                  stepState={currentStep?.state}
-                  t={t}
-                />
-              )}
-              {problem.visualizer === "binsearch" && (
-                <BinarySearchViz
-                  nums={input.nums || []}
-                  stepState={currentStep?.state}
-                  t={t}
-                />
-              )}
-              {problem.visualizer === "climbing" && (
-                <ClimbingViz
-                  n={input.n}
-                  stepState={currentStep?.state}
-                  t={t}
-                />
-              )}
-            </div>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "4px 18px 18px", fontSize: `${whiteboardFontScale}rem` }}>
+            {problem.visualizer === "array"       && <ArrayVisualizer       nums={input.nums || []}   stepState={{ ...currentStep?.state, target: input.target }} t={t} />}
+            {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "duplicate"   && <DuplicateViz          nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
+            {problem.visualizer === "anagram"     && <AnagramViz            s={input.s || ""}         tStr={input.t || ""} stepState={currentStep?.state} t={t} />}
+            {problem.visualizer === "stock"       && <StockViz              prices={input.prices || []} stepState={currentStep?.state} t={t} />}
+            {problem.visualizer === "binsearch"   && <BinarySearchViz       nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
+            {problem.visualizer === "climbing"    && <ClimbingViz           n={input.n}               stepState={currentStep?.state} t={t} />}
           </div>
           <StepControls {...player} t={t} />
         </Card>
