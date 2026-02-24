@@ -1,6 +1,6 @@
 export default function ExplanationPanel({ explanation, t }) {
   return (
-    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1, minHeight: 0 }}>
+    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", height: "100%", minHeight: 0 }}>
       {explanation.map((block, idx) => (
         <div key={idx} style={{
           padding: "12px 14px",
