@@ -1,7 +1,6 @@
 export default function ThemeToggle({ mode, setMode, t }) {
   return (
     <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9rem", color: t.inkMuted }}>Theme</span>
       <select value={mode} onChange={e => setMode(e.target.value)}
         style={{
           fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", fontWeight: 600,
