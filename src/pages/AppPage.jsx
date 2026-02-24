@@ -123,7 +123,17 @@ export default function AppPage({
           </Card>
 
           {/* Code panel */}
-          <Card t={t} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+          <Card
+            t={t}
+            style={{
+              flexShrink: 0,
+              height: "clamp(340px, 45vh, 560px)",
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+              overflow: "hidden",
+            }}
+          >
             <div style={{ display: "flex", alignItems: "center", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt, flexShrink: 0, paddingLeft: 4, paddingRight: 10 }}>
               {["Solution", "Explanation"].map(tab => (
                 <button key={tab} onClick={() => setSolTab(tab)}
