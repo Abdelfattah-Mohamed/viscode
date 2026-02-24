@@ -157,6 +157,27 @@ export function generateClimbingStairsSteps({ n }) {
   return steps;
 }
 
+export function generateMaxSubarraySteps({ nums }) {
+  if (!nums || !nums.length) return [];
+  const steps = [];
+  let currentSum = nums[0], maxSum = nums[0], start = 0;
+  steps.push({ stepType: "init", description: `currentSum = maxSum = nums[0] = ${nums[0]}`, state: { i: 0, currentSum, maxSum, start, highlight: [0], done: false } });
+  for (let i = 1; i < nums.length; i++) {
+    const extend = currentSum + nums[i];
+    const newCurrent = Math.max(nums[i], extend);
+    const resetStart = newCurrent === nums[i];
+    if (resetStart) start = i;
+    const newMax = Math.max(maxSum, newCurrent);
+    steps.push({ stepType: "loop", description: `i=${i} → nums[${i}]=${nums[i]}`, state: { i, currentSum, maxSum, start, highlight: Array.from({ length: i - start + 1 }, (_, k) => start + k), done: false } });
+    steps.push({ stepType: "update_current", description: `currentSum = max(${nums[i]}, ${currentSum}+${nums[i]}) = max(${nums[i]}, ${extend}) = ${newCurrent}`, state: { i, currentSum: newCurrent, maxSum, start, highlight: Array.from({ length: i - start + 1 }, (_, k) => start + k), done: false } });
+    currentSum = newCurrent;
+    steps.push({ stepType: "update_max", description: `maxSum = max(${maxSum}, ${currentSum}) = ${newMax}`, state: { i, currentSum, maxSum: newMax, start, highlight: Array.from({ length: i - start + 1 }, (_, k) => start + k), done: false } });
+    maxSum = newMax;
+  }
+  steps.push({ stepType: "done", description: `✅ Max subarray sum = ${maxSum}`, state: { i: nums.length - 1, currentSum, maxSum, start, highlight: Array.from({ length: nums.length - start }, (_, k) => start + k), done: true } });
+  return steps;
+}
+
 export const STEP_GENERATORS = {
   "two-sum":              generateTwoSumSteps,
   "longest-consecutive":  generateLongestConsecutiveSteps,
@@ -165,4 +186,5 @@ export const STEP_GENERATORS = {
   "best-time-stock":      generateStockSteps,
   "binary-search":        generateBinarySearchSteps,
   "climbing-stairs":      generateClimbingStairsSteps,
+  "max-subarray":         generateMaxSubarraySteps,
 };

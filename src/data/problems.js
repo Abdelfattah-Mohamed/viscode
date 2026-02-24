@@ -284,6 +284,44 @@ export const PROBLEMS = {
       },
     },
   },
+
+  "max-subarray": {
+    title:           "Maximum Subarray (Kadane)",
+    difficulty:      "Medium",
+    category:        "Arrays",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(1)",
+    visualizer:      "array",
+    description:     "Given an integer array <code>nums</code>, find the contiguous subarray with the <strong>largest sum</strong> and return its sum.",
+    example:         { input: "nums = [-2,1,-3,4,-1,2,1,-5,4]", output: "6", note: "Subarray [4,-1,2,1] has the largest sum 6" },
+    defaultInput:    { nums: [-2, 1, -3, 4, -1, 2, 1, -5, 4] },
+    inputFields:     ["nums"],
+    explanation: [
+      { emoji: "🤔", title: "Brute Force", body: "Try every (i,j) pair and sum — O(n³) or O(n²) with prefix sums. Too slow." },
+      { emoji: "💡", title: "Key Insight", body: "At each index, the best sum ending here is either extend the previous run or start fresh: currentSum = max(nums[i], currentSum + nums[i])." },
+      { emoji: "🗺️", title: "Kadane's Algorithm", body: "One pass: keep currentSum (best sum ending at i) and maxSum (global best). Update both at each step." },
+      { emoji: "👣", title: "Step by Step", body: "1. currentSum = nums[0], maxSum = nums[0].\n2. For i=1..n-1: currentSum = max(nums[i], currentSum + nums[i]); maxSum = max(maxSum, currentSum).\n3. Return maxSum." },
+      { emoji: "⚡", title: "Why O(1) Space", body: "Only two variables. No extra arrays." },
+    ],
+    languages: {
+      cpp: {
+        code: ["int maxSubArray(vector<int>& nums) {","    int currentSum = nums[0], maxSum = nums[0];","    for (int i = 1; i < nums.size(); i++) {","        currentSum = max(nums[i], currentSum + nums[i]);","        maxSum = max(maxSum, currentSum);","    }","    return maxSum;","}"],
+        lineMap: { init: 2, loop: 3, update_current: 4, update_max: 5, done: 7 },
+      },
+      java: {
+        code: ["public int maxSubArray(int[] nums) {","    int currentSum = nums[0], maxSum = nums[0];","    for (int i = 1; i < nums.length; i++) {","        currentSum = Math.max(nums[i], currentSum + nums[i]);","        maxSum = Math.max(maxSum, currentSum);","    }","    return maxSum;","}"],
+        lineMap: { init: 2, loop: 3, update_current: 4, update_max: 5, done: 7 },
+      },
+      javascript: {
+        code: ["function maxSubArray(nums) {","  let currentSum = nums[0], maxSum = nums[0];","  for (let i = 1; i < nums.length; i++) {","    currentSum = Math.max(nums[i], currentSum + nums[i]);","    maxSum = Math.max(maxSum, currentSum);","  }","  return maxSum;","}"],
+        lineMap: { init: 2, loop: 3, update_current: 4, update_max: 5, done: 7 },
+      },
+      python: {
+        code: ["def maxSubArray(nums):","    current_sum = max_sum = nums[0]","    for i in range(1, len(nums)):","        current_sum = max(nums[i], current_sum + nums[i])","        max_sum = max(max_sum, current_sum)","    return max_sum"],
+        lineMap: { init: 2, loop: 3, update_current: 4, update_max: 5, done: 6 },
+      },
+    },
+  },
 };
 
 // ── Problem list for browse/search ───────────────────────────────────────
@@ -295,6 +333,7 @@ export const PROB_LIST = [
   { id: "best-time-stock",     title: "Best Time to Buy & Sell Stock", difficulty: "Easy",   category: "Sliding Window",      desc: "Maximize profit with one buy and one sell.",                    tags: ["sliding-window", "greedy", "arrays"] },
   { id: "binary-search",       title: "Binary Search",                 difficulty: "Easy",   category: "Binary Search",       desc: "Search a sorted array in O(log n) time.",                       tags: ["binary-search", "arrays", "two-pointers"] },
   { id: "climbing-stairs",     title: "Climbing Stairs",               difficulty: "Easy",   category: "Dynamic Programming", desc: "Count ways to climb n steps taking 1 or 2 at a time.",          tags: ["dynamic-programming", "fibonacci", "math"] },
+  { id: "max-subarray",        title: "Maximum Subarray (Kadane)",      difficulty: "Medium", category: "Arrays",              desc: "Find the contiguous subarray with the largest sum.",           tags: ["arrays", "dynamic-programming", "kadane"] },
 ];
 
 export function getSimilar(currentId, max = 3) {
