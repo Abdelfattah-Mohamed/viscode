@@ -1,38 +1,169 @@
-function Btn({ onClick, label, disabled, accent, t }) {
+function Btn({ onClick, disabled, accent, t, children }) {
   return (
-    <button onClick={onClick} disabled={disabled}
+    <button
+      onClick={onClick}
+      disabled={disabled}
       style={{
-        fontFamily: "'Caveat',cursive", fontSize: "1.1rem", fontWeight: 700,
-        padding: "5px 13px",
-        border: `2px solid ${t.border}`, borderRadius: 8,
-        background: accent ? t.yellow : t.surface,
-        color: accent ? t.ink : disabled ? t.inkMuted : t.ink,
+        fontFamily: "'Caveat',cursive",
+        width: 34,
+        height: 34,
+        borderRadius: 8,
+        border: "none",
+        background: accent ? t.yellow : t.ink,
+        color: accent ? t.ink : t.surface,
         cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.45 : 1,
+        opacity: disabled ? 0.35 : 1,
         boxShadow: disabled ? "none" : t.shadowSm,
-        transition: "all 0.15s",
-      }}>
-      {label}
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 0,
+        transition: "transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease",
+      }}
+    >
+      {children}
     </button>
   );
 }
 
-export default function StepControls({ isPlaying, stepIndex, totalSteps, play, pause, next, prev, reset, setSpeed, t }) {
+function IconTriangle({ direction = "right" }) {
+  const base = {
+    width: 0,
+    height: 0,
+    borderTop: "7px solid transparent",
+    borderBottom: "7px solid transparent",
+  };
+
+  const style =
+    direction === "right"
+      ? { ...base, borderLeft: "12px solid currentColor" }
+      : { ...base, borderRight: "12px solid currentColor" };
+
+  return <div style={style} />;
+}
+
+function IconBar() {
+  return (
+    <div
+      style={{
+        width: 3,
+        height: 14,
+        background: "currentColor",
+        borderRadius: 1,
+      }}
+    />
+  );
+}
+
+function IconPrevWithBar() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <IconBar />
+      <IconTriangle direction="left" />
+    </div>
+  );
+}
+
+function IconNextWithBar() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <IconTriangle direction="right" />
+      <IconBar />
+    </div>
+  );
+}
+
+function IconPrevDouble() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <div style={{ transform: "scale(0.75)" }}>
+        <IconTriangle direction="left" />
+      </div>
+      <div style={{ transform: "scale(0.75)" }}>
+        <IconTriangle direction="left" />
+      </div>
+    </div>
+  );
+}
+
+function IconNextDouble() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <div style={{ transform: "scale(0.75)" }}>
+        <IconTriangle direction="right" />
+      </div>
+      <div style={{ transform: "scale(0.75)" }}>
+        <IconTriangle direction="right" />
+      </div>
+    </div>
+  );
+}
+
+function IconPause() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+      <IconBar />
+      <IconBar />
+    </div>
+  );
+}
+
+export default function StepControls({
+  isPlaying,
+  stepIndex,
+  totalSteps,
+  play,
+  pause,
+  next,
+  prev,
+  jumpToStart,
+  jumpToEnd,
+  reset,
+  setSpeed,
+  t,
+}) {
   const progress = totalSteps > 1 ? (stepIndex / (totalSteps - 1)) * 100 : 0;
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 8,
-      padding: "12px 16px",
-      borderTop: `1.5px solid ${t.border}`,
-      background: t.surfaceAlt, flexShrink: 0,
-    }}>
-      <Btn onClick={reset} label="⏮" disabled={stepIndex === 0 && !isPlaying} t={t} />
-      <Btn onClick={prev}  label="◀" disabled={stepIndex === 0} t={t} />
-      <Btn onClick={isPlaying ? pause : play}
-        label={isPlaying ? "⏸" : "▶"}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "12px 16px",
+        borderTop: `1.5px solid ${t.border}`,
+        background: t.surfaceAlt,
+        flexShrink: 0,
+      }}
+    >
+      {/* Jump to start (all the way back) */}
+      <Btn onClick={jumpToStart} disabled={stepIndex === 0} t={t}>
+        <IconPrevDouble />
+      </Btn>
+
+      {/* Step back (single step with bar) */}
+      <Btn onClick={prev} disabled={stepIndex === 0} t={t}>
+        <IconPrevWithBar />
+      </Btn>
+
+      {/* Play / Pause */}
+      <Btn
+        onClick={isPlaying ? pause : play}
         disabled={!isPlaying && stepIndex === totalSteps - 1}
-        accent t={t} />
-      <Btn onClick={next} label="▶▶" disabled={stepIndex === totalSteps - 1} t={t} />
+        accent
+        t={t}
+      >
+        {isPlaying ? <IconPause /> : <IconTriangle direction="right" />}
+      </Btn>
+
+      {/* Step forward (single step with bar) */}
+      <Btn onClick={next} disabled={stepIndex === totalSteps - 1} t={t}>
+        <IconNextWithBar />
+      </Btn>
+
+      {/* Jump to end (all the way forward) */}
+      <Btn onClick={jumpToEnd} disabled={stepIndex === totalSteps - 1} t={t}>
+        <IconNextDouble />
+      </Btn>
 
       {/* Progress bar */}
       <div style={{ flex: 1, height: 6, background: t.surfaceAlt, border: `1.5px solid ${t.border}`, borderRadius: 3, overflow: "hidden", margin: "0 4px" }}>

@@ -35,9 +35,11 @@ export function useStepPlayer(steps = [], speed = 900) {
     isPlaying,
     play:     () => setIsPlaying(true),
     pause:    () => setIsPlaying(false),
-    next:     () => { setIsPlaying(false); setStepIndex(p => Math.min(p + 1, steps.length - 1)); },
-    prev:     () => { setIsPlaying(false); setStepIndex(p => Math.max(p - 1, 0)); },
-    reset:    () => { setIsPlaying(false); setStepIndex(0); },
+    next:        () => { setIsPlaying(false); setStepIndex(p => Math.min(p + 1, steps.length - 1)); },
+    prev:        () => { setIsPlaying(false); setStepIndex(p => Math.max(p - 1, 0)); },
+    jumpToStart: () => { setIsPlaying(false); setStepIndex(0); },
+    jumpToEnd:   () => { setIsPlaying(false); setStepIndex(steps.length ? steps.length - 1 : 0); },
+    reset:       () => { setIsPlaying(false); setStepIndex(0); },
     setSpeed: ms => setPlaySpeed(ms),
   };
 }
