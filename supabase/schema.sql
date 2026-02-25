@@ -26,6 +26,7 @@ create table if not exists public.profiles (
   avatar_url text,
   provider text not null default 'email',
   google_sub text,
+  password_hash text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -8,10 +8,17 @@ function generateCode() {
   return Array.from({ length: VERIFICATION_CODE_LENGTH }, () => Math.floor(Math.random() * 10)).join("");
 }
 
-function profileToRow(profile) {
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + ":viscode-salt-2025");
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function profileToRow(profile, passwordHash) {
   const now = new Date().toISOString();
   const avatarUrl = profile.picture || (profile.avatarId ? `avatar:${profile.avatarId}` : null);
-  return {
+  const row = {
     email: profile.email || null,
     username: profile.username || "User",
     avatar_url: avatarUrl,
@@ -19,6 +26,8 @@ function profileToRow(profile) {
     google_sub: profile.sub || null,
     updated_at: now,
   };
+  if (passwordHash !== undefined) row.password_hash = passwordHash;
+  return row;
 }
 
 function rowToProfile(row) {
@@ -36,10 +45,10 @@ function rowToProfile(row) {
   };
 }
 
-async function upsertProfile(profile) {
+async function upsertProfile(profile, passwordHash) {
   const sb = getSupabase();
   if (!sb || profile.isGuest) return;
-  const row = profileToRow(profile);
+  const row = profileToRow(profile, passwordHash);
   await sb.from(PROFILES_TABLE).upsert(row, { onConflict: "email" });
 }
 
@@ -56,6 +65,20 @@ async function fetchProfileFromDb(profile) {
     row = data;
   }
   return row ? rowToProfile(row) : null;
+}
+
+async function findUserInDb(username) {
+  const sb = getSupabase();
+  if (!sb) return null;
+  const { data } = await sb.from(PROFILES_TABLE).select("*").eq("username", username).maybeSingle();
+  return data;
+}
+
+async function findUserByEmailInDb(email) {
+  const sb = getSupabase();
+  if (!sb) return null;
+  const { data } = await sb.from(PROFILES_TABLE).select("*").eq("email", email.toLowerCase()).maybeSingle();
+  return data;
 }
 
 export function useAuth() {
@@ -79,14 +102,27 @@ export function useAuth() {
   }, []);
 
   const signup = async (username, email, password) => {
+    const normalizedEmail = email.trim().toLowerCase();
+
     try {
       const existing = localStorage.getItem(`vc:user:${username}`);
       if (existing) return { error: "Username already taken" };
-      const existingEmail = localStorage.getItem(`vc:email:${email.toLowerCase()}`);
-      if (existingEmail) return { error: "Email already registered" };
     } catch (_) {}
+
+    const sb = getSupabase();
+    if (sb) {
+      const byUsername = await findUserInDb(username);
+      if (byUsername) return { error: "Username already taken" };
+      const byEmail = await findUserByEmailInDb(normalizedEmail);
+      if (byEmail) return { error: "Email already registered" };
+    } else {
+      try {
+        const existingEmail = localStorage.getItem(`vc:email:${normalizedEmail}`);
+        if (existingEmail) return { error: "Email already registered" };
+      } catch (_) {}
+    }
+
     const code = generateCode();
-    const normalizedEmail = email.trim().toLowerCase();
     const sendResult = await sendVerificationCode(normalizedEmail, code);
     setPendingVerification({
       username,
@@ -123,12 +159,14 @@ export function useAuth() {
 
     const { username, email, password } = pendingVerification;
     const profile = { username, email, createdAt: new Date().toISOString(), avatarId: 1 };
+    const pwHash = await hashPassword(password);
+
     localStorage.setItem(`vc:user:${username}`, JSON.stringify({ password, profile }));
     localStorage.setItem(`vc:email:${email}`, username);
     localStorage.setItem("vc:session", JSON.stringify(profile));
     setPendingVerification(null);
     setUser(profile);
-    upsertProfile(profile);
+    upsertProfile(profile, pwHash);
     return { ok: true };
   };
 
@@ -138,13 +176,29 @@ export function useAuth() {
     let data;
     try {
       const raw = localStorage.getItem(`vc:user:${username}`);
-      if (!raw) return { error: "User not found" };
-      data = JSON.parse(raw);
-    } catch (_) { return { error: "User not found" }; }
-    if (data.password !== password) return { error: "Incorrect password" };
-    localStorage.setItem("vc:session", JSON.stringify(data.profile));
-    setUser(data.profile);
-    upsertProfile(data.profile);
+      if (raw) data = JSON.parse(raw);
+    } catch (_) {}
+
+    if (data) {
+      if (data.password !== password) return { error: "Incorrect password" };
+      localStorage.setItem("vc:session", JSON.stringify(data.profile));
+      setUser(data.profile);
+      upsertProfile(data.profile);
+      return { ok: true };
+    }
+
+    const row = await findUserInDb(username);
+    if (!row) return { error: "User not found" };
+    if (!row.password_hash) return { error: "Account requires password reset" };
+
+    const pwHash = await hashPassword(password);
+    if (pwHash !== row.password_hash) return { error: "Incorrect password" };
+
+    const profile = rowToProfile(row);
+    localStorage.setItem(`vc:user:${username}`, JSON.stringify({ password, profile }));
+    if (profile.email) localStorage.setItem(`vc:email:${profile.email.toLowerCase()}`, username);
+    localStorage.setItem("vc:session", JSON.stringify(profile));
+    setUser(profile);
     return { ok: true };
   };
 
@@ -200,10 +254,15 @@ export function useAuth() {
 
   const requestPasswordReset = async (email) => {
     const normalizedEmail = email.trim().toLowerCase();
-    const username = localStorage.getItem(`vc:email:${normalizedEmail}`);
-    if (!username) return { error: "No account found with that email" };
-    const raw = localStorage.getItem(`vc:user:${username}`);
-    if (!raw) return { error: "No account found with that email" };
+
+    let username = null;
+    try { username = localStorage.getItem(`vc:email:${normalizedEmail}`); } catch (_) {}
+
+    if (!username) {
+      const row = await findUserByEmailInDb(normalizedEmail);
+      if (!row) return { error: "No account found with that email" };
+      username = row.username;
+    }
 
     const code = generateCode();
     const sendResult = await sendVerificationCode(normalizedEmail, code);
@@ -237,17 +296,26 @@ export function useAuth() {
     return { ok: true };
   };
 
-  const confirmPasswordReset = (newPassword) => {
+  const confirmPasswordReset = async (newPassword) => {
     if (!pendingReset?.codeVerified) return { error: "Code not verified" };
+    const pwHash = await hashPassword(newPassword);
+
     try {
       const raw = localStorage.getItem(`vc:user:${pendingReset.username}`);
-      if (!raw) return { error: "Account not found" };
-      const data = JSON.parse(raw);
-      data.password = newPassword;
-      localStorage.setItem(`vc:user:${pendingReset.username}`, JSON.stringify(data));
-    } catch (_) {
-      return { error: "Failed to update password" };
+      if (raw) {
+        const data = JSON.parse(raw);
+        data.password = newPassword;
+        localStorage.setItem(`vc:user:${pendingReset.username}`, JSON.stringify(data));
+      }
+    } catch (_) {}
+
+    const sb = getSupabase();
+    if (sb) {
+      await sb.from(PROFILES_TABLE)
+        .update({ password_hash: pwHash, updated_at: new Date().toISOString() })
+        .eq("email", pendingReset.email);
     }
+
     setPendingReset(null);
     return { ok: true };
   };

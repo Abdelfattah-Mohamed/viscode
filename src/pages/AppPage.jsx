@@ -251,7 +251,7 @@ export default function AppPage({
             }
           />
           <div style={{ padding: "10px 14px", flexShrink: 0 }}>
-            <div style={{ fontFamily: "'Caveat',cursive", fontSize: `${1.1 * whiteboardFontScale}rem`, fontWeight: 600, padding: "9px 14px", background: stepDescColor + (themeMode === "dark" ? "33" : "cc"), border: `2px solid ${t.border}`, borderRadius: 8, minHeight: 42, display: "flex", alignItems: "center", gap: 8, color: t.ink, transition: "background 0.3s" }}>
+            <div style={{ fontFamily: "'Caveat',cursive", fontSize: `${1.1 * whiteboardFontScale}rem`, fontWeight: 600, padding: "9px 14px", background: stepDescColor + (t._resolved === "dark" ? "33" : "cc"), border: `2px solid ${t.border}`, borderRadius: 8, minHeight: 42, display: "flex", alignItems: "center", gap: 8, color: t.ink, transition: "background 0.3s" }}>
               <span>💡</span>
               <span>{currentStep?.description || "Press ▶ to start the visualization"}</span>
             </div>

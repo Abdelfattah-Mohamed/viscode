@@ -23,7 +23,7 @@ export default function NavBar({ page, onNavigate, t, themeMode, right, mobile }
           background: "none", border: "none", padding: 0, cursor: "pointer",
         }}
       >
-        <LogoMark size={mobile ? 30 : 38} darkBorder={themeMode === "dark"} />
+        <LogoMark size={mobile ? 30 : 38} darkBorder={t._resolved === "dark"} />
         {!mobile && (
           <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.55rem", fontWeight: 700, color: t.ink }}>
             Vis<span style={{ color: t.blue }}>Code</span>

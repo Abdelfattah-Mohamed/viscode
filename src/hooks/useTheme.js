@@ -17,5 +17,7 @@ export function useTheme(mode) {
     return () => mq.removeEventListener("change", handler);
   }, [mode]);
 
-  return THEMES[resolved] ?? THEMES.light;
+  const theme = THEMES[resolved] ?? THEMES.light;
+  theme._resolved = resolved;
+  return theme;
 }

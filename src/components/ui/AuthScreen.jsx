@@ -81,7 +81,9 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
     setError("");
     if (resetPw.length < MIN_PASSWORD_LENGTH) { setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`); return; }
     if (resetPw !== resetPwConfirm) { setError("Passwords do not match"); return; }
-    const res = onAuth.confirmPasswordReset(resetPw);
+    setBusy(true);
+    const res = await onAuth.confirmPasswordReset(resetPw);
+    setBusy(false);
     if (res.error) { setError(res.error); return; }
     setSuccessMsg("Password updated! You can now sign in.");
     setResetEmail("");
@@ -153,7 +155,7 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap'); * { box-sizing: border-box; }`}</style>
       <div style={{ width: "100%", maxWidth: 400, padding: 24 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginBottom: 24 }}>
-          <LogoMark size={48} darkBorder={themeMode === "dark"} />
+          <LogoMark size={48} darkBorder={t._resolved === "dark"} />
           <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.6rem", fontWeight: 700, color: t.ink }}>{title}</span>
         </div>
         <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 14, boxShadow: t.shadow, padding: 24 }}>
@@ -285,7 +287,7 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
 
       <div style={{ width: "100%", maxWidth: 400, padding: 24 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginBottom: 32 }}>
-          <LogoMark size={56} darkBorder={themeMode === "dark"} />
+          <LogoMark size={56} darkBorder={t._resolved === "dark"} />
           <span style={{ fontFamily: "'Caveat',cursive", fontSize: "2rem", fontWeight: 700, color: t.ink }}>
             Vis<span style={{ color: t.blue }}>Code</span>
           </span>
