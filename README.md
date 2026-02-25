@@ -1,24 +1,89 @@
 # VisCode — DSA Algorithm Visualizer
 
-> Watch data structures and algorithms come alive, step-by-step, synced to real code.
+> **Watch data structures and algorithms come alive.** Step through solutions in C++, Java, JavaScript, and Python with live animations synced to the code. Built for interview prep and learning.
 
-![VisCode preview](https://raw.githubusercontent.com/YOUR_USERNAME/viscode/main/preview.png)
+---
+
+## What is VisCode?
+
+VisCode is a **web app** that helps you understand classic coding problems by **visualizing** how algorithms run step-by-step. Instead of reading code in isolation, you see:
+
+- **The code** (syntax-highlighted, with the active line highlighted)
+- **The visualization** (arrays, pointers, trees, linked lists, etc.)
+- **Plain-English explanations** for each step
+
+You can change inputs, switch languages, adjust playback speed, and share a specific problem + test case via URL. Perfect for **Blind 75**-style practice and technical interview prep.
+
+---
+
+## Screenshots
+
+Add your own screenshots to `docs/screenshots/` and reference them below. Example filenames: `home.png`, `problems.png`, `visualizer.png`, `profile.png`.
+
+### Home
+
+Landing page with hero, stats, and **Continue Where You Left Off** (last 5 problems). Use **Start Visualizing** or **Browse Problems** to dive in.
+
+| Light | Dark |
+|-------|------|
+| ![Home — light](docs/screenshots/home-light.png) | ![Home — dark](docs/screenshots/home-dark.png) |
+
+*Place screenshots in `docs/screenshots/home-light.png` and `docs/screenshots/home-dark.png`.*
+
+### Problems
+
+Browse all problems with search, category filters, and **Favorites** / **Flagged** filters. **Recently Visited** shows your last 5 problems; cards fit on screen without scrolling on medium/large viewports.
+
+| Light | Dark |
+|-------|------|
+| ![Problems — light](docs/screenshots/problems-light.png) | ![Problems — dark](docs/screenshots/problems-dark.png) |
+
+*Place screenshots in `docs/screenshots/problems-light.png` and `docs/screenshots/problems-dark.png`.*
+
+### Visualizer (App)
+
+The main learning view: **problem statement** (with favorite/flag and **share**), **code** (Solution / Explanation tabs, language selector, copy button), and **whiteboard** (custom input, step description, animation). Use **?** in the whiteboard header for keyboard shortcuts.
+
+| Light | Dark |
+|-------|------|
+| ![Visualizer — light](docs/screenshots/visualizer-light.png) | ![Visualizer — dark](docs/screenshots/visualizer-dark.png) |
+
+*Place screenshots in `docs/screenshots/visualizer-light.png` and `docs/screenshots/visualizer-dark.png`.*
+
+### Profile
+
+User profile with **Favorites** and **Flagged** problem lists. Manage account and sign out.
+
+| Light | Dark |
+|-------|------|
+| ![Profile — light](docs/screenshots/profile-light.png) | ![Profile — dark](docs/screenshots/profile-dark.png) |
+
+*Place screenshots in `docs/screenshots/profile-light.png` and `docs/screenshots/profile-dark.png`.*
+
+---
 
 ## Features
 
-- **7 Blind 75 problems** visualized with smooth animations
-- **4 languages** — C++, Java, JavaScript, Python — all syntax-highlighted
-- **Step-by-step playback** with play/pause, speed control, and manual stepping
-- **Custom inputs** — edit any input and re-run instantly
-- **Plain-English explanations** for every algorithm decision
-- **Similar problems** — smart tag-based recommendations after each problem
-- **Dark / Light / System** theme
-- **Auth system** — sign up, log in, or continue as guest
+- **19 Blind 75–style problems** across Arrays, Sliding Window, Binary Search, DP, Trees, Two Pointers, Stack, and Linked Lists
+- **4 languages** — C++, Java, JavaScript, Python — with syntax highlighting and per-step line mapping
+- **Step-by-step playback** — play/pause, speed control, next/previous, jump to start/end
+- **Custom inputs** — edit any input and re-run the visualization instantly
+- **Plain-English explanations** for each algorithm decision (Solution vs Explanation tab)
+- **Similar problems** — tag-based recommendations after each problem
+- **Share a visualization** — copy a URL with problem ID and custom input in query params so others open the same test case
+- **Recently visited** — last 5 problems stored in `localStorage`; quick-access on Home and Problems (fits on screen without scrolling on medium+)
+- **Favorites & Flagged** — per-user lists persisted in Supabase; visible on profile and filterable on Problems
+- **Auth** — sign up, log in, or continue as guest; email verification (EmailJS); password reset; cross-device login via Supabase
+- **Themes** — Light / Dark / System (respects `prefers-color-scheme` on first visit)
+- **Keyboard shortcuts** — Space (play/pause), ←/→ or A/D (prev/next), Home/End, L (language), E (Solution/Explanation), ? (help); ? button in whiteboard header
+- **Mobile-friendly** — responsive layout; visualizer and code stack on small screens
+
+---
 
 ## Problems
 
 | Problem | Category | Difficulty |
-|---|---|---|
+|---------|----------|------------|
 | Two Sum | Arrays | Easy |
 | Longest Consecutive Sequence | Arrays | Medium |
 | Contains Duplicate | Arrays | Easy |
@@ -26,6 +91,20 @@
 | Best Time to Buy & Sell Stock | Sliding Window | Easy |
 | Binary Search | Binary Search | Easy |
 | Climbing Stairs | Dynamic Programming | Easy |
+| Maximum Subarray (Kadane) | Arrays | Medium |
+| Subtree of Another Tree | Trees | Easy |
+| Valid Palindrome | Two Pointers | Easy |
+| Valid Parentheses | Stack | Easy |
+| Product of Array Except Self | Arrays | Medium |
+| Maximum Product Subarray | Dynamic Programming | Medium |
+| House Robber | Dynamic Programming | Medium |
+| Missing Number | Arrays | Easy |
+| Maximum Depth of Binary Tree | Trees | Easy |
+| Invert Binary Tree | Trees | Easy |
+| Same Tree | Trees | Easy |
+| Reverse Linked List | Linked Lists | Easy |
+
+---
 
 ## Quick Start
 
@@ -37,13 +116,19 @@ cd viscode
 # 2. Install
 npm install
 
-# 3. Develop
+# 3. Environment (optional — for auth, favorites, email)
+# Copy .env.example to .env and set VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY,
+# and EmailJS keys if you use verification / password reset.
+
+# 4. Develop
 npm run dev
 # → http://localhost:5173
 
-# 4. Build for production
+# 5. Build for production
 npm run build
 ```
+
+---
 
 ## Project Structure
 
@@ -53,76 +138,71 @@ viscode/
 │   └── favicon.svg
 ├── src/
 │   ├── data/
-│   │   ├── themes.js          # Light/dark color tokens
-│   │   ├── problems.js        # All 7 problem definitions + metadata
-│   │   └── stepGenerators.js  # Animation step producers per problem
+│   │   ├── themes.js           # Light/dark color tokens
+│   │   ├── problems.js         # Problem definitions, PROB_LIST, LANG_META, DIFF_COLOR, CAT_ICON
+│   │   └── stepGenerators.js   # Step producers per problem (for animations)
 │   ├── hooks/
-│   │   ├── useTheme.js        # Resolves system/light/dark preference
-│   │   ├── useStepPlayer.js   # Play/pause/speed animation engine
-│   │   └── useAuth.js         # localStorage-based auth
+│   │   ├── useTheme.js         # Resolves system/light/dark
+│   │   ├── useStepPlayer.js    # Play/pause/speed animation
+│   │   ├── useAuth.js          # Auth + Supabase (login, signup, reset)
+│   │   ├── useFavorites.js     # Favorites/flagged + Supabase + localStorage
+│   │   ├── useIsMobile.js      # Breakpoint for responsive layout
+│   │   └── useRecentProblems.js # Last 5 problems (localStorage)
 │   ├── components/
 │   │   ├── ui/
 │   │   │   ├── NavBar.jsx
-│   │   │   ├── Card.jsx
+│   │   │   ├── Card.jsx, CardHeader
 │   │   │   ├── LogoMark.jsx
 │   │   │   ├── ThemeToggle.jsx
 │   │   │   ├── StepControls.jsx
 │   │   │   ├── InputEditor.jsx
 │   │   │   └── AuthScreen.jsx
-│   │   ├── visualizers/
-│   │   │   ├── ArrayVisualizer.jsx
-│   │   │   ├── ConsecutiveVisualizer.jsx
-│   │   │   ├── DuplicateViz.jsx
-│   │   │   ├── AnagramViz.jsx
-│   │   │   ├── StockViz.jsx
-│   │   │   ├── BinarySearchViz.jsx
-│   │   │   └── ClimbingViz.jsx
-│   │   ├── CodePanel.jsx
+│   │   ├── visualizers/        # Per-problem visualizers (array, tree, etc.)
+│   │   ├── CodePanel.jsx       # Syntax highlight + copy + active line
 │   │   ├── ExplanationPanel.jsx
 │   │   └── SimilarProblems.jsx
 │   ├── pages/
-│   │   ├── HomePage.jsx
-│   │   ├── ProblemsPage.jsx
-│   │   └── AppPage.jsx
-│   ├── App.jsx                # Root router
-│   └── main.jsx               # Entry point
+│   │   ├── HomePage.jsx        # Hero, stats, continue where you left off
+│   │   ├── ProblemsPage.jsx   # List, filters, recently visited
+│   │   ├── AppPage.jsx         # Problem + code + whiteboard + shortcuts
+│   │   └── ProfilePage.jsx    # Profile, favorites, flagged
+│   ├── App.jsx                 # Router, share URL parsing, selectProblem
+│   └── main.jsx
+├── supabase/
+│   └── schema.sql              # profiles, user_problem_flags, verification_codes
 ├── index.html
 ├── vite.config.js
 └── package.json
 ```
 
+---
+
 ## Adding a New Problem
 
-1. **Add the problem definition** to `src/data/problems.js` inside `PROBLEMS` and `PROB_LIST`.
-2. **Write a step generator** in `src/data/stepGenerators.js` and register it in `STEP_GENERATORS`.
-3. **Create a visualizer component** in `src/components/visualizers/`.
-4. **Export it** from `src/components/visualizers/index.js`.
-5. **Add a render condition** in `src/pages/AppPage.jsx` (the `{problem.visualizer === "..." && ...}` block).
+1. **Define the problem** in `src/data/problems.js`: add to `PROBLEMS` and `PROB_LIST`.
+2. **Add a step generator** in `src/data/stepGenerators.js` and register in `STEP_GENERATORS`.
+3. **Create a visualizer** in `src/components/visualizers/` and export from `index.js`.
+4. **Wire it in** `src/pages/AppPage.jsx` (the `{problem.visualizer === "..." && ...}` block).
+
+---
 
 ## Deploy
 
-### GitHub Pages (automatic via CI)
-Push to `main` — the included GitHub Actions workflow builds and deploys automatically.
+- **Vercel:** `npx vercel` (set env vars in dashboard for Supabase + EmailJS).
+- **Netlify:** `npm run build` then deploy the `dist/` folder.
+- **GitHub Pages:** use your existing workflow; ensure base path if needed.
 
-### Vercel (recommended)
-```bash
-npx vercel
-```
-Vercel auto-detects Vite. No configuration needed.
-
-### Netlify
-```bash
-npm run build
-# Drag-and-drop the `dist/` folder to netlify.com/drop
-```
+---
 
 ## Tech Stack
 
-- **React 18** + **Vite 5**
-- No UI library — all styles are inline CSS-in-JS
-- No state management library — plain `useState` / `useMemo`
-- `localStorage` for auth persistence
+- **React 18** + **Vite 7**
+- **Supabase** — auth, profiles, user_problem_flags, verification_codes
+- **EmailJS** — optional email verification and password reset
+- Inline styles (no UI library); `localStorage` + Supabase for persistence
+
+---
 
 ## License
 
-MIT — free to use, modify, and distribute.
+MIT — use, modify, and distribute freely.
