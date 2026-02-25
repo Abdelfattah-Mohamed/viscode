@@ -26,6 +26,24 @@ function parseShareUrl() {
   return null;
 }
 
+function getRouteFromPath(pathname) {
+  const path = (pathname || window.location.pathname).replace(/\/$/, "") || "/";
+  if (path === "/" || path === "/home") return { page: "home" };
+  if (path === "/problems") return { page: "problems" };
+  if (path === "/profile") return { page: "profile" };
+  const match = path.match(/^\/problem\/(.+)$/);
+  if (match && PROBLEMS[match[1]]) return { page: "app", problemId: match[1] };
+  return { page: "home" };
+}
+
+function pathFor(page, problemId) {
+  if (page === "app" && problemId) return `/problem/${problemId}`;
+  if (page === "home") return "/";
+  if (page === "problems") return "/problems";
+  if (page === "profile") return "/profile";
+  return "/";
+}
+
 export default function App() {
   const [themeMode, setThemeModeRaw] = useState(() => {
     try {
@@ -40,8 +58,11 @@ export default function App() {
   };
 
   const shared = useRef(parseShareUrl());
-  const [page, setPage]                = useState(shared.current ? "app" : "home");
-  const [selectedProblem, setSelected] = useState(shared.current?.pid || DEFAULT_PROBLEM);
+  const initialRoute = shared.current
+    ? { page: "app", problemId: shared.current.pid }
+    : getRouteFromPath(window.location.pathname);
+  const [page, setPage]                = useState(initialRoute.page);
+  const [selectedProblem, setSelected] = useState(initialRoute.problemId || shared.current?.pid || DEFAULT_PROBLEM);
   const [sharedInput, setSharedInput]  = useState(shared.current?.input || null);
 
   const t      = useTheme(themeMode);
@@ -54,8 +75,18 @@ export default function App() {
 
   useEffect(() => {
     if (shared.current) {
-      window.history.replaceState({}, "", window.location.pathname);
+      window.history.replaceState({}, "", pathFor("app", shared.current.pid));
     }
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const route = getRouteFromPath(window.location.pathname);
+      setPage(route.page);
+      if (route.problemId) setSelected(route.problemId);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   useEffect(() => {
@@ -69,6 +100,12 @@ export default function App() {
     setSharedInput(null);
     setPage("app");
     track(id);
+    window.history.pushState({}, "", pathFor("app", id));
+  };
+
+  const navigate = (dest) => {
+    setPage(dest);
+    window.history.pushState({}, "", pathFor(dest, dest === "app" ? selectedProblem : null));
   };
 
   if (auth.loading) {
@@ -82,8 +119,6 @@ export default function App() {
   if (!auth.user) {
     return <AuthScreen onAuth={auth} t={t} themeMode={themeMode} />;
   }
-
-  const navigate = dest => setPage(dest);
 
   if (page === "home") {
     return (
@@ -130,7 +165,7 @@ export default function App() {
   return (
     <AppPage
       selectedProblem={selectedProblem}
-      setSelectedProblem={id => { if (PROBLEMS[id]) { setSelected(id); track(id); } }}
+      setSelectedProblem={id => { if (PROBLEMS[id]) { setSelected(id); track(id); window.history.pushState({}, "", pathFor("app", id)); } }}
       t={t} themeMode={themeMode} setThemeMode={setThemeMode}
       onNavigate={navigate}
       onLogout={auth.logout}
