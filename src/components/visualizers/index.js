@@ -24,3 +24,5 @@ export { default as CycleViz }              from "./CycleViz";
 export { default as GridViz }               from "./GridViz";
 export { default as GraphViz }              from "./GraphViz";
 export { default as RpnViz }                from "./RpnViz";
+export { default as DecodeWaysViz }         from "./DecodeWaysViz";
+export { default as GenerateParenthesesViz } from "./GenerateParenthesesViz";

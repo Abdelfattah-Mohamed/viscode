@@ -1007,6 +1007,132 @@ export function generateEvalRpnSteps(input) {
   return steps;
 }
 
+export function generateSearchRotatedSteps({ nums = [], target }) {
+  if (!nums.length) return [{ stepType: "init", description: "Empty array", state: { left: 0, right: -1, mid: -1, found: -1, eliminated: [] } }];
+  const steps = [];
+  let left = 0, right = nums.length - 1;
+  const t = target != null ? Number(target) : 0;
+  steps.push({ stepType: "init", description: `left=0, right=${right}, target=${t}`, state: { left, right, mid: -1, found: -1, eliminated: [] } });
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    steps.push({ stepType: "loop", description: `left=${left}, right=${right}`, state: { left, right, mid, found: -1, eliminated: [] } });
+    steps.push({ stepType: "calc_mid", description: `mid=${mid} → nums[${mid}]=${nums[mid]}`, state: { left, right, mid, found: -1, eliminated: [] } });
+    if (nums[mid] === t) {
+      steps.push({ stepType: "found", description: `✅ Found at index ${mid}`, state: { left, right, mid, found: mid, eliminated: [] } });
+      return steps;
+    }
+    if (nums[left] <= nums[mid]) {
+      if (t >= nums[left] && t < nums[mid]) {
+        const el = Array.from({ length: mid - left + 1 }, (_, k) => left + k);
+        steps.push({ stepType: "go_left", description: `Left half sorted; ${t} in [${nums[left]},${nums[mid]}) → right=${mid - 1}`, state: { left, right: mid - 1, mid, found: -1, eliminated: el } });
+        right = mid - 1;
+      } else {
+        const el = Array.from({ length: mid - left + 1 }, (_, k) => left + k);
+        steps.push({ stepType: "go_right", description: `Left half sorted; ${t} not in range → left=${mid + 1}`, state: { left: mid + 1, right, mid, found: -1, eliminated: el } });
+        left = mid + 1;
+      }
+    } else {
+      if (t > nums[mid] && t <= nums[right]) {
+        const el = Array.from({ length: right - mid + 1 }, (_, k) => mid + k);
+        steps.push({ stepType: "go_right", description: `Right half sorted; ${t} in (${nums[mid]},${nums[right]}] → left=${mid + 1}`, state: { left: mid + 1, right, mid, found: -1, eliminated: el } });
+        left = mid + 1;
+      } else {
+        const el = Array.from({ length: right - mid + 1 }, (_, k) => mid + k);
+        steps.push({ stepType: "go_left", description: `Right half sorted; ${t} not in range → right=${mid - 1}`, state: { left, right: mid - 1, mid, found: -1, eliminated: el } });
+        right = mid - 1;
+      }
+    }
+  }
+  steps.push({ stepType: "done", description: `❌ ${t} not found → return -1`, state: { left, right, mid: -1, found: -1, eliminated: [] } });
+  return steps;
+}
+
+export function generateDecodeWaysSteps(input) {
+  const s = input?.s != null ? String(input.s).trim() : "";
+  if (!s.length) return [{ stepType: "init", description: "Empty string", state: { s: "", dp: [1], i: 0, highlight: [], done: true } }];
+  const n = s.length;
+  const dp = new Array(n + 1).fill(0);
+  dp[0] = 1;
+  const steps = [];
+  steps.push({ stepType: "init", description: "dp[0] = 1 (empty string = 1 way)", state: { s: s.split(""), dp: [...dp], i: 0, highlight: [], done: false } });
+  for (let i = 1; i <= n; i++) {
+    steps.push({ stepType: "loop", description: `Position i=${i} (s[${i - 1}]='${s[i - 1]}')`, state: { s: s.split(""), dp: [...dp], i, highlight: [i - 1], done: false } });
+    if (s[i - 1] !== "0") {
+      dp[i] += dp[i - 1];
+      steps.push({ stepType: "one_digit", description: `One digit: s[${i - 1}]='${s[i - 1]}' → dp[${i}] += dp[${i - 1}] = ${dp[i]}`, state: { s: s.split(""), dp: [...dp], i, highlight: [i - 1], done: false } });
+    }
+    if (i >= 2) {
+      const two = parseInt(s.slice(i - 2, i), 10);
+      if (two >= 10 && two <= 26) {
+        dp[i] += dp[i - 2];
+        steps.push({ stepType: "two_digit", description: `Two digits: "${s.slice(i - 2, i)}" = ${two} → dp[${i}] += dp[${i - 2}] = ${dp[i]}`, state: { s: s.split(""), dp: [...dp], i, highlight: [i - 2, i - 1], done: false } });
+      }
+    }
+  }
+  steps.push({ stepType: "done", description: `✅ Ways to decode = ${dp[n]}`, state: { s: s.split(""), dp: [...dp], i: n, highlight: [], done: true } });
+  return steps;
+}
+
+export function generateParenthesesSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const steps = [];
+  const results = [];
+  steps.push({ stepType: "init", description: `Generate all valid parentheses for n=${n}`, state: { n, open: 0, close: 0, path: "", results: [] } });
+  function backtrack(open, close, path) {
+    if (path.length === 2 * n) {
+      results.push(path);
+      steps.push({ stepType: "complete", description: `Complete: "${path}" → add to results`, state: { n, open, close, path, results: [...results] } });
+      return;
+    }
+    if (open < n) {
+      steps.push({ stepType: "add_open", description: `Add '(' (open=${open + 1}, close=${close})`, state: { n, open: open + 1, close, path: path + "(", results: [...results] } });
+      backtrack(open + 1, close, path + "(");
+    }
+    if (close < open) {
+      steps.push({ stepType: "add_close", description: `Add ')' (open=${open}, close=${close + 1})`, state: { n, open, close: close + 1, path: path + ")", results: [...results] } });
+      backtrack(open, close + 1, path + ")");
+    }
+  }
+  if (n > 0) backtrack(0, 0, "");
+  steps.push({ stepType: "done", description: `✅ Generated ${results.length} combinations`, state: { n, open: n, close: n, path: "", results: [...results], done: true } });
+  return steps;
+}
+
+export function generateReorderListSteps(input) {
+  const head = Array.isArray(input?.head) ? [...input.head] : [];
+  if (head.length < 2) {
+    return [
+      { stepType: "init", description: "List too short", state: { head: [...head], prevIdx: -1, currIdx: -1, nextIdx: -1, reversed: 0, phase: "done", done: true } },
+    ];
+  }
+  const steps = [];
+  let slow = 0, fast = 0;
+  steps.push({ stepType: "init", description: "Find middle with slow/fast pointers", state: { head: [...head], prevIdx: -1, currIdx: 0, nextIdx: 0, reversed: 0, phase: "find_mid", done: false } });
+  while (fast + 2 < head.length) {
+    slow++;
+    fast += 2;
+    steps.push({ stepType: "find_mid", description: `slow=${slow}, fast=${fast}`, state: { head: [...head], prevIdx: -1, currIdx: slow, nextIdx: Math.min(fast, head.length - 1), reversed: 0, phase: "find_mid", done: false } });
+  }
+  const midIdx = slow;
+  const firstHalf = head.slice(0, midIdx + 1);
+  const secondHalf = head.slice(midIdx + 1);
+  steps.push({ stepType: "split", description: `Split: first=[${firstHalf.join(",")}], second=[${secondHalf.join(",")}]`, state: { head: [...head], firstHalf: [...firstHalf], secondHalf: [...secondHalf], phase: "split", done: false } });
+  const reversedSecond = [...secondHalf].reverse();
+  steps.push({ stepType: "reverse_start", description: "Reverse second half", state: { head: reversedSecond, prevIdx: -1, currIdx: 0, nextIdx: 1, reversed: 0, phase: "reverse", done: false } });
+  for (let r = 0; r < reversedSecond.length; r++) {
+    steps.push({ stepType: "reverse_step", description: `Reverse step ${r + 1}/${reversedSecond.length}`, state: { head: reversedSecond, prevIdx: r - 1, currIdx: r, nextIdx: r + 1 < reversedSecond.length ? r + 1 : -1, reversed: r, phase: "reverse", done: false } });
+  }
+  steps.push({ stepType: "reverse_done", description: "Second half reversed", state: { head: reversedSecond, prevIdx: reversedSecond.length - 1, currIdx: -1, nextIdx: -1, reversed: reversedSecond.length, phase: "reverse", done: false } });
+  const merged = [];
+  let i = 0, j = 0;
+  while (i < firstHalf.length || j < reversedSecond.length) {
+    if (i < firstHalf.length) { merged.push(firstHalf[i]); i++; }
+    if (j < reversedSecond.length) { merged.push(reversedSecond[j]); j++; }
+  }
+  steps.push({ stepType: "merge", description: `Merge: [${merged.join(",")}]`, state: { head: [...merged], prevIdx: -1, currIdx: -1, nextIdx: -1, reversed: 0, phase: "merge", done: true } });
+  return steps;
+}
+
 function stubGraphSteps(input) {
   const n = input?.n != null ? input.n : 0;
   const edges = buildEdgesFromNums(n, input?.nums || []);
@@ -1048,7 +1174,7 @@ export const STEP_GENERATORS = {
   "number-of-islands":       generateNumberOfIslandsSteps,
   "max-area-of-island":      generateMaxAreaOfIslandSteps,
   "min-rotated-sorted":      (i) => stubArraySteps(i),
-  "search-rotated-sorted":   (i) => stubWithNumsTarget(i),
+  "search-rotated-sorted":   generateSearchRotatedSteps,
   "sum-two-integers":        (i) => stubArraySteps(i),
   "number-of-1-bits":        (i) => stubArraySteps(i),
   "counting-bits":           (i) => stubWithN(i),
@@ -1059,7 +1185,7 @@ export const STEP_GENERATORS = {
   "word-break":              (i) => stubWithS(i),
   "combination-sum":         (i) => stubWithNumsTarget(i),
   "house-robber-ii":         (i) => stubArraySteps(i),
-  "decode-ways":             (i) => stubWithS(i),
+  "decode-ways":             generateDecodeWaysSteps,
   "unique-paths":            (i) => stubArraySteps(i),
   "jump-game":               (i) => stubArraySteps(i),
   "insert-interval":         (i) => stubIntervalSteps(i),
@@ -1068,7 +1194,7 @@ export const STEP_GENERATORS = {
   "meeting-rooms-ii":        (i) => stubIntervalSteps(i),
   "merge-k-sorted-lists":    (i) => stubArraySteps(i),
   "remove-nth-node":        (i) => stubLinkedListSteps(i),
-  "reorder-list":           (i) => stubLinkedListSteps(i),
+  "reorder-list":            generateReorderListSteps,
   "copy-list-random-pointer": (i) => stubLinkedListSteps(i),
   "clone-graph":            (i) => stubGraphSteps(i),
   "course-schedule":        (i) => stubGraphSteps(i),
@@ -1083,6 +1209,6 @@ export const STEP_GENERATORS = {
   "permutations":            (i) => stubArraySteps(i),
   "min-stack":               (i) => stubArraySteps(i),
   "eval-rpn":               generateEvalRpnSteps,
-  "generate-parentheses":    (i) => stubWithN(i),
+  "generate-parentheses":    generateParenthesesSteps,
   "trapping-rain-water":     (i) => stubArraySteps(i),
 };
