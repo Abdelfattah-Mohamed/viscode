@@ -104,11 +104,6 @@ export function useAuth() {
   const signup = async (username, email, password) => {
     const normalizedEmail = email.trim().toLowerCase();
 
-    try {
-      const existing = localStorage.getItem(`vc:user:${username}`);
-      if (existing) return { error: "Username already taken" };
-    } catch (_) {}
-
     const sb = getSupabase();
     if (sb) {
       const byUsername = await findUserInDb(username);
@@ -117,6 +112,8 @@ export function useAuth() {
       if (byEmail) return { error: "Email already registered" };
     } else {
       try {
+        const existing = localStorage.getItem(`vc:user:${username}`);
+        if (existing) return { error: "Username already taken" };
         const existingEmail = localStorage.getItem(`vc:email:${normalizedEmail}`);
         if (existingEmail) return { error: "Email already registered" };
       } catch (_) {}
