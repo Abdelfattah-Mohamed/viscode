@@ -16,12 +16,18 @@ export default function NavBar({ page, onNavigate, t, themeMode, right }) {
       flexShrink: 0, boxShadow: t.shadow,
     }}>
       {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 4 }}>
+      <button
+        onClick={() => onNavigate("home")}
+        style={{
+          display: "flex", alignItems: "center", gap: 10, marginRight: 4,
+          background: "none", border: "none", padding: 0, cursor: "pointer",
+        }}
+      >
         <LogoMark size={38} darkBorder={themeMode === "dark"} />
         <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.55rem", fontWeight: 700, color: t.ink }}>
           Vis<span style={{ color: t.blue }}>Code</span>
         </span>
-      </div>
+      </button>
 
       {/* Divider */}
       <div style={{ width: 1, height: 22, background: t.border, opacity: 0.25, margin: "0 14px" }} />

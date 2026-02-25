@@ -249,6 +249,346 @@ export function generateSubtreeSteps({ root, subRoot }) {
   return steps;
 }
 
+export function generateValidPalindromeSteps({ s }) {
+  if (!s) s = "";
+  const steps = [];
+  let left = 0, right = s.length - 1;
+  const isAlphaNum = (c) => /[a-zA-Z0-9]/.test(c);
+
+  steps.push({ stepType: "init", description: `Initialize left=0, right=${right}`, state: { left, right, result: null, done: false } });
+
+  while (left < right) {
+    steps.push({ stepType: "loop", description: `left=${left}, right=${right}`, state: { left, right, result: null, done: false } });
+
+    while (left < right && !isAlphaNum(s[left])) {
+      left++;
+      steps.push({ stepType: "skip_left", description: `'${s[left - 1]}' not alphanumeric → skip left to ${left}`, state: { left, right, result: null, done: false } });
+    }
+    while (left < right && !isAlphaNum(s[right])) {
+      right--;
+      steps.push({ stepType: "skip_right", description: `'${s[right + 1]}' not alphanumeric → skip right to ${right}`, state: { left, right, result: null, done: false } });
+    }
+
+    if (left >= right) break;
+
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
+
+    if (lc === rc) {
+      steps.push({ stepType: "compare", description: `'${lc}' == '${rc}' → match, move inward`, state: { left, right, result: null, done: false } });
+      left++;
+      right--;
+    } else {
+      steps.push({ stepType: "found", description: `'${lc}' ≠ '${rc}' → not a palindrome`, state: { left, right, result: false, done: true } });
+      return steps;
+    }
+  }
+
+  steps.push({ stepType: "done", description: "✅ Valid palindrome!", state: { left, right, result: true, done: true } });
+  return steps;
+}
+
+export function generateValidParenthesesSteps({ s }) {
+  if (!s) s = "";
+  const steps = [];
+  const stack = [];
+  const closeToOpen = { ")": "(", "]": "[", "}": "{" };
+
+  steps.push({ stepType: "init", description: "Initialize empty stack", state: { i: -1, char: null, stack: [], action: null, valid: null, done: false } });
+
+  for (let i = 0; i < s.length; i++) {
+    const char = s[i];
+    steps.push({ stepType: "loop", description: `i=${i} → char='${char}'`, state: { i, char, stack: [...stack], action: null, valid: null, done: false } });
+
+    if (char === "(" || char === "[" || char === "{") {
+      stack.push(char);
+      steps.push({ stepType: "push", description: `'${char}' is opening → push to stack`, state: { i, char, stack: [...stack], action: "push", valid: null, done: false } });
+    } else if (closeToOpen[char]) {
+      if (stack.length === 0 || stack[stack.length - 1] !== closeToOpen[char]) {
+        steps.push({ stepType: "mismatch", description: `'${char}' doesn't match top '${stack.length ? stack[stack.length - 1] : "empty"}' → invalid`, state: { i, char, stack: [...stack], action: "mismatch", valid: false, done: true } });
+        return steps;
+      }
+      stack.pop();
+      steps.push({ stepType: "pop_match", description: `'${char}' matches '${closeToOpen[char]}' → pop`, state: { i, char, stack: [...stack], action: "pop", valid: null, done: false } });
+    }
+  }
+
+  const valid = stack.length === 0;
+  steps.push({ stepType: "done", description: valid ? "✅ Stack empty → valid parentheses!" : "❌ Stack not empty → invalid", state: { i: s.length, char: null, stack: [...stack], action: null, valid, done: true } });
+  return steps;
+}
+
+export function generateProductExceptSelfSteps({ nums }) {
+  if (!nums || !nums.length) return [];
+  const steps = [];
+  const n = nums.length;
+  const result = new Array(n).fill(1);
+  let prefix = 1;
+
+  steps.push({ stepType: "init", description: `Initialize result=[${result.join(",")}], prefix=1`, state: { i: -1, phase: "prefix", prefix: 1, result: [...result], done: false } });
+
+  for (let i = 0; i < n; i++) {
+    steps.push({ stepType: "prefix_loop", description: `Prefix pass: i=${i}`, state: { i, phase: "prefix", prefix, result: [...result], done: false } });
+    result[i] = prefix;
+    steps.push({ stepType: "prefix_compute", description: `result[${i}] = prefix = ${result[i]}`, state: { i, phase: "prefix", prefix, result: [...result], done: false } });
+    prefix *= nums[i];
+    steps.push({ stepType: "prefix_update", description: `prefix *= nums[${i}] → prefix = ${prefix}`, state: { i, phase: "prefix", prefix, result: [...result], done: false } });
+  }
+
+  let suffix = 1;
+  for (let i = n - 1; i >= 0; i--) {
+    steps.push({ stepType: "suffix_loop", description: `Suffix pass: i=${i}`, state: { i, phase: "suffix", prefix: suffix, result: [...result], done: false } });
+    result[i] *= suffix;
+    steps.push({ stepType: "suffix_compute", description: `result[${i}] *= suffix → ${result[i]}`, state: { i, phase: "suffix", prefix: suffix, result: [...result], done: false } });
+    suffix *= nums[i];
+    steps.push({ stepType: "suffix_update", description: `suffix *= nums[${i}] → suffix = ${suffix}`, state: { i, phase: "suffix", prefix: suffix, result: [...result], done: false } });
+  }
+
+  steps.push({ stepType: "done", description: `✅ Product except self = [${result.join(",")}]`, state: { i: -1, phase: "done", prefix: 0, result: [...result], done: true } });
+  return steps;
+}
+
+export function generateMaxProductSubarraySteps({ nums }) {
+  if (!nums || !nums.length) return [];
+  const steps = [];
+  let curMax = nums[0], curMin = nums[0], maxProd = nums[0];
+
+  steps.push({ stepType: "init", description: `maxProd = ${maxProd}`, state: { i: 0, highlight: [0], curMax, curMin, maxProd, done: false } });
+  steps.push({ stepType: "init_vars", description: `curMax = curMin = ${curMax}`, state: { i: 0, highlight: [0], curMax, curMin, maxProd, done: false } });
+
+  for (let i = 1; i < nums.length; i++) {
+    steps.push({ stepType: "loop", description: `i=${i} → nums[${i}]=${nums[i]}`, state: { i, highlight: [i], curMax, curMin, maxProd, done: false } });
+
+    if (nums[i] < 0) {
+      [curMax, curMin] = [curMin, curMax];
+      steps.push({ stepType: "swap", description: `nums[${i}]=${nums[i]} < 0 → swap curMax↔curMin`, state: { i, highlight: [i], curMax, curMin, maxProd, done: false } });
+    }
+
+    const prevMax = curMax, prevMin = curMin;
+    curMax = Math.max(nums[i], prevMax * nums[i]);
+    steps.push({ stepType: "compute_max", description: `curMax = max(${nums[i]}, ${prevMax}×${nums[i]}) = ${curMax}`, state: { i, highlight: [i], curMax, curMin: prevMin, maxProd, done: false } });
+
+    curMin = Math.min(nums[i], prevMin * nums[i]);
+    steps.push({ stepType: "compute_min", description: `curMin = min(${nums[i]}, ${prevMin}×${nums[i]}) = ${curMin}`, state: { i, highlight: [i], curMax, curMin, maxProd, done: false } });
+
+    const prevMaxProd = maxProd;
+    maxProd = Math.max(maxProd, curMax);
+    steps.push({ stepType: "update", description: `maxProd = max(${prevMaxProd}, ${curMax}) = ${maxProd}`, state: { i, highlight: [i], curMax, curMin, maxProd, done: false } });
+  }
+
+  steps.push({ stepType: "done", description: `✅ Maximum product = ${maxProd}`, state: { i: nums.length - 1, highlight: [], curMax, curMin, maxProd, done: true } });
+  return steps;
+}
+
+export function generateHouseRobberSteps({ nums }) {
+  if (!nums || !nums.length) return [];
+  const steps = [];
+  const n = nums.length;
+
+  if (n === 1) {
+    steps.push({ stepType: "base", description: `Only one house → rob it for ${nums[0]}`, state: { i: 0, dp: [nums[0]], choice: "rob", maxRob: nums[0], done: true } });
+    return steps;
+  }
+
+  const dp = new Array(n).fill(0);
+  dp[0] = nums[0];
+  dp[1] = Math.max(nums[0], nums[1]);
+
+  steps.push({ stepType: "base", description: `dp[0]=${dp[0]}, dp[1]=max(${nums[0]},${nums[1]})=${dp[1]}`, state: { i: 1, dp: [...dp], choice: null, maxRob: dp[1], done: false } });
+  steps.push({ stepType: "init", description: "Base cases set, iterate from i=2", state: { i: 1, dp: [...dp], choice: null, maxRob: dp[1], done: false } });
+
+  for (let i = 2; i < n; i++) {
+    steps.push({ stepType: "loop", description: `House ${i}: value=${nums[i]}`, state: { i, dp: [...dp], choice: null, maxRob: dp[i - 1], done: false } });
+
+    const rob = dp[i - 2] + nums[i];
+    const skip = dp[i - 1];
+    dp[i] = Math.max(rob, skip);
+    const choice = rob > skip ? "rob" : "skip";
+
+    steps.push({ stepType: "compute", description: `rob: dp[${i - 2}]+${nums[i]}=${rob}, skip: dp[${i - 1}]=${skip} → ${choice} → dp[${i}]=${dp[i]}`, state: { i, dp: [...dp], choice, maxRob: dp[i], done: false } });
+    steps.push({ stepType: "slide", description: `prev2 = prev1`, state: { i, dp: [...dp], choice, maxRob: dp[i], done: false } });
+    steps.push({ stepType: "slide_curr", description: `prev1 = curr = ${dp[i]}`, state: { i, dp: [...dp], choice, maxRob: dp[i], done: false } });
+  }
+
+  steps.push({ stepType: "done", description: `✅ Max robbery = ${dp[n - 1]}`, state: { i: n - 1, dp: [...dp], choice: null, maxRob: dp[n - 1], done: true } });
+  return steps;
+}
+
+export function generateMissingNumberSteps({ nums }) {
+  if (!nums) return [];
+  const steps = [];
+  const n = nums.length;
+  let expected = (n * (n + 1)) / 2;
+
+  steps.push({ stepType: "init", description: `n=${n}, expected = ${n}×${n + 1}/2 = ${expected}`, state: { i: -1, highlight: [], expectedSum: expected, currentSum: 0, missing: null, done: false } });
+
+  for (let i = 0; i < n; i++) {
+    steps.push({ stepType: "loop", description: `i=${i} → nums[${i}]=${nums[i]}`, state: { i, highlight: [i], expectedSum: expected, currentSum: 0, missing: null, done: false } });
+    expected -= nums[i];
+    steps.push({ stepType: "subtract", description: `expected -= ${nums[i]} → ${expected}`, state: { i, highlight: [i], expectedSum: (n * (n + 1)) / 2, currentSum: (n * (n + 1)) / 2 - expected, missing: null, done: false } });
+  }
+
+  steps.push({ stepType: "done", description: `✅ Missing number = ${expected}`, state: { i: n, highlight: [], expectedSum: (n * (n + 1)) / 2, currentSum: (n * (n + 1)) / 2 - expected, missing: expected, done: true } });
+  return steps;
+}
+
+export function generateMaxDepthTreeSteps({ root }) {
+  const arr = Array.isArray(root) ? root : [];
+  const steps = [];
+  const depthMap = {};
+  let maxDepth = 0;
+
+  if (!arr.length || arr[0] === null) {
+    steps.push({ stepType: "base_null", description: "Tree is empty → depth 0", state: { visiting: -1, depthMap: {}, maxDepth: 0, done: true } });
+    return steps;
+  }
+
+  function dfs(idx) {
+    if (idx >= arr.length || arr[idx] === null || arr[idx] === undefined) {
+      steps.push({ stepType: "base_null", description: `Node ${idx} is null/out of bounds → depth 0`, state: { visiting: idx, depthMap: { ...depthMap }, maxDepth, done: false } });
+      return 0;
+    }
+
+    steps.push({ stepType: "visit", description: `Visit node ${idx} (value=${arr[idx]})`, state: { visiting: idx, depthMap: { ...depthMap }, maxDepth, done: false } });
+    steps.push({ stepType: "recurse", description: `Recurse left (${2 * idx + 1}) and right (${2 * idx + 2})`, state: { visiting: idx, depthMap: { ...depthMap }, maxDepth, done: false } });
+
+    const leftDepth = dfs(2 * idx + 1);
+    const rightDepth = dfs(2 * idx + 2);
+    const depth = 1 + Math.max(leftDepth, rightDepth);
+
+    depthMap[idx] = depth;
+    maxDepth = Math.max(maxDepth, depth);
+
+    steps.push({ stepType: "compute", description: `depth(${idx}) = 1 + max(${leftDepth}, ${rightDepth}) = ${depth}`, state: { visiting: idx, depthMap: { ...depthMap }, maxDepth, done: false } });
+    return depth;
+  }
+
+  dfs(0);
+  steps.push({ stepType: "done", description: `✅ Max depth = ${maxDepth}`, state: { visiting: -1, depthMap: { ...depthMap }, maxDepth, done: true } });
+  return steps;
+}
+
+export function generateInvertTreeSteps({ root }) {
+  const arr = Array.isArray(root) ? root : [];
+  if (!arr.length || arr[0] === null) {
+    return [{ stepType: "base", description: "Tree is empty → nothing to invert", state: { visiting: -1, swapped: [], inverted: [...arr], done: true } }];
+  }
+
+  const steps = [];
+  const inverted = [...arr];
+  while (inverted.length < 2 * arr.length + 2) inverted.push(null);
+  const swapped = [];
+
+  function swapSub(a, i, j) {
+    if (i >= a.length && j >= a.length) return;
+    const vi = i < a.length ? a[i] : null;
+    const vj = j < a.length ? a[j] : null;
+    if (i < a.length) a[i] = vj;
+    if (j < a.length) a[j] = vi;
+    swapSub(a, 2 * i + 1, 2 * j + 1);
+    swapSub(a, 2 * i + 2, 2 * j + 2);
+  }
+
+  function dfs(idx) {
+    if (idx >= inverted.length || inverted[idx] === null || inverted[idx] === undefined) {
+      steps.push({ stepType: "base", description: `Node ${idx} is null/out of bounds`, state: { visiting: idx, swapped: [...swapped], inverted: [...inverted], done: false } });
+      return;
+    }
+
+    steps.push({ stepType: "visit", description: `Visit node ${idx} (value=${inverted[idx]})`, state: { visiting: idx, swapped: [...swapped], inverted: [...inverted], done: false } });
+
+    const leftIdx = 2 * idx + 1;
+    const rightIdx = 2 * idx + 2;
+
+    swapSub(inverted, leftIdx, rightIdx);
+    swapped.push(idx);
+
+    steps.push({ stepType: "swap", description: `Save temp = left child of ${idx}`, state: { visiting: idx, swapped: [...swapped], inverted: [...inverted], done: false } });
+    steps.push({ stepType: "swap_assign", description: `Assign left = right, right = temp for node ${idx}`, state: { visiting: idx, swapped: [...swapped], inverted: [...inverted], done: false } });
+    steps.push({ stepType: "recurse", description: `Recurse into children of node ${idx}`, state: { visiting: idx, swapped: [...swapped], inverted: [...inverted], done: false } });
+
+    dfs(leftIdx);
+    dfs(rightIdx);
+  }
+
+  dfs(0);
+  const trimmed = [...inverted];
+  while (trimmed.length > 0 && (trimmed[trimmed.length - 1] === null || trimmed[trimmed.length - 1] === undefined)) trimmed.pop();
+  steps.push({ stepType: "done", description: "✅ Tree inverted!", state: { visiting: -1, swapped: [...swapped], inverted: trimmed, done: true } });
+  return steps;
+}
+
+export function generateSameTreeSteps({ p, q }) {
+  const pArr = Array.isArray(p) ? p : [];
+  const qArr = Array.isArray(q) ? q : [];
+  const steps = [];
+  const matchSet = [];
+  let mismatch = null;
+
+  function dfs(pi, qi) {
+    const pNull = pi >= pArr.length || pArr[pi] === null || pArr[pi] === undefined;
+    const qNull = qi >= qArr.length || qArr[qi] === null || qArr[qi] === undefined;
+
+    if (pNull && qNull) {
+      steps.push({ stepType: "both_null", description: `Both p[${pi}] and q[${qi}] are null → match`, state: { visitingP: pi, visitingQ: qi, matchSet: [...matchSet], mismatch, result: null, done: false } });
+      return true;
+    }
+
+    if (pNull || qNull) {
+      mismatch = pNull ? qi : pi;
+      steps.push({ stepType: "one_null", description: `One null at p[${pi}]/q[${qi}] → mismatch`, state: { visitingP: pi, visitingQ: qi, matchSet: [...matchSet], mismatch, result: false, done: false } });
+      return false;
+    }
+
+    steps.push({ stepType: "compare", description: `Compare p[${pi}]=${pArr[pi]} vs q[${qi}]=${qArr[qi]}`, state: { visitingP: pi, visitingQ: qi, matchSet: [...matchSet], mismatch, result: null, done: false } });
+
+    if (pArr[pi] !== qArr[qi]) {
+      mismatch = pi;
+      steps.push({ stepType: "compare", description: `${pArr[pi]} ≠ ${qArr[qi]} → mismatch!`, state: { visitingP: pi, visitingQ: qi, matchSet: [...matchSet], mismatch, result: false, done: false } });
+      return false;
+    }
+
+    matchSet.push(pi);
+    steps.push({ stepType: "recurse", description: `p[${pi}]=q[${qi}]=${pArr[pi]} ✓ Recurse children`, state: { visitingP: pi, visitingQ: qi, matchSet: [...matchSet], mismatch, result: null, done: false } });
+
+    const leftOk = dfs(2 * pi + 1, 2 * qi + 1);
+    if (!leftOk) return false;
+    return dfs(2 * pi + 2, 2 * qi + 2);
+  }
+
+  const result = dfs(0, 0);
+  steps.push({ stepType: "done", description: result ? "✅ Trees are identical!" : "❌ Trees are not the same", state: { visitingP: -1, visitingQ: -1, matchSet: [...matchSet], mismatch, result, done: true } });
+  return steps;
+}
+
+export function generateReverseLinkedListSteps({ head }) {
+  if (!head || !head.length) return [];
+  const steps = [];
+  let prevIdx = -1, currIdx = 0;
+  const reversed = [];
+
+  steps.push({ stepType: "init", description: "prev = null", state: { prevIdx: -1, currIdx: -1, nextIdx: -1, reversed: [], done: false } });
+  steps.push({ stepType: "init_curr", description: `curr = head (index 0, val=${head[0]})`, state: { prevIdx: -1, currIdx: 0, nextIdx: -1, reversed: [], done: false } });
+
+  while (currIdx >= 0 && currIdx < head.length) {
+    const nextIdx = currIdx + 1 < head.length ? currIdx + 1 : -1;
+
+    steps.push({ stepType: "loop", description: `curr=${currIdx} (val=${head[currIdx]}), prev=${prevIdx === -1 ? "null" : prevIdx}`, state: { prevIdx, currIdx, nextIdx, reversed: [...reversed], done: false } });
+    steps.push({ stepType: "save_next", description: `Save next = ${nextIdx === -1 ? "null" : nextIdx}`, state: { prevIdx, currIdx, nextIdx, reversed: [...reversed], done: false } });
+    steps.push({ stepType: "reverse_ptr", description: `Reverse: node ${currIdx}.next → ${prevIdx === -1 ? "null" : prevIdx}`, state: { prevIdx, currIdx, nextIdx, reversed: [...reversed], done: false } });
+
+    reversed.unshift(head[currIdx]);
+    prevIdx = currIdx;
+    currIdx = nextIdx;
+
+    steps.push({ stepType: "advance", description: `prev = ${prevIdx}`, state: { prevIdx, currIdx, nextIdx, reversed: [...reversed], done: false } });
+    steps.push({ stepType: "advance_curr", description: `curr = ${currIdx === -1 ? "null" : currIdx}`, state: { prevIdx, currIdx, nextIdx, reversed: [...reversed], done: false } });
+  }
+
+  steps.push({ stepType: "done", description: `✅ List reversed: [${reversed.join("→")}]`, state: { prevIdx, currIdx: -1, nextIdx: -1, reversed: [...reversed], done: true } });
+  return steps;
+}
+
 export const STEP_GENERATORS = {
   "two-sum":              generateTwoSumSteps,
   "longest-consecutive":  generateLongestConsecutiveSteps,
@@ -259,4 +599,14 @@ export const STEP_GENERATORS = {
   "climbing-stairs":      generateClimbingStairsSteps,
   "max-subarray":         generateMaxSubarraySteps,
   "subtree-of-another-tree": generateSubtreeSteps,
+  "valid-palindrome":        generateValidPalindromeSteps,
+  "valid-parentheses":       generateValidParenthesesSteps,
+  "product-except-self":     generateProductExceptSelfSteps,
+  "max-product-subarray":    generateMaxProductSubarraySteps,
+  "house-robber":            generateHouseRobberSteps,
+  "missing-number":          generateMissingNumberSteps,
+  "max-depth-tree":          generateMaxDepthTreeSteps,
+  "invert-tree":             generateInvertTreeSteps,
+  "same-tree":               generateSameTreeSteps,
+  "reverse-linked-list":     generateReverseLinkedListSteps,
 };

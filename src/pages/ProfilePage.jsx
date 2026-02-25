@@ -3,6 +3,7 @@ import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { Card } from "../components/ui/Card";
 import { AVATARS, getAvatarEmoji } from "../data/avatars";
+import { PROBLEMS, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
 const TrashIcon = ({ size = 18, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", marginRight: 6 }}>
@@ -13,7 +14,26 @@ const TrashIcon = ({ size = 18, color = "currentColor" }) => (
   </svg>
 );
 
-export default function ProfilePage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, onDeleteAccount, onUpdateProfile }) {
+const StarIcon = ({ filled, size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#f59e0b" : "none"} stroke={filled ? "#f59e0b" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
+const FlagIcon = ({ filled, size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#ef4444" : "none"} stroke={filled ? "#ef4444" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+    <line x1="4" y1="22" x2="4" y2="15" />
+  </svg>
+);
+
+const XIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+export default function ProfilePage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, onDeleteAccount, onUpdateProfile, fav, onSelectProblem }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -57,7 +77,7 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
         }
       />
 
-      <div style={{ flex: 1, maxWidth: 560, margin: "0 auto", padding: "40px 24px 60px", width: "100%" }}>
+      <div style={{ flex: 1, maxWidth: 700, margin: "0 auto", padding: "40px 24px 60px", width: "100%" }}>
         <Card t={t} style={{ overflow: "hidden" }}>
           <div style={{ padding: "28px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, borderBottom: `1.5px solid ${t.border}` }}>
             <div
@@ -182,6 +202,96 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
                 <div style={{ padding: "10px 14px", background: t.surfaceAlt, borderRadius: 8, border: `1.5px solid ${t.border}`, fontSize: "0.9rem", color: t.ink }}>
                   {memberSince}
                 </div>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Favorites */}
+        <Card t={t} style={{ marginTop: 24, overflow: "hidden" }}>
+          <div style={{ padding: "16px 20px", borderBottom: `1.5px solid ${t.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+            <StarIcon filled size={20} />
+            <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, color: t.ink }}>
+              Favorites {fav?.favorites.length ? <span style={{ color: t.blue }}>({fav.favorites.length})</span> : null}
+            </span>
+          </div>
+          <div style={{ padding: "12px 16px" }}>
+            {!fav?.favorites.length ? (
+              <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.88rem", textAlign: "center", padding: "16px 0" }}>
+                No favorite problems yet. Star problems to add them here.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {fav.favorites.map(id => {
+                  const p = PROBLEMS[id];
+                  if (!p) return null;
+                  const dc = DIFF_COLOR[p.difficulty] || {};
+                  return (
+                    <div key={id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: t.surfaceAlt, borderRadius: 10, border: `1.5px solid ${t.border}`, cursor: "pointer", transition: "transform 0.12s" }}
+                      onClick={() => onSelectProblem?.(id)}
+                      onMouseEnter={e => e.currentTarget.style.transform = "translateX(4px)"}
+                      onMouseLeave={e => e.currentTarget.style.transform = ""}>
+                      <span style={{ fontSize: "1.1rem", flexShrink: 0 }}>{CAT_ICON[p.category] || "📌"}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05rem", fontWeight: 700, color: t.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
+                        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.78rem", color: t.inkMuted }}>{p.category}</span>
+                      </div>
+                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.72rem", fontWeight: 700, padding: "1px 8px", border: `1.5px solid ${t.border}`, borderRadius: 10, ...dc, flexShrink: 0 }}>{p.difficulty}</span>
+                      <button
+                        onClick={e => { e.stopPropagation(); fav.toggleFavorite(id); }}
+                        title="Remove from favorites"
+                        style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: t.inkMuted, display: "flex", borderRadius: 6, flexShrink: 0 }}
+                      >
+                        <XIcon size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Flagged */}
+        <Card t={t} style={{ marginTop: 16, overflow: "hidden" }}>
+          <div style={{ padding: "16px 20px", borderBottom: `1.5px solid ${t.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+            <FlagIcon filled size={20} />
+            <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, color: t.ink }}>
+              Flagged {fav?.flagged.length ? <span style={{ color: t.red }}>({fav.flagged.length})</span> : null}
+            </span>
+          </div>
+          <div style={{ padding: "12px 16px" }}>
+            {!fav?.flagged.length ? (
+              <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.88rem", textAlign: "center", padding: "16px 0" }}>
+                No flagged problems yet. Flag problems you want to revisit.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {fav.flagged.map(id => {
+                  const p = PROBLEMS[id];
+                  if (!p) return null;
+                  const dc = DIFF_COLOR[p.difficulty] || {};
+                  return (
+                    <div key={id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: t.surfaceAlt, borderRadius: 10, border: `1.5px solid ${t.border}`, cursor: "pointer", transition: "transform 0.12s" }}
+                      onClick={() => onSelectProblem?.(id)}
+                      onMouseEnter={e => e.currentTarget.style.transform = "translateX(4px)"}
+                      onMouseLeave={e => e.currentTarget.style.transform = ""}>
+                      <span style={{ fontSize: "1.1rem", flexShrink: 0 }}>{CAT_ICON[p.category] || "📌"}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05rem", fontWeight: 700, color: t.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
+                        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.78rem", color: t.inkMuted }}>{p.category}</span>
+                      </div>
+                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.72rem", fontWeight: 700, padding: "1px 8px", border: `1.5px solid ${t.border}`, borderRadius: 10, ...dc, flexShrink: 0 }}>{p.difficulty}</span>
+                      <button
+                        onClick={e => { e.stopPropagation(); fav.toggleFlagged(id); }}
+                        title="Remove flag"
+                        style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: t.inkMuted, display: "flex", borderRadius: 6, flexShrink: 0 }}
+                      >
+                        <XIcon size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

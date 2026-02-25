@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { useTheme } from "./hooks/useTheme";
-import { useAuth }  from "./hooks/useAuth";
-import { PROBLEMS } from "./data/problems";
+import { useTheme }     from "./hooks/useTheme";
+import { useAuth }      from "./hooks/useAuth";
+import { useFavorites } from "./hooks/useFavorites";
+import { PROBLEMS }     from "./data/problems";
 import AuthScreen   from "./components/ui/AuthScreen";
 import HomePage     from "./pages/HomePage";
 import ProblemsPage from "./pages/ProblemsPage";
@@ -16,6 +17,8 @@ export default function App() {
   const [selectedProblem, setSelected]  = useState(DEFAULT_PROBLEM);
   const t    = useTheme(themeMode);
   const auth = useAuth();
+  const favData = useFavorites(auth.user);
+  const fav  = auth.user?.isGuest ? null : favData;
   const prevUser = useRef(null);
 
   useEffect(() => {
@@ -60,6 +63,7 @@ export default function App() {
         onNavigate={navigate} onSelectProblem={selectProblem}
         onLogout={auth.logout}
         username={auth.user?.username}
+        fav={fav}
       />
     );
   }
@@ -75,6 +79,8 @@ export default function App() {
         onLogout={auth.logout}
         onUpdateProfile={auth.updateProfile}
         onDeleteAccount={auth.deleteAccount}
+        fav={fav}
+        onSelectProblem={selectProblem}
       />
     );
   }
@@ -88,6 +94,7 @@ export default function App() {
       onNavigate={navigate}
       onLogout={auth.logout}
       username={auth.user.username}
+      fav={fav}
     />
   );
 }

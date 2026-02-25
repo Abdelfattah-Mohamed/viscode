@@ -3,17 +3,33 @@ import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
-export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem, onLogout, username }) {
+const StarIcon = ({ filled, size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#f59e0b" : "none"} stroke={filled ? "#f59e0b" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
+const FlagIcon = ({ filled, size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#ef4444" : "none"} stroke={filled ? "#ef4444" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+    <line x1="4" y1="22" x2="4" y2="15" />
+  </svg>
+);
+
+export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem, onLogout, username, fav }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [flagFilter, setFlagFilter] = useState("all");
   const [userMenuOpen, setMenuOpen] = useState(false);
 
   const cats = ["All", ...Array.from(new Set(PROB_LIST.map(p => p.category)))];
-  const list = PROB_LIST.filter(p =>
-    (filter === "All" || p.category === filter) &&
-    (p.title.toLowerCase().includes(search.toLowerCase()) ||
-     p.desc.toLowerCase().includes(search.toLowerCase()))
-  );
+  const list = PROB_LIST.filter(p => {
+    if (filter !== "All" && p.category !== filter) return false;
+    if (search && !p.title.toLowerCase().includes(search.toLowerCase()) && !p.desc.toLowerCase().includes(search.toLowerCase())) return false;
+    if (flagFilter === "favorites" && !fav?.isFavorite(p.id)) return false;
+    if (flagFilter === "flagged" && !fav?.isFlagged(p.id)) return false;
+    return true;
+  });
 
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
@@ -62,6 +78,18 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
               placeholder="Search problems…"
               style={{ width: "100%", padding: "9px 14px 9px 36px", border: `1.5px solid ${t.border}`, borderRadius: 8, background: t.surface, color: t.ink, fontFamily: "'DM Sans',sans-serif", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
           </div>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            {[
+              { key: "all", label: "All", icon: null },
+              { key: "favorites", label: "Favorites", icon: <StarIcon filled={flagFilter === "favorites"} size={14} /> },
+              { key: "flagged", label: "Flagged", icon: <FlagIcon filled={flagFilter === "flagged"} size={14} /> },
+            ].map(f => (
+              <button key={f.key} onClick={() => setFlagFilter(f.key)}
+                style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9rem", fontWeight: 700, padding: "6px 14px", border: `1.5px solid ${flagFilter === f.key ? t.blue : t.border}`, borderRadius: 20, cursor: "pointer", background: flagFilter === f.key ? t.blue + "18" : "transparent", color: flagFilter === f.key ? t.blue : t.inkMuted, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 5 }}>
+                {f.icon}{f.label}
+              </button>
+            ))}
+          </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             {cats.map(cat => (
               <button key={cat} onClick={() => setFilter(cat)}
@@ -85,7 +113,23 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                     onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <span style={{ fontSize: "1.3rem" }}>{CAT_ICON[p.category] || "📌"}</span>
-                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.75rem", fontWeight: 700, padding: "2px 9px", border: `1.5px solid ${t.border}`, borderRadius: 10, ...dc }}>{p.difficulty}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <button
+                          onClick={e => { e.stopPropagation(); fav?.toggleFavorite(p.id); }}
+                          title={fav?.isFavorite(p.id) ? "Remove from favorites" : "Add to favorites"}
+                          style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: t.inkMuted, display: "flex", borderRadius: 6 }}
+                        >
+                          <StarIcon filled={fav?.isFavorite(p.id)} size={16} />
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); fav?.toggleFlagged(p.id); }}
+                          title={fav?.isFlagged(p.id) ? "Remove flag" : "Flag this problem"}
+                          style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: t.inkMuted, display: "flex", borderRadius: 6 }}
+                        >
+                          <FlagIcon filled={fav?.isFlagged(p.id)} size={16} />
+                        </button>
+                        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.75rem", fontWeight: 700, padding: "2px 9px", border: `1.5px solid ${t.border}`, borderRadius: 10, ...dc }}>{p.difficulty}</span>
+                      </div>
                     </div>
                     <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink, lineHeight: 1.3 }}>{p.title}</div>
                     <div style={{ fontSize: "0.82rem", color: t.inkMuted, lineHeight: 1.6, flex: 1 }}>{p.desc}</div>

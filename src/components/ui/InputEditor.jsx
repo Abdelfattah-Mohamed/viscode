@@ -3,7 +3,7 @@ import { leetcodeToComplete, completeToLeetcode } from "../../utils/treeFormat";
 
 const STR_FIELDS  = new Set(["s", "t"]);
 const INT_FIELDS  = new Set(["target", "n"]);
-const TREE_FIELDS = new Set(["root", "subRoot"]);
+const TREE_FIELDS = new Set(["root", "subRoot", "p", "q"]);
 
 function stripBrackets(s) {
   s = s.trim();

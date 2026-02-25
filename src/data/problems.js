@@ -17,6 +17,9 @@ export const CAT_ICON = {
   "Binary Search":       "🔍",
   "Dynamic Programming": "🧩",
   "Trees":               "🌳",
+  "Two Pointers":        "👆",
+  "Stack":               "📚",
+  "Linked Lists":        "🔗",
 };
 
 export const PROBLEMS = {
@@ -361,6 +364,386 @@ export const PROBLEMS = {
       },
     },
   },
+
+  "valid-palindrome": {
+    title:           "Valid Palindrome",
+    difficulty:      "Easy",
+    category:        "Two Pointers",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(1)",
+    visualizer:      "palindrome",
+    description:     "Given a string <code>s</code>, return <code>true</code> if it is a <strong>palindrome</strong> after converting to lowercase and removing non-alphanumeric characters.",
+    example:         { input: 's = "A man, a plan, a canal: Panama"', output: "true", note: "After cleanup: 'amanaplanacanalpanama' reads the same." },
+    defaultInput:    { s: "A man, a plan, a canal: Panama" },
+    inputFields:     ["s"],
+    explanation: [
+      { emoji: "🤔", title: "The Brute Force Way", body: "Clean the string first, then compare with its reverse — O(n) time but O(n) extra space for the cleaned copy." },
+      { emoji: "💡", title: "Two Pointers Insight", body: "Use two pointers from both ends. Skip non-alphanumeric characters and compare in-place — no extra string needed." },
+      { emoji: "🔤", title: "Handling Characters", body: "Convert to lowercase before comparing. Skip anything that isn't a letter or digit by advancing the pointer." },
+      { emoji: "👣", title: "Step by Step", body: "1. left = 0, right = end.\n2. Skip non-alnum from left, skip non-alnum from right.\n3. Compare lowercase chars.\n4. If mismatch → false. Else move both inward.\n5. If pointers cross → true." },
+      { emoji: "⚡", title: "Why O(1) Space", body: "No extra string created. We compare characters directly in the original string using only two index variables." },
+    ],
+    languages: {
+      cpp: {
+        code: ["bool isPalindrome(string s) {","    int l = 0, r = s.size() - 1;","    while (l < r) {","        while (l < r && !isalnum(s[l])) l++;","        while (l < r && !isalnum(s[r])) r--;","        if (tolower(s[l]) != tolower(s[r])) return false;","        l++;","        r--;","    }","    return true;","}"],
+        lineMap: { init: 2, loop: 3, skip_left: 4, skip_right: 5, compare: 6, found: 6, done: 10 },
+      },
+      java: {
+        code: ["public boolean isPalindrome(String s) {","    int l = 0, r = s.length() - 1;","    while (l < r) {","        while (l < r && !Character.isLetterOrDigit(s.charAt(l))) l++;","        while (l < r && !Character.isLetterOrDigit(s.charAt(r))) r--;","        if (Character.toLowerCase(s.charAt(l)) != Character.toLowerCase(s.charAt(r))) return false;","        l++;","        r--;","    }","    return true;","}"],
+        lineMap: { init: 2, loop: 3, skip_left: 4, skip_right: 5, compare: 6, found: 6, done: 10 },
+      },
+      javascript: {
+        code: ["function isPalindrome(s) {","  let l = 0, r = s.length - 1;","  while (l < r) {","    while (l < r && !/[a-z0-9]/i.test(s[l])) l++;","    while (l < r && !/[a-z0-9]/i.test(s[r])) r--;","    if (s[l].toLowerCase() !== s[r].toLowerCase()) return false;","    l++;","    r--;","  }","  return true;","}"],
+        lineMap: { init: 2, loop: 3, skip_left: 4, skip_right: 5, compare: 6, found: 6, done: 10 },
+      },
+      python: {
+        code: ["def isPalindrome(s):","    l, r = 0, len(s) - 1","    while l < r:","        while l < r and not s[l].isalnum(): l += 1","        while l < r and not s[r].isalnum(): r -= 1","        if s[l].lower() != s[r].lower(): return False","        l += 1","        r -= 1","    return True"],
+        lineMap: { init: 2, loop: 3, skip_left: 4, skip_right: 5, compare: 6, found: 6, done: 9 },
+      },
+    },
+  },
+
+  "valid-parentheses": {
+    title:           "Valid Parentheses",
+    difficulty:      "Easy",
+    category:        "Stack",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(n)",
+    visualizer:      "parentheses",
+    description:     "Given a string <code>s</code> containing just <code>()</code>, <code>{}</code>, <code>[]</code>, determine if the input string is <strong>valid</strong>.",
+    example:         { input: 's = "()[]{}"', output: "true", note: "Each bracket is properly closed." },
+    defaultInput:    { s: "()[]{}" },
+    inputFields:     ["s"],
+    explanation: [
+      { emoji: "🤔", title: "Why a Stack?", body: "Brackets must close in reverse order of opening. A stack naturally handles this last-in, first-out pattern." },
+      { emoji: "💡", title: "The Key Insight", body: "Push every opening bracket. When you see a closing bracket, the stack top must be its matching opener." },
+      { emoji: "🗺️", title: "Matching Pairs", body: "Use a map: ')' → '(', '}' → '{', ']' → '['. On closing bracket, pop and compare." },
+      { emoji: "👣", title: "Step by Step", body: "1. Create an empty stack.\n2. For each char: if opening → push.\n3. If closing → pop top; if it doesn't match → false.\n4. If stack empty when popping → false.\n5. End: stack must be empty." },
+      { emoji: "⚡", title: "Complexity", body: "One pass through the string. Each push/pop is O(1). Stack can grow to O(n) in the worst case." },
+    ],
+    languages: {
+      cpp: {
+        code: ["bool isValid(string s) {","    stack<char> stk;","    for (char c : s) {","        if (c == '(' || c == '{' || c == '[') {","            stk.push(c);","        } else {","            if (stk.empty()) return false;","            char top = stk.top(); stk.pop();","            if ((c == ')' && top != '(') || (c == '}' && top != '{') || (c == ']' && top != '[')) return false;","        }","    }","    return stk.empty();","}"],
+        lineMap: { init: 2, loop: 3, push: 5, pop_match: 8, mismatch: 9, done: 12 },
+      },
+      java: {
+        code: ["public boolean isValid(String s) {","    Stack<Character> stk = new Stack<>();","    for (char c : s.toCharArray()) {","        if (c == '(' || c == '{' || c == '[') {","            stk.push(c);","        } else {","            if (stk.isEmpty()) return false;","            char top = stk.pop();","            if ((c == ')' && top != '(') || (c == '}' && top != '{') || (c == ']' && top != '[')) return false;","        }","    }","    return stk.isEmpty();","}"],
+        lineMap: { init: 2, loop: 3, push: 5, pop_match: 8, mismatch: 9, done: 12 },
+      },
+      javascript: {
+        code: ["function isValid(s) {","  const stk = [];","  const map = { ')': '(', '}': '{', ']': '[' };","  for (const c of s) {","    if ('({['.includes(c)) {","      stk.push(c);","    } else {","      if (!stk.length || stk.pop() !== map[c]) return false;","    }","  }","  return stk.length === 0;","}"],
+        lineMap: { init: 2, loop: 4, push: 6, pop_match: 8, mismatch: 8, done: 11 },
+      },
+      python: {
+        code: ["def isValid(s):","    stk = []","    pairs = {')': '(', '}': '{', ']': '['}","    for c in s:","        if c in '({[':","            stk.append(c)","        else:","            if not stk or stk.pop() != pairs[c]: return False","    return len(stk) == 0"],
+        lineMap: { init: 2, loop: 4, push: 6, pop_match: 8, mismatch: 8, done: 9 },
+      },
+    },
+  },
+
+  "product-except-self": {
+    title:           "Product of Array Except Self",
+    difficulty:      "Medium",
+    category:        "Arrays",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(1)",
+    visualizer:      "product",
+    description:     "Given an integer array <code>nums</code>, return an array <code>answer</code> such that <code>answer[i]</code> is the product of all elements except <code>nums[i]</code>, without using division.",
+    example:         { input: "nums = [1,2,3,4]", output: "[24,12,8,6]", note: "answer[0] = 2×3×4 = 24" },
+    defaultInput:    { nums: [1, 2, 3, 4] },
+    inputFields:     ["nums"],
+    explanation: [
+      { emoji: "🤔", title: "No Division Allowed", body: "The obvious approach (total product ÷ nums[i]) fails when zeros exist and is explicitly forbidden." },
+      { emoji: "💡", title: "Prefix × Suffix", body: "answer[i] = (product of everything left of i) × (product of everything right of i). Build both in two passes." },
+      { emoji: "➡️", title: "Left Pass (Prefix)", body: "Walk left to right, accumulating a running prefix product. Store it in the answer array." },
+      { emoji: "⬅️", title: "Right Pass (Suffix)", body: "Walk right to left with a running suffix product. Multiply each answer[i] by the suffix." },
+      { emoji: "⚡", title: "Why O(1) Extra Space", body: "The output array doesn't count as extra space. The two running products are just single variables." },
+    ],
+    languages: {
+      cpp: {
+        code: ["vector<int> productExceptSelf(vector<int>& nums) {","    int n = nums.size();","    vector<int> answer(n, 1);","    int prefix = 1;","    for (int i = 0; i < n; i++) {","        answer[i] = prefix;","        prefix *= nums[i];","    }","    int suffix = 1;","    for (int i = n - 1; i >= 0; i--) {","        answer[i] *= suffix;","        suffix *= nums[i];","    }","    return answer;","}"],
+        lineMap: { init: 3, prefix_loop: 5, prefix_compute: 6, prefix_update: 7, suffix_loop: 10, suffix_compute: 11, suffix_update: 12, done: 14 },
+      },
+      java: {
+        code: ["public int[] productExceptSelf(int[] nums) {","    int n = nums.length;","    int[] answer = new int[n];","    java.util.Arrays.fill(answer, 1);","    int prefix = 1;","    for (int i = 0; i < n; i++) {","        answer[i] = prefix;","        prefix *= nums[i];","    }","    int suffix = 1;","    for (int i = n - 1; i >= 0; i--) {","        answer[i] *= suffix;","        suffix *= nums[i];","    }","    return answer;","}"],
+        lineMap: { init: 4, prefix_loop: 6, prefix_compute: 7, prefix_update: 8, suffix_loop: 11, suffix_compute: 12, suffix_update: 13, done: 15 },
+      },
+      javascript: {
+        code: ["function productExceptSelf(nums) {","  const n = nums.length;","  const answer = new Array(n).fill(1);","  let prefix = 1;","  for (let i = 0; i < n; i++) {","    answer[i] = prefix;","    prefix *= nums[i];","  }","  let suffix = 1;","  for (let i = n - 1; i >= 0; i--) {","    answer[i] *= suffix;","    suffix *= nums[i];","  }","  return answer;","}"],
+        lineMap: { init: 3, prefix_loop: 5, prefix_compute: 6, prefix_update: 7, suffix_loop: 10, suffix_compute: 11, suffix_update: 12, done: 14 },
+      },
+      python: {
+        code: ["def productExceptSelf(nums):","    n = len(nums)","    answer = [1] * n","    prefix = 1","    for i in range(n):","        answer[i] = prefix","        prefix *= nums[i]","    suffix = 1","    for i in range(n - 1, -1, -1):","        answer[i] *= suffix","        suffix *= nums[i]","    return answer"],
+        lineMap: { init: 3, prefix_loop: 5, prefix_compute: 6, prefix_update: 7, suffix_loop: 9, suffix_compute: 10, suffix_update: 11, done: 12 },
+      },
+    },
+  },
+
+  "max-product-subarray": {
+    title:           "Maximum Product Subarray",
+    difficulty:      "Medium",
+    category:        "Dynamic Programming",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(1)",
+    visualizer:      "maxproduct",
+    description:     "Given an integer array <code>nums</code>, find a contiguous subarray that has the <strong>largest product</strong>, and return the product.",
+    example:         { input: "nums = [2,3,-2,4]", output: "6", note: "[2,3] has the largest product 6" },
+    defaultInput:    { nums: [2, 3, -2, 4] },
+    inputFields:     ["nums"],
+    explanation: [
+      { emoji: "🤔", title: "Why Not Just Max?", body: "Unlike max subarray sum, negatives complicate things — a negative × negative = positive. We can't just track the running max." },
+      { emoji: "💡", title: "Track Max AND Min", body: "At each position, track both the maximum and minimum product ending here. A large negative min can become the new max after a negative number." },
+      { emoji: "🔄", title: "Swap on Negative", body: "When nums[i] is negative, swap curMax and curMin before multiplying. This correctly flips the roles." },
+      { emoji: "👣", title: "Step by Step", body: "1. curMax = curMin = maxProd = nums[0].\n2. For i=1..n-1: if nums[i]<0 swap curMax,curMin.\n3. curMax = max(nums[i], curMax * nums[i]).\n4. curMin = min(nums[i], curMin * nums[i]).\n5. maxProd = max(maxProd, curMax)." },
+      { emoji: "⚡", title: "Why O(1) Space", body: "Only three variables: curMax, curMin, and maxProd. Single pass through the array." },
+    ],
+    languages: {
+      cpp: {
+        code: ["int maxProduct(vector<int>& nums) {","    int maxProd = nums[0];","    int curMax = nums[0], curMin = nums[0];","    for (int i = 1; i < nums.size(); i++) {","        if (nums[i] < 0) swap(curMax, curMin);","        curMax = max(nums[i], curMax * nums[i]);","        curMin = min(nums[i], curMin * nums[i]);","        maxProd = max(maxProd, curMax);","    }","    return maxProd;","}"],
+        lineMap: { init: 2, init_vars: 3, loop: 4, swap: 5, compute_max: 6, compute_min: 7, update: 8, done: 10 },
+      },
+      java: {
+        code: ["public int maxProduct(int[] nums) {","    int maxProd = nums[0];","    int curMax = nums[0], curMin = nums[0];","    for (int i = 1; i < nums.length; i++) {","        if (nums[i] < 0) { int tmp = curMax; curMax = curMin; curMin = tmp; }","        curMax = Math.max(nums[i], curMax * nums[i]);","        curMin = Math.min(nums[i], curMin * nums[i]);","        maxProd = Math.max(maxProd, curMax);","    }","    return maxProd;","}"],
+        lineMap: { init: 2, init_vars: 3, loop: 4, swap: 5, compute_max: 6, compute_min: 7, update: 8, done: 10 },
+      },
+      javascript: {
+        code: ["function maxProduct(nums) {","  let maxProd = nums[0];","  let curMax = nums[0], curMin = nums[0];","  for (let i = 1; i < nums.length; i++) {","    if (nums[i] < 0) [curMax, curMin] = [curMin, curMax];","    curMax = Math.max(nums[i], curMax * nums[i]);","    curMin = Math.min(nums[i], curMin * nums[i]);","    maxProd = Math.max(maxProd, curMax);","  }","  return maxProd;","}"],
+        lineMap: { init: 2, init_vars: 3, loop: 4, swap: 5, compute_max: 6, compute_min: 7, update: 8, done: 10 },
+      },
+      python: {
+        code: ["def maxProduct(nums):","    max_prod = nums[0]","    cur_max = cur_min = nums[0]","    for i in range(1, len(nums)):","        if nums[i] < 0:","            cur_max, cur_min = cur_min, cur_max","        cur_max = max(nums[i], cur_max * nums[i])","        cur_min = min(nums[i], cur_min * nums[i])","        max_prod = max(max_prod, cur_max)","    return max_prod"],
+        lineMap: { init: 2, init_vars: 3, loop: 4, swap: 6, compute_max: 7, compute_min: 8, update: 9, done: 10 },
+      },
+    },
+  },
+
+  "house-robber": {
+    title:           "House Robber",
+    difficulty:      "Medium",
+    category:        "Dynamic Programming",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(1)",
+    visualizer:      "robber",
+    description:     "Given an array <code>nums</code> representing money at each house, return the max you can rob without robbing two <strong>adjacent</strong> houses.",
+    example:         { input: "nums = [1,2,3,1]", output: "4", note: "Rob house 1 ($1) + house 3 ($3) = $4" },
+    defaultInput:    { nums: [1, 2, 3, 1] },
+    inputFields:     ["nums"],
+    explanation: [
+      { emoji: "🤔", title: "The Constraint", body: "You cannot rob two adjacent houses. This means for each house you choose to rob or skip, affecting future options." },
+      { emoji: "💡", title: "DP Recurrence", body: "dp[i] = max(dp[i-1], dp[i-2] + nums[i]). Either skip house i (take dp[i-1]) or rob it (dp[i-2] + nums[i])." },
+      { emoji: "🗺️", title: "Space Optimization", body: "You only need the last two dp values. Use prev1 and prev2 instead of a full array." },
+      { emoji: "👣", title: "Step by Step", body: "1. prev2 = 0, prev1 = 0.\n2. For each house: curr = max(prev1, prev2 + nums[i]).\n3. Slide: prev2 = prev1, prev1 = curr.\n4. Return prev1." },
+      { emoji: "⚡", title: "Why O(1) Space", body: "Two sliding variables replace the entire dp array. One pass through all houses." },
+    ],
+    languages: {
+      cpp: {
+        code: ["int rob(vector<int>& nums) {","    if (nums.size() == 1) return nums[0];","    int prev2 = 0, prev1 = 0;","    for (int n : nums) {","        int curr = max(prev1, prev2 + n);","        prev2 = prev1;","        prev1 = curr;","    }","    return prev1;","}"],
+        lineMap: { base: 2, init: 3, loop: 4, compute: 5, slide: 6, slide_curr: 7, done: 9 },
+      },
+      java: {
+        code: ["public int rob(int[] nums) {","    if (nums.length == 1) return nums[0];","    int prev2 = 0, prev1 = 0;","    for (int n : nums) {","        int curr = Math.max(prev1, prev2 + n);","        prev2 = prev1;","        prev1 = curr;","    }","    return prev1;","}"],
+        lineMap: { base: 2, init: 3, loop: 4, compute: 5, slide: 6, slide_curr: 7, done: 9 },
+      },
+      javascript: {
+        code: ["function rob(nums) {","  if (nums.length === 1) return nums[0];","  let prev2 = 0, prev1 = 0;","  for (const n of nums) {","    const curr = Math.max(prev1, prev2 + n);","    prev2 = prev1;","    prev1 = curr;","  }","  return prev1;","}"],
+        lineMap: { base: 2, init: 3, loop: 4, compute: 5, slide: 6, slide_curr: 7, done: 9 },
+      },
+      python: {
+        code: ["def rob(nums):","    if len(nums) == 1: return nums[0]","    prev2, prev1 = 0, 0","    for n in nums:","        curr = max(prev1, prev2 + n)","        prev2 = prev1","        prev1 = curr","    return prev1"],
+        lineMap: { base: 2, init: 3, loop: 4, compute: 5, slide: 6, slide_curr: 7, done: 8 },
+      },
+    },
+  },
+
+  "missing-number": {
+    title:           "Missing Number",
+    difficulty:      "Easy",
+    category:        "Arrays",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(1)",
+    visualizer:      "missing",
+    description:     "Given an array <code>nums</code> containing <code>n</code> distinct numbers in the range <code>[0, n]</code>, return the only number in the range that is missing.",
+    example:         { input: "nums = [3,0,1]", output: "2", note: "n=3, range is [0,1,2,3], 2 is missing" },
+    defaultInput:    { nums: [3, 0, 1] },
+    inputFields:     ["nums"],
+    explanation: [
+      { emoji: "🤔", title: "Brute Force", body: "Sort and scan for the gap — O(n log n). Or use a hash set — O(n) time but O(n) space." },
+      { emoji: "💡", title: "Gauss' Formula", body: "The sum of 0..n is n×(n+1)/2. Subtract the actual array sum. The difference is the missing number." },
+      { emoji: "🧮", title: "Math in Action", body: "For [3,0,1]: expected = 3×4/2 = 6. Actual = 3+0+1 = 4. Missing = 6−4 = 2." },
+      { emoji: "👣", title: "Step by Step", body: "1. Compute expected = n×(n+1)/2.\n2. For each num in array: expected -= num.\n3. Return expected (the remainder)." },
+      { emoji: "⚡", title: "Why O(1) Space", body: "Just one variable for the running sum. No extra data structures." },
+    ],
+    languages: {
+      cpp: {
+        code: ["int missingNumber(vector<int>& nums) {","    int n = nums.size();","    int expected = n * (n + 1) / 2;","    for (int num : nums) {","        expected -= num;","    }","    return expected;","}"],
+        lineMap: { init: 3, loop: 4, subtract: 5, done: 7 },
+      },
+      java: {
+        code: ["public int missingNumber(int[] nums) {","    int n = nums.length;","    int expected = n * (n + 1) / 2;","    for (int num : nums) {","        expected -= num;","    }","    return expected;","}"],
+        lineMap: { init: 3, loop: 4, subtract: 5, done: 7 },
+      },
+      javascript: {
+        code: ["function missingNumber(nums) {","  const n = nums.length;","  let expected = n * (n + 1) / 2;","  for (const num of nums) {","    expected -= num;","  }","  return expected;","}"],
+        lineMap: { init: 3, loop: 4, subtract: 5, done: 7 },
+      },
+      python: {
+        code: ["def missingNumber(nums):","    n = len(nums)","    expected = n * (n + 1) // 2","    for num in nums:","        expected -= num","    return expected"],
+        lineMap: { init: 3, loop: 4, subtract: 5, done: 6 },
+      },
+    },
+  },
+
+  "max-depth-tree": {
+    title:           "Maximum Depth of Binary Tree",
+    difficulty:      "Easy",
+    category:        "Trees",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(h)",
+    visualizer:      "treedepth",
+    description:     "Given the <code>root</code> of a binary tree, return its <strong>maximum depth</strong> (longest path from root to leaf).",
+    example:         { input: "root = [3,9,20,null,null,15,7]", output: "3", note: "Path: 3 → 20 → 15 (or 7)" },
+    defaultInput:    { root: [3, 9, 20, null, null, 15, 7] },
+    inputFields:     ["root"],
+    explanation: [
+      { emoji: "🤔", title: "What Is Depth?", body: "The maximum depth is the number of nodes along the longest path from root to the farthest leaf node." },
+      { emoji: "💡", title: "Recursive Insight", body: "The depth of a tree = 1 + max(depth of left subtree, depth of right subtree). Base case: null node has depth 0." },
+      { emoji: "🌳", title: "DFS Traversal", body: "Recursively compute depth for left and right children. Combine results at each node." },
+      { emoji: "👣", title: "Step by Step", body: "1. If root is null → return 0.\n2. left = maxDepth(root.left).\n3. right = maxDepth(root.right).\n4. Return 1 + max(left, right)." },
+      { emoji: "⚡", title: "Complexity", body: "O(n) time — visit every node once. O(h) space for the recursion stack where h is the tree height." },
+    ],
+    languages: {
+      cpp: {
+        code: ["int maxDepth(TreeNode* root) {","    if (!root) return 0;","    int left = maxDepth(root->left);","    int right = maxDepth(root->right);","    return 1 + max(left, right);","}"],
+        lineMap: { visit: 1, base_null: 2, recurse: 3, compute: 5, done: 5 },
+      },
+      java: {
+        code: ["public int maxDepth(TreeNode root) {","    if (root == null) return 0;","    int left = maxDepth(root.left);","    int right = maxDepth(root.right);","    return 1 + Math.max(left, right);","}"],
+        lineMap: { visit: 1, base_null: 2, recurse: 3, compute: 5, done: 5 },
+      },
+      javascript: {
+        code: ["function maxDepth(root) {","  if (!root) return 0;","  const left = maxDepth(root.left);","  const right = maxDepth(root.right);","  return 1 + Math.max(left, right);","}"],
+        lineMap: { visit: 1, base_null: 2, recurse: 3, compute: 5, done: 5 },
+      },
+      python: {
+        code: ["def maxDepth(root):","    if not root: return 0","    left = maxDepth(root.left)","    right = maxDepth(root.right)","    return 1 + max(left, right)"],
+        lineMap: { visit: 1, base_null: 2, recurse: 3, compute: 5, done: 5 },
+      },
+    },
+  },
+
+  "invert-tree": {
+    title:           "Invert Binary Tree",
+    difficulty:      "Easy",
+    category:        "Trees",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(h)",
+    visualizer:      "invertree",
+    description:     "Given the <code>root</code> of a binary tree, <strong>invert</strong> the tree (mirror it) and return its root.",
+    example:         { input: "root = [4,2,7,1,3,6,9]", output: "[4,7,2,9,6,3,1]", note: "Left and right subtrees are swapped at every node." },
+    defaultInput:    { root: [4, 2, 7, 1, 3, 6, 9] },
+    inputFields:     ["root"],
+    explanation: [
+      { emoji: "🤔", title: "What Is Inverting?", body: "Inverting means mirroring the tree — every node's left child becomes its right child and vice versa, recursively." },
+      { emoji: "💡", title: "Recursive Insight", body: "At each node, swap its two children. Then recursively invert both subtrees." },
+      { emoji: "🔄", title: "The Swap", body: "Simple pointer swap: tmp = left, left = right, right = tmp. Then recurse on both new children." },
+      { emoji: "👣", title: "Step by Step", body: "1. If root is null → return null.\n2. Swap root.left and root.right.\n3. invertTree(root.left).\n4. invertTree(root.right).\n5. Return root." },
+      { emoji: "⚡", title: "Complexity", body: "O(n) time — visit every node. O(h) space for recursion stack." },
+    ],
+    languages: {
+      cpp: {
+        code: ["TreeNode* invertTree(TreeNode* root) {","    if (!root) return nullptr;","    TreeNode* tmp = root->left;","    root->left = root->right;","    root->right = tmp;","    invertTree(root->left);","    invertTree(root->right);","    return root;","}"],
+        lineMap: { visit: 1, base: 2, swap: 3, swap_assign: 4, recurse: 6, done: 8 },
+      },
+      java: {
+        code: ["public TreeNode invertTree(TreeNode root) {","    if (root == null) return null;","    TreeNode tmp = root.left;","    root.left = root.right;","    root.right = tmp;","    invertTree(root.left);","    invertTree(root.right);","    return root;","}"],
+        lineMap: { visit: 1, base: 2, swap: 3, swap_assign: 4, recurse: 6, done: 8 },
+      },
+      javascript: {
+        code: ["function invertTree(root) {","  if (!root) return null;","  const tmp = root.left;","  root.left = root.right;","  root.right = tmp;","  invertTree(root.left);","  invertTree(root.right);","  return root;","}"],
+        lineMap: { visit: 1, base: 2, swap: 3, swap_assign: 4, recurse: 6, done: 8 },
+      },
+      python: {
+        code: ["def invertTree(root):","    if not root: return None","    root.left, root.right = root.right, root.left","    invertTree(root.left)","    invertTree(root.right)","    return root"],
+        lineMap: { visit: 1, base: 2, swap: 3, swap_assign: 3, recurse: 4, done: 6 },
+      },
+    },
+  },
+
+  "same-tree": {
+    title:           "Same Tree",
+    difficulty:      "Easy",
+    category:        "Trees",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(h)",
+    visualizer:      "sametree",
+    description:     "Given the roots of two binary trees <code>p</code> and <code>q</code>, check if they are <strong>structurally identical</strong> and have the same node values.",
+    example:         { input: "p = [1,2,3], q = [1,2,3]", output: "true", note: "Both trees have the same structure and values." },
+    defaultInput:    { p: [1, 2, 3], q: [1, 2, 3] },
+    inputFields:     ["p", "q"],
+    explanation: [
+      { emoji: "🤔", title: "What Does Same Mean?", body: "Two trees are the same if they have identical structure and every corresponding node has the same value." },
+      { emoji: "💡", title: "Simultaneous DFS", body: "Traverse both trees at the same time. At each step, compare the current nodes." },
+      { emoji: "🔍", title: "Base Cases", body: "Both null → same (true). One null, other not → different (false). Values differ → false." },
+      { emoji: "👣", title: "Step by Step", body: "1. If both null → true.\n2. If one null → false.\n3. If p.val ≠ q.val → false.\n4. Recurse: isSameTree(p.left, q.left) AND isSameTree(p.right, q.right)." },
+      { emoji: "⚡", title: "Complexity", body: "O(n) time where n is the smaller tree's size. O(h) space for recursion." },
+    ],
+    languages: {
+      cpp: {
+        code: ["bool isSameTree(TreeNode* p, TreeNode* q) {","    if (!p && !q) return true;","    if (!p || !q) return false;","    if (p->val != q->val) return false;","    return isSameTree(p->left, q->left) && isSameTree(p->right, q->right);","}"],
+        lineMap: { both_null: 2, one_null: 3, compare: 4, recurse: 5, done: 5 },
+      },
+      java: {
+        code: ["public boolean isSameTree(TreeNode p, TreeNode q) {","    if (p == null && q == null) return true;","    if (p == null || q == null) return false;","    if (p.val != q.val) return false;","    return isSameTree(p.left, q.left) && isSameTree(p.right, q.right);","}"],
+        lineMap: { both_null: 2, one_null: 3, compare: 4, recurse: 5, done: 5 },
+      },
+      javascript: {
+        code: ["function isSameTree(p, q) {","  if (!p && !q) return true;","  if (!p || !q) return false;","  if (p.val !== q.val) return false;","  return isSameTree(p.left, q.left) && isSameTree(p.right, q.right);","}"],
+        lineMap: { both_null: 2, one_null: 3, compare: 4, recurse: 5, done: 5 },
+      },
+      python: {
+        code: ["def isSameTree(p, q):","    if not p and not q: return True","    if not p or not q: return False","    if p.val != q.val: return False","    return isSameTree(p.left, q.left) and isSameTree(p.right, q.right)"],
+        lineMap: { both_null: 2, one_null: 3, compare: 4, recurse: 5, done: 5 },
+      },
+    },
+  },
+
+  "reverse-linked-list": {
+    title:           "Reverse Linked List",
+    difficulty:      "Easy",
+    category:        "Linked Lists",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(1)",
+    visualizer:      "linkedlist",
+    description:     "Given the <code>head</code> of a singly linked list, <strong>reverse</strong> the list, and return the reversed list.",
+    example:         { input: "head = [1,2,3,4,5]", output: "[5,4,3,2,1]", note: "Each pointer is reversed." },
+    defaultInput:    { head: [1, 2, 3, 4, 5] },
+    inputFields:     ["head"],
+    explanation: [
+      { emoji: "🤔", title: "The Challenge", body: "Each node points forward. We need every node to point backward instead, without losing any references." },
+      { emoji: "💡", title: "Three Pointers", body: "Use prev, curr, and next. At each step, save the next node, reverse the pointer, then advance." },
+      { emoji: "🔄", title: "The Reversal Step", body: "next = curr.next (save), curr.next = prev (reverse), prev = curr (advance prev), curr = next (advance curr)." },
+      { emoji: "👣", title: "Step by Step", body: "1. prev = null, curr = head.\n2. While curr: save next, point curr back to prev, slide both forward.\n3. Return prev (new head)." },
+      { emoji: "⚡", title: "Why O(1) Space", body: "Only three pointer variables. No extra data structures. One pass through the list." },
+    ],
+    languages: {
+      cpp: {
+        code: ["ListNode* reverseList(ListNode* head) {","    ListNode* prev = nullptr;","    ListNode* curr = head;","    while (curr) {","        ListNode* next = curr->next;","        curr->next = prev;","        prev = curr;","        curr = next;","    }","    return prev;","}"],
+        lineMap: { init: 2, init_curr: 3, loop: 4, save_next: 5, reverse_ptr: 6, advance: 7, advance_curr: 8, done: 10 },
+      },
+      java: {
+        code: ["public ListNode reverseList(ListNode head) {","    ListNode prev = null;","    ListNode curr = head;","    while (curr != null) {","        ListNode next = curr.next;","        curr.next = prev;","        prev = curr;","        curr = next;","    }","    return prev;","}"],
+        lineMap: { init: 2, init_curr: 3, loop: 4, save_next: 5, reverse_ptr: 6, advance: 7, advance_curr: 8, done: 10 },
+      },
+      javascript: {
+        code: ["function reverseList(head) {","  let prev = null;","  let curr = head;","  while (curr) {","    const next = curr.next;","    curr.next = prev;","    prev = curr;","    curr = next;","  }","  return prev;","}"],
+        lineMap: { init: 2, init_curr: 3, loop: 4, save_next: 5, reverse_ptr: 6, advance: 7, advance_curr: 8, done: 10 },
+      },
+      python: {
+        code: ["def reverseList(head):","    prev = None","    curr = head","    while curr:","        nxt = curr.next","        curr.next = prev","        prev = curr","        curr = nxt","    return prev"],
+        lineMap: { init: 2, init_curr: 3, loop: 4, save_next: 5, reverse_ptr: 6, advance: 7, advance_curr: 8, done: 9 },
+      },
+    },
+  },
 };
 
 // ── Problem list for browse/search ───────────────────────────────────────
@@ -374,6 +757,16 @@ export const PROB_LIST = [
   { id: "climbing-stairs",     title: "Climbing Stairs",               difficulty: "Easy",   category: "Dynamic Programming", desc: "Count ways to climb n steps taking 1 or 2 at a time.",          tags: ["dynamic-programming", "fibonacci", "math"] },
   { id: "max-subarray",        title: "Maximum Subarray (Kadane)",      difficulty: "Medium", category: "Arrays",              desc: "Find the contiguous subarray with the largest sum.",           tags: ["arrays", "dynamic-programming", "kadane"] },
   { id: "subtree-of-another-tree", title: "Subtree of Another Tree",     difficulty: "Easy",   category: "Trees",               desc: "Check if subRoot has the same structure and values as a subtree of root.", tags: ["trees", "dfs", "binary-tree", "recursion"] },
+  { id: "valid-palindrome",      title: "Valid Palindrome",               difficulty: "Easy",   category: "Two Pointers",        desc: "Check if a string is a palindrome after removing non-alphanumeric characters.", tags: ["two-pointers", "strings"] },
+  { id: "valid-parentheses",     title: "Valid Parentheses",              difficulty: "Easy",   category: "Stack",               desc: "Determine if brackets are properly opened and closed using a stack.", tags: ["stack", "strings"] },
+  { id: "product-except-self",   title: "Product of Array Except Self",   difficulty: "Medium", category: "Arrays",              desc: "Build product array without division using prefix and suffix products.", tags: ["arrays", "prefix-sum"] },
+  { id: "max-product-subarray",  title: "Maximum Product Subarray",       difficulty: "Medium", category: "Dynamic Programming", desc: "Find the contiguous subarray with the largest product.", tags: ["dynamic-programming", "arrays"] },
+  { id: "house-robber",          title: "House Robber",                   difficulty: "Medium", category: "Dynamic Programming", desc: "Maximize robbery loot without hitting adjacent houses.", tags: ["dynamic-programming", "arrays"] },
+  { id: "missing-number",        title: "Missing Number",                 difficulty: "Easy",   category: "Arrays",              desc: "Find the missing number in range [0, n] using Gauss formula.", tags: ["arrays", "math"] },
+  { id: "max-depth-tree",        title: "Maximum Depth of Binary Tree",   difficulty: "Easy",   category: "Trees",               desc: "Find the longest root-to-leaf path in a binary tree.", tags: ["trees", "dfs", "recursion"] },
+  { id: "invert-tree",           title: "Invert Binary Tree",             difficulty: "Easy",   category: "Trees",               desc: "Mirror a binary tree by swapping left and right children.", tags: ["trees", "dfs", "recursion"] },
+  { id: "same-tree",             title: "Same Tree",                      difficulty: "Easy",   category: "Trees",               desc: "Check if two binary trees are structurally identical with same values.", tags: ["trees", "dfs", "recursion"] },
+  { id: "reverse-linked-list",   title: "Reverse Linked List",            difficulty: "Easy",   category: "Linked Lists",        desc: "Reverse a singly linked list using three pointers.", tags: ["linked-lists", "pointers"] },
 ];
 
 export function getSimilar(currentId, max = 3) {

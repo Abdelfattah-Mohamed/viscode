@@ -10,15 +10,30 @@ import SimilarProblems from "../components/SimilarProblems";
 import {
   ArrayVisualizer, ConsecutiveVisualizer,
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
+  PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
+  MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
 import { useStepPlayer } from "../hooks/useStepPlayer";
 
+const StarIcon = ({ filled, size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#f59e0b" : "none"} stroke={filled ? "#f59e0b" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
+const FlagIcon = ({ filled, size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#ef4444" : "none"} stroke={filled ? "#ef4444" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+    <line x1="4" y1="22" x2="4" y2="15" />
+  </svg>
+);
+
 export default function AppPage({
   selectedProblem, setSelectedProblem,
   t, themeMode, setThemeMode,
-  onNavigate, onLogout, username,
+  onNavigate, onLogout, username, fav,
 }) {
   const [lang, setLang]              = useState("cpp");
   const [solutionTab, setSolTab]     = useState("Solution");
@@ -107,6 +122,20 @@ export default function AppPage({
             <CardHeader icon="📋" title={problem.title} t={t}
               extra={
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    onClick={() => fav?.toggleFavorite(selectedProblem)}
+                    title={fav?.isFavorite(selectedProblem) ? "Remove from favorites" : "Add to favorites"}
+                    style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: t.inkMuted, display: "flex", borderRadius: 6 }}
+                  >
+                    <StarIcon filled={fav?.isFavorite(selectedProblem)} size={18} />
+                  </button>
+                  <button
+                    onClick={() => fav?.toggleFlagged(selectedProblem)}
+                    title={fav?.isFlagged(selectedProblem) ? "Remove flag" : "Flag this problem"}
+                    style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: t.inkMuted, display: "flex", borderRadius: 6 }}
+                  >
+                    <FlagIcon filled={fav?.isFlagged(selectedProblem)} size={18} />
+                  </button>
                   <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", padding: "1px 9px", border: `1.5px solid ${t.border}`, borderRadius: 10, ...DIFF_COLOR[problem.difficulty], fontWeight: 700 }}>{problem.difficulty}</span>
                   <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", color: t.inkMuted }}>{problem.category}</span>
                 </div>
@@ -230,6 +259,16 @@ export default function AppPage({
             {problem.visualizer === "binsearch"   && <BinarySearchViz       nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
             {problem.visualizer === "climbing"    && <ClimbingViz           n={input.n}               stepState={currentStep?.state} t={t} />}
             {problem.visualizer === "subtree"     && <SubtreeViz            root={input.root || []}   subRoot={input.subRoot || []} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "palindrome"  && <PalindromeViz    s={input.s || ""}         stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "parentheses" && <ParenthesesViz   s={input.s || ""}         stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "product"     && <ProductViz       nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "maxproduct"  && <MaxProductViz    nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "robber"      && <RobberViz        nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "missing"     && <MissingViz       nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "treedepth"   && <TreeDepthViz     root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "invertree"   && <InvertTreeViz    root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "sametree"    && <SameTreeViz      p={input.p || []}         q={input.q || []} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "linkedlist"  && <LinkedListViz    head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
           </div>
           <StepControls {...player} t={t} />
         </Card>

@@ -13,3 +13,4 @@ export function getSupabase() {
 }
 
 export const PROFILES_TABLE = "profiles";
+export const FLAGS_TABLE = "user_problem_flags";
