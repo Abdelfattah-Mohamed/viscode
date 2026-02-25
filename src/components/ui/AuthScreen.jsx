@@ -13,6 +13,7 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
   const googleButtonRef = useRef(null);
   const googleRendered  = useRef(false);
   const pending = onAuth.pendingVerification;
+  const pendingGoogle = onAuth.pendingGoogleVerification;
   const clientId = getGoogleClientId();
 
   useEffect(() => {
@@ -73,7 +74,9 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
     if (!verifyCode.trim()) { setError("Enter the verification code"); return; }
     setError("");
     setBusy(true);
-    const res = await onAuth.verifyEmail(verifyCode.trim());
+    const res = pendingGoogle
+      ? await onAuth.verifyGoogleCode(verifyCode.trim())
+      : await onAuth.verifyEmail(verifyCode.trim());
     setBusy(false);
     if (res.error) setError(res.error);
   };
@@ -94,7 +97,11 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
     />
   );
 
-  if (pending) {
+  const showEmailVerification = pending || pendingGoogle;
+  const verificationEmail = pending?.email ?? pendingGoogle?.email;
+  const demoHint = pending?.demoHint ?? pendingGoogle?.demoHint;
+
+  if (showEmailVerification && verificationEmail) {
     return (
       <div style={{ minHeight: "100vh", background: t.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif" }}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap'); * { box-sizing: border-box; }`}</style>
@@ -105,9 +112,13 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
           </div>
           <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 14, boxShadow: t.shadow, padding: 24 }}>
             <p style={{ margin: "0 0 16px", color: t.inkMuted, fontSize: "0.9rem" }}>
-              We sent a 6-digit code to <strong style={{ color: t.ink }}>{pending.email}</strong>. Enter it below.
+              We sent a 6-digit code to <strong style={{ color: t.ink }}>{verificationEmail}</strong>. Enter it below.
             </p>
-            <p style={{ margin: "0 0 16px", color: t.inkMuted, fontSize: "0.8rem" }}>Demo: use <code style={{ background: t.surfaceAlt, padding: "2px 6px", borderRadius: 4 }}>123456</code> to verify.</p>
+            {demoHint && (
+              <p style={{ margin: "0 0 16px", color: t.inkMuted, fontSize: "0.8rem" }}>
+                Email not configured or send failed. For testing use <code style={{ background: t.surfaceAlt, padding: "2px 6px", borderRadius: 4 }}>123456</code>.
+              </p>
+            )}
             <form onSubmit={handleVerify} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <input
                 type="text"
@@ -136,11 +147,11 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
                 }}>
                 {busy ? "…" : "Verify"}
               </button>
-              <button type="button" onClick={onAuth.cancelVerification}
+              <button type="button" onClick={pendingGoogle ? onAuth.cancelGoogleVerification : onAuth.cancelVerification}
                 style={{
                   background: "none", border: "none", color: t.inkMuted, fontSize: "0.85rem", cursor: "pointer", textDecoration: "underline",
                 }}>
-                ← Back to sign up
+                {pendingGoogle ? "← Cancel" : "← Back to sign up"}
               </button>
             </form>
           </div>
