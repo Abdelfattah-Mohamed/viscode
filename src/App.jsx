@@ -67,6 +67,8 @@ export default function App() {
         setThemeMode={setThemeMode}
         onNavigate={navigate}
         onLogout={auth.logout}
+        onUpdateProfile={auth.updateProfile}
+        onDeleteAccount={auth.deleteAccount}
       />
     );
   }

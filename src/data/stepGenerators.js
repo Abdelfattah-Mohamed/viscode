@@ -178,6 +178,84 @@ export function generateMaxSubarraySteps({ nums }) {
   return steps;
 }
 
+// Build tree from level-order array. Node at index i has left 2i+1, right 2i+2.
+function buildTreeNodes(arr) {
+  if (!arr || !arr.length) return [];
+  const nodes = arr.map((val, i) => ({ index: i, val, leftIndex: 2 * i + 1, rightIndex: 2 * i + 2 }));
+  return nodes;
+}
+
+function isSameTreeSteps(rootArr, subRootArr, rootStart, steps, stepState) {
+  const rLen = rootArr.length;
+  const sLen = subRootArr.length;
+  function sameTree(rIdx, sIdx, rPath, sPath) {
+    const rNull = rIdx < 0 || rIdx >= rLen;
+    const sNull = sIdx < 0 || sIdx >= sLen;
+    if (rNull && sNull) {
+      steps.push({ stepType: "same_base", description: "Both null → match", state: { ...stepState, sameRootPath: rPath, sameSubPath: sPath, sameResult: true } });
+      return true;
+    }
+    if (rNull || sNull) {
+      steps.push({ stepType: "same_mismatch", description: `One null (root=${rNull}, sub=${sNull}) → not same`, state: { ...stepState, sameRootPath: rPath, sameSubPath: sPath, sameResult: false } });
+      return false;
+    }
+    const rVal = rootArr[rIdx];
+    const sVal = subRootArr[sIdx];
+    steps.push({ stepType: "same_compare", description: `Compare root[${rIdx}]=${rVal} vs subRoot[${sIdx}]=${sVal}`, state: { ...stepState, sameRootPath: [...rPath, rIdx], sameSubPath: [...sPath, sIdx], sameResult: null } });
+    if (rVal !== sVal) {
+      steps.push({ stepType: "same_mismatch", description: `Values ${rVal} ≠ ${sVal} → not same`, state: { ...stepState, sameRootPath: [...rPath, rIdx], sameSubPath: [...sPath, sIdx], sameResult: false } });
+      return false;
+    }
+    const rLeft = 2 * rIdx + 1, rRight = 2 * rIdx + 2;
+    const sLeft = 2 * sIdx + 1, sRight = 2 * sIdx + 2;
+    const leftOk = sameTree(rLeft, sLeft, [...rPath, rIdx], [...sPath, sIdx]);
+    const rightOk = sameTree(rRight, sRight, [...rPath, rIdx], [...sPath, sIdx]);
+    const result = leftOk && rightOk;
+    steps.push({ stepType: "same_recurse", description: `Left ${leftOk}, right ${rightOk} → ${result ? "same tree ✓" : "not same"}`, state: { ...stepState, sameRootPath: [...rPath, rIdx], sameSubPath: [...sPath, sIdx], sameResult: result } });
+    return result;
+  }
+  sameTree(rootStart, 0, [], []);
+}
+
+export function generateSubtreeSteps({ root, subRoot }) {
+  const rootArr = Array.isArray(root) ? root : [];
+  const subRootArr = Array.isArray(subRoot) ? subRoot : [];
+  const steps = [];
+  const rLen = rootArr.length;
+  if (!rLen) {
+    steps.push({ stepType: "subtree_base", description: "root is null → return false", state: { rootArr, subRootArr, rootVisit: -1, found: false } });
+    return steps;
+  }
+  if (!subRootArr.length) {
+    steps.push({ stepType: "done", description: "subRoot is empty → return true", state: { rootArr, subRootArr, rootVisit: -1, found: true } });
+    return steps;
+  }
+  function dfs(rootIdx) {
+    if (rootIdx < 0 || rootIdx >= rLen) return false;
+    const val = rootArr[rootIdx];
+    steps.push({ stepType: "visit", description: `Visit root node at index ${rootIdx}, value=${val}. Check: is this subtree same as subRoot?`, state: { rootArr, subRootArr, rootVisit: rootIdx, found: false } });
+    const stepState = { rootArr, subRootArr, rootVisit: rootIdx, found: false };
+    isSameTreeSteps(rootArr, subRootArr, rootIdx, steps, stepState);
+    const lastSame = steps[steps.length - 1];
+    const found = lastSame?.state?.sameResult === true;
+    if (found) {
+      steps.push({ stepType: "subtree_found", description: `✅ Same tree found at root index ${rootIdx}! return true`, state: { rootArr, subRootArr, rootVisit: rootIdx, found: true, matchAt: rootIdx } });
+      return true;
+    }
+    const leftIdx = 2 * rootIdx + 1;
+    const rightIdx = 2 * rootIdx + 2;
+    steps.push({ stepType: "subtree_recurse", description: `No match here. Recurse on left (${leftIdx}) and right (${rightIdx})`, state: { rootArr, subRootArr, rootVisit: rootIdx, found: false } });
+    if (dfs(leftIdx)) return true;
+    if (dfs(rightIdx)) return true;
+    return false;
+  }
+  dfs(0);
+  const last = steps[steps.length - 1];
+  if (last?.state?.found) return steps;
+  steps.push({ stepType: "done", description: "❌ No subtree of root matches subRoot → return false", state: { rootArr, subRootArr, rootVisit: -1, found: false, done: true } });
+  return steps;
+}
+
 export const STEP_GENERATORS = {
   "two-sum":              generateTwoSumSteps,
   "longest-consecutive":  generateLongestConsecutiveSteps,
@@ -187,4 +265,5 @@ export const STEP_GENERATORS = {
   "binary-search":        generateBinarySearchSteps,
   "climbing-stairs":      generateClimbingStairsSteps,
   "max-subarray":         generateMaxSubarraySteps,
+  "subtree-of-another-tree": generateSubtreeSteps,
 };

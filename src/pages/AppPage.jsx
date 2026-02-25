@@ -9,7 +9,7 @@ import ExplanationPanel from "../components/ExplanationPanel";
 import SimilarProblems from "../components/SimilarProblems";
 import {
   ArrayVisualizer, ConsecutiveVisualizer,
-  DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz,
+  DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -20,7 +20,7 @@ export default function AppPage({
   t, themeMode, setThemeMode,
   onNavigate, onLogout, username,
 }) {
-  const [lang, setLang]              = useState("javascript");
+  const [lang, setLang]              = useState("cpp");
   const [solutionTab, setSolTab]     = useState("Solution");
   const [input, setInput]            = useState(() => PROBLEMS[selectedProblem].defaultInput);
   const [userMenuOpen, setMenuOpen] = useState(false);
@@ -96,11 +96,11 @@ export default function AppPage({
         }
       />
 
-      {/* Main grid */}
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1.2fr", gridTemplateRows: "1fr auto", gap: 16, padding: 16, overflow: "auto" }}>
+      {/* Main grid: left column scrolls, whiteboard keeps min width */}
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr minmax(380px, 1.2fr)", gridTemplateRows: "1fr auto", gap: 16, padding: 16, overflow: "hidden", minWidth: 0 }}>
 
-        {/* LEFT — Problem statement + Code */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: 0 }}>
+        {/* LEFT — Problem statement + Code (scrollable so whiteboard isn't squeezed) */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: 0, minWidth: 0, overflow: "auto" }}>
 
           {/* Problem statement */}
           <Card t={t} style={{ flexShrink: 0 }}>
@@ -229,6 +229,7 @@ export default function AppPage({
             {problem.visualizer === "stock"       && <StockViz              prices={input.prices || []} stepState={currentStep?.state} t={t} />}
             {problem.visualizer === "binsearch"   && <BinarySearchViz       nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
             {problem.visualizer === "climbing"    && <ClimbingViz           n={input.n}               stepState={currentStep?.state} t={t} />}
+            {problem.visualizer === "subtree"     && <SubtreeViz            root={input.root || []}   subRoot={input.subRoot || []} stepState={currentStep?.state ?? {}} t={t} />}
           </div>
           <StepControls {...player} t={t} />
         </Card>

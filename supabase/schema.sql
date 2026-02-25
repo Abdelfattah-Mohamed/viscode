@@ -47,6 +47,9 @@ create policy "profiles_insert" on public.profiles for insert with check (true);
 drop policy if exists "profiles_update" on public.profiles;
 create policy "profiles_update" on public.profiles for update using (true);
 
+drop policy if exists "profiles_delete" on public.profiles;
+create policy "profiles_delete" on public.profiles for delete using (true);
+
 -- Verification codes (used by Edge Functions only; no anon access)
 create table if not exists public.verification_codes (
   email text not null,

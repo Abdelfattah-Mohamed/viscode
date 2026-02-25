@@ -5,3 +5,4 @@ export { default as AnagramViz }            from "./AnagramViz";
 export { default as StockViz }              from "./StockViz";
 export { default as BinarySearchViz }       from "./BinarySearchViz";
 export { default as ClimbingViz }           from "./ClimbingViz";
+export { default as SubtreeViz }            from "./SubtreeViz";

@@ -16,6 +16,7 @@ export const CAT_ICON = {
   "Sliding Window":      "🪟",
   "Binary Search":       "🔍",
   "Dynamic Programming": "🧩",
+  "Trees":               "🌳",
 };
 
 export const PROBLEMS = {
@@ -285,6 +286,44 @@ export const PROBLEMS = {
     },
   },
 
+  "subtree-of-another-tree": {
+    title:           "Subtree of Another Tree",
+    difficulty:      "Easy",
+    category:        "Trees",
+    timeComplexity:  "O(m × n)",
+    spaceComplexity: "O(h)",
+    visualizer:      "subtree",
+    description:     "Given the roots of two binary trees <code>root</code> and <code>subRoot</code>, return <code>true</code> if there is a subtree of <code>root</code> with the same structure and node values as <code>subRoot</code>.",
+    example:         { input: "root = [3,4,5,1,2], subRoot = [4,1,2]", output: "true", note: "The subtree rooted at 4 (left of 3) matches subRoot." },
+    defaultInput:    { root: [3, 4, 5, 1, 2], subRoot: [4, 1, 2] },
+    inputFields:     ["root", "subRoot"],
+    explanation: [
+      { emoji: "🤔", title: "What Is a Subtree?", body: "A subtree of a node includes that node and all of its descendants. We need to find if any subtree of root is identical to subRoot." },
+      { emoji: "💡", title: "Key Insight", body: "For every node in root, check: \"Is the tree starting here identical to subRoot?\" Use a helper isSameTree(r, s)." },
+      { emoji: "🌳", title: "Same Tree Check", body: "Both null → true. One null → false. Values differ → false. Else: isSameTree(r.left, s.left) && isSameTree(r.right, s.right)." },
+      { emoji: "👣", title: "Step by Step", body: "1. DFS on root. 2. At each node, call isSameTree(node, subRoot). 3. If true, return true. 4. Else recurse on left and right. 5. Return false if no match." },
+      { emoji: "⚡", title: "Complexity", body: "For each of m nodes in root we may do a full comparison with subRoot (n nodes). So O(m × n) time. O(h) recursion stack." },
+    ],
+    languages: {
+      cpp: {
+        code: ["bool isSameTree(TreeNode* r, TreeNode* s) {","    if (!r && !s) return true;","    if (!r || !s || r->val != s->val) return false;","    return isSameTree(r->left, s->left) && isSameTree(r->right, s->right);","}","bool isSubtree(TreeNode* root, TreeNode* subRoot) {","    if (!root) return false;","    if (isSameTree(root, subRoot)) return true;","    return isSubtree(root->left, subRoot) || isSubtree(root->right, subRoot);","}"],
+        lineMap: { same_base: 2, same_mismatch: 3, same_compare: 3, same_recurse: 4, subtree_base: 7, visit: 8, subtree_found: 8, subtree_recurse: 9, done: 9 },
+      },
+      java: {
+        code: ["boolean isSameTree(TreeNode r, TreeNode s) {","    if (r == null && s == null) return true;","    if (r == null || s == null || r.val != s.val) return false;","    return isSameTree(r.left, s.left) && isSameTree(r.right, s.right);","}","boolean isSubtree(TreeNode root, TreeNode subRoot) {","    if (root == null) return false;","    if (isSameTree(root, subRoot)) return true;","    return isSubtree(root.left, subRoot) || isSubtree(root.right, subRoot);","}"],
+        lineMap: { same_base: 2, same_mismatch: 3, same_compare: 3, same_recurse: 4, subtree_base: 7, visit: 8, subtree_found: 8, subtree_recurse: 9, done: 9 },
+      },
+      javascript: {
+        code: ["function isSameTree(r, s) {","  if (!r && !s) return true;","  if (!r || !s || r.val !== s.val) return false;","  return isSameTree(r.left, s.left) && isSameTree(r.right, s.right);","}","function isSubtree(root, subRoot) {","  if (!root) return false;","  if (isSameTree(root, subRoot)) return true;","  return isSubtree(root.left, subRoot) || isSubtree(root.right, subRoot);","}"],
+        lineMap: { same_base: 2, same_mismatch: 3, same_compare: 3, same_recurse: 4, subtree_base: 7, visit: 8, subtree_found: 8, subtree_recurse: 9, done: 9 },
+      },
+      python: {
+        code: ["def is_same_tree(r, s):","    if not r and not s: return True","    if not r or not s or r.val != s.val: return False","    return is_same_tree(r.left, s.left) and is_same_tree(r.right, s.right)","def is_subtree(root, sub_root):","    if not root: return False","    if is_same_tree(root, sub_root): return True","    return is_subtree(root.left, sub_root) or is_subtree(root.right, sub_root)"],
+        lineMap: { same_base: 2, same_mismatch: 3, same_compare: 3, same_recurse: 4, subtree_base: 6, visit: 7, subtree_found: 7, subtree_recurse: 8, done: 8 },
+      },
+    },
+  },
+
   "max-subarray": {
     title:           "Maximum Subarray (Kadane)",
     difficulty:      "Medium",
@@ -334,6 +373,7 @@ export const PROB_LIST = [
   { id: "binary-search",       title: "Binary Search",                 difficulty: "Easy",   category: "Binary Search",       desc: "Search a sorted array in O(log n) time.",                       tags: ["binary-search", "arrays", "two-pointers"] },
   { id: "climbing-stairs",     title: "Climbing Stairs",               difficulty: "Easy",   category: "Dynamic Programming", desc: "Count ways to climb n steps taking 1 or 2 at a time.",          tags: ["dynamic-programming", "fibonacci", "math"] },
   { id: "max-subarray",        title: "Maximum Subarray (Kadane)",      difficulty: "Medium", category: "Arrays",              desc: "Find the contiguous subarray with the largest sum.",           tags: ["arrays", "dynamic-programming", "kadane"] },
+  { id: "subtree-of-another-tree", title: "Subtree of Another Tree",     difficulty: "Easy",   category: "Trees",               desc: "Check if subRoot has the same structure and values as a subtree of root.", tags: ["trees", "dfs", "binary-tree", "recursion"] },
 ];
 
 export function getSimilar(currentId, max = 3) {

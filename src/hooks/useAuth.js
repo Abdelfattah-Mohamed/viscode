@@ -10,10 +10,11 @@ function generateCode() {
 
 function profileToRow(profile) {
   const now = new Date().toISOString();
+  const avatarUrl = profile.picture || (profile.avatarId ? `avatar:${profile.avatarId}` : null);
   return {
     email: profile.email || null,
     username: profile.username || "User",
-    avatar_url: profile.picture || null,
+    avatar_url: avatarUrl,
     provider: profile.isGoogle ? "google" : "email",
     google_sub: profile.sub || null,
     updated_at: now,
@@ -22,10 +23,13 @@ function profileToRow(profile) {
 
 function rowToProfile(row) {
   if (!row) return null;
+  const avatarUrl = row.avatar_url;
+  const isAvatarId = typeof avatarUrl === "string" && avatarUrl.startsWith("avatar:");
   return {
     username: row.username,
     email: row.email ?? undefined,
-    picture: row.avatar_url ?? undefined,
+    picture: isAvatarId ? undefined : avatarUrl ?? undefined,
+    avatarId: isAvatarId ? parseInt(avatarUrl.slice(7), 10) : undefined,
     sub: row.google_sub ?? undefined,
     isGoogle: row.provider === "google",
     createdAt: row.created_at,
@@ -58,7 +62,6 @@ export function useAuth() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pendingVerification, setPendingVerification] = useState(null);
-  const [pendingGoogleVerification, setPendingGoogleVerification] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -84,13 +87,21 @@ export function useAuth() {
     const code = generateCode();
     const normalizedEmail = email.trim().toLowerCase();
     const sendResult = await sendVerificationCode(normalizedEmail, code);
-    setPendingVerification({ username, email: normalizedEmail, password, code, demoHint: sendResult.demo });
+    setPendingVerification({
+      username,
+      email: normalizedEmail,
+      password,
+      code,
+      demoHint: sendResult.demo,
+      sendError: sendResult.ok ? null : sendResult.error,
+    });
     return {
       ok: true,
       needVerification: true,
       email: email.trim(),
       sendFailed: !sendResult.ok,
       demoHint: sendResult.demo,
+      sendError: sendResult.error,
     };
   };
 
@@ -101,7 +112,7 @@ export function useAuth() {
     const accepted = apiResult.ok || (isDemoCode(normalized) && (apiResult.demo || !getSupabase()));
     if (!accepted) return { error: apiResult.error || "Invalid or expired code" };
     const { username, email, password } = pendingVerification;
-    const profile = { username, email, createdAt: new Date().toISOString() };
+    const profile = { username, email, createdAt: new Date().toISOString(), avatarId: 1 };
     localStorage.setItem(`vc:user:${username}`, JSON.stringify({ password, profile }));
     localStorage.setItem(`vc:email:${email}`, username);
     localStorage.setItem("vc:session", JSON.stringify(profile));
@@ -136,61 +147,45 @@ export function useAuth() {
     setUser({ username: "Guest", isGuest: true });
   };
 
-  const startGoogleVerification = async (googlePayload) => {
-    if (!googlePayload || (!googlePayload.email && !googlePayload.sub)) {
-      setUser({ username: "Google User", email: "user@gmail.com", isGoogle: true });
-      return { ok: false };
-    }
-    const email = googlePayload.email || null;
-    if (!email) {
-      setUser({
-        username: googlePayload.name || "Google User",
-        email: null,
-        picture: googlePayload.picture || null,
-        sub: googlePayload.sub,
-        isGoogle: true,
-        createdAt: new Date().toISOString(),
-      });
-      return { ok: false, noEmail: true };
-    }
-    const code = generateCode();
-    const sendResult = await sendVerificationCode(email, code);
-    const profile = {
-      username: googlePayload.name || email.split("@")[0] || "Google User",
-      email,
-      picture: googlePayload.picture || null,
-      sub: googlePayload.sub,
-      isGoogle: true,
-      createdAt: new Date().toISOString(),
-    };
-    setPendingGoogleVerification({ email, profile, demoHint: sendResult.demo });
-    return { ok: true, sendFailed: !sendResult.ok, demoHint: sendResult.demo };
-  };
-
-  const verifyGoogleCode = async (code) => {
-    if (!pendingGoogleVerification) return { error: "No pending verification" };
-    const normalized = String(code).replace(/\D/g, "").slice(0, VERIFICATION_CODE_LENGTH);
-    const apiResult = await verifyCodeWithApi(pendingGoogleVerification.email, normalized);
-    const accepted = apiResult.ok || (isDemoCode(normalized) && (apiResult.demo || !getSupabase()));
-    if (!accepted) return { error: apiResult.error || "Invalid or expired code" };
-    const { profile } = pendingGoogleVerification;
+  const updateProfile = (updates) => {
+    if (!user) return;
+    const next = { ...user, ...updates };
+    setUser(next);
     try {
-      localStorage.setItem("vc:session", JSON.stringify(profile));
+      localStorage.setItem("vc:session", JSON.stringify(next));
+      if (user.username && !user.isGuest) {
+        const raw = localStorage.getItem(`vc:user:${user.username}`);
+        if (raw) {
+          const data = JSON.parse(raw);
+          data.profile = next;
+          localStorage.setItem(`vc:user:${user.username}`, JSON.stringify(data));
+        }
+      }
+      upsertProfile(next);
     } catch (_) {}
-    setUser(profile);
-    upsertProfile(profile);
-    setPendingGoogleVerification(null);
-    return { ok: true };
   };
 
-  const cancelGoogleVerification = () => setPendingGoogleVerification(null);
-
-  const loginWithGoogle = async (googlePayload) => {
-    if (googlePayload && (googlePayload.email || googlePayload.sub)) {
-      await startGoogleVerification(googlePayload);
-      return;
+  const deleteAccount = async (currentUser) => {
+    if (!currentUser) return { error: "Not signed in" };
+    if (currentUser.isGuest) {
+      logout();
+      return { ok: true };
     }
-    setUser({ username: "Google User", email: "user@gmail.com", isGoogle: true });
+    const username = currentUser.username;
+    const email = currentUser.email ? currentUser.email.toLowerCase() : null;
+    try {
+      const sb = getSupabase();
+      if (sb && email) {
+        await sb.from(PROFILES_TABLE).delete().eq("email", email);
+      }
+      if (email) localStorage.removeItem(`vc:email:${email}`);
+      localStorage.removeItem(`vc:user:${username}`);
+      localStorage.removeItem("vc:session");
+    } catch (e) {
+      return { error: "Failed to delete account" };
+    }
+    setUser(null);
+    return { ok: true };
   };
 
   return {
@@ -200,13 +195,10 @@ export function useAuth() {
     verifyEmail,
     cancelVerification,
     pendingVerification,
-    pendingGoogleVerification,
-    verifyGoogleCode,
-    cancelGoogleVerification,
-    startGoogleVerification,
     login,
     logout,
     loginAsGuest,
-    loginWithGoogle,
+    updateProfile,
+    deleteAccount,
   };
 }
