@@ -178,19 +178,12 @@ export function generateMaxSubarraySteps({ nums }) {
   return steps;
 }
 
-// Build tree from level-order array. Node at index i has left 2i+1, right 2i+2.
-function buildTreeNodes(arr) {
-  if (!arr || !arr.length) return [];
-  const nodes = arr.map((val, i) => ({ index: i, val, leftIndex: 2 * i + 1, rightIndex: 2 * i + 2 }));
-  return nodes;
-}
-
 function isSameTreeSteps(rootArr, subRootArr, rootStart, steps, stepState) {
   const rLen = rootArr.length;
   const sLen = subRootArr.length;
   function sameTree(rIdx, sIdx, rPath, sPath) {
-    const rNull = rIdx < 0 || rIdx >= rLen;
-    const sNull = sIdx < 0 || sIdx >= sLen;
+    const rNull = rIdx < 0 || rIdx >= rLen || rootArr[rIdx] === null;
+    const sNull = sIdx < 0 || sIdx >= sLen || subRootArr[sIdx] === null;
     if (rNull && sNull) {
       steps.push({ stepType: "same_base", description: "Both null → match", state: { ...stepState, sameRootPath: rPath, sameSubPath: sPath, sameResult: true } });
       return true;
@@ -222,7 +215,7 @@ export function generateSubtreeSteps({ root, subRoot }) {
   const subRootArr = Array.isArray(subRoot) ? subRoot : [];
   const steps = [];
   const rLen = rootArr.length;
-  if (!rLen) {
+  if (!rLen || rootArr[0] === null) {
     steps.push({ stepType: "subtree_base", description: "root is null → return false", state: { rootArr, subRootArr, rootVisit: -1, found: false } });
     return steps;
   }
@@ -231,7 +224,7 @@ export function generateSubtreeSteps({ root, subRoot }) {
     return steps;
   }
   function dfs(rootIdx) {
-    if (rootIdx < 0 || rootIdx >= rLen) return false;
+    if (rootIdx < 0 || rootIdx >= rLen || rootArr[rootIdx] === null) return false;
     const val = rootArr[rootIdx];
     steps.push({ stepType: "visit", description: `Visit root node at index ${rootIdx}, value=${val}. Check: is this subtree same as subRoot?`, state: { rootArr, subRootArr, rootVisit: rootIdx, found: false } });
     const stepState = { rootArr, subRootArr, rootVisit: rootIdx, found: false };
