@@ -57,6 +57,7 @@ export default function AppPage({
   const [whiteboardFontScale, setWhiteboardFontScale] = useState(1);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [shareMsg, setShareMsg]      = useState("");
+  const [whiteboardMaximized, setWhiteboardMaximized] = useState(false);
 
   const problem = PROBLEMS[selectedProblem];
 
@@ -146,6 +147,9 @@ export default function AppPage({
         case "Slash":
           if (e.shiftKey) { e.preventDefault(); setShowShortcuts(s => !s); }
           break;
+        case "Escape":
+          setWhiteboardMaximized(false);
+          break;
         default: break;
       }
     };
@@ -162,6 +166,69 @@ export default function AppPage({
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${t.border}; border-radius: 3px; }
       `}</style>
+
+      {/* Maximized whiteboard overlay */}
+      {whiteboardMaximized && (
+        <div
+          onClick={() => setWhiteboardMaximized(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1000,
+            background: "rgba(0,0,0,0.7)", display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", padding: 24,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: t.surface, border: `2px solid ${t.border}`, borderRadius: 16, boxShadow: t.shadow,
+              width: "100%", maxWidth: 1200, height: "90vh", maxHeight: 900,
+              display: "flex", flexDirection: "column", overflow: "hidden",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt, flexShrink: 0 }}>
+              <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, color: t.ink }}>🎨 Whiteboard</span>
+              <button onClick={() => setWhiteboardMaximized(false)} title="Exit full screen (Esc)"
+                style={{ width: 36, height: 36, borderRadius: 8, border: `2px solid ${t.border}`, background: t.surface, color: t.ink, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div style={{ padding: "12px 16px", flexShrink: 0 }}>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: `${1.1 * whiteboardFontScale}rem`, fontWeight: 600, padding: "10px 16px", background: stepDescColor + (t._resolved === "dark" ? "33" : "cc"), border: `2px solid ${t.border}`, borderRadius: 8, minHeight: 44, display: "flex", alignItems: "center", gap: 8, color: t.ink }}>
+                <span>💡</span>
+                <span>{currentStep?.description || "Press ▶ to start the visualization"}</span>
+              </div>
+            </div>
+            <div style={{ flex: 1, overflow: "auto", padding: "8px 20px 20px", fontSize: `${whiteboardFontScale}rem` }}>
+              {problem.visualizer === "array"       && <ArrayVisualizer       nums={input.nums || []}   stepState={{ ...currentStep?.state, target: input.target }} t={t} />}
+              {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "duplicate"   && <DuplicateViz          nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
+              {problem.visualizer === "anagram"     && <AnagramViz            s={input.s || ""}         tStr={input.t || ""} stepState={currentStep?.state} t={t} />}
+              {problem.visualizer === "stock"       && <StockViz              prices={input.prices || []} stepState={currentStep?.state} t={t} />}
+              {problem.visualizer === "binsearch"   && <BinarySearchViz       nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
+              {problem.visualizer === "climbing"    && <ClimbingViz           n={input.n}               stepState={currentStep?.state} t={t} />}
+              {problem.visualizer === "subtree"     && <SubtreeViz            root={input.root || []}   subRoot={input.subRoot || []} stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "palindrome"  && <PalindromeViz    s={input.s || ""}         stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "parentheses" && <ParenthesesViz   s={input.s || ""}         stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "product"     && <ProductViz       nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "maxproduct"  && <MaxProductViz    nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "robber"      && <RobberViz        nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "missing"     && <MissingViz       nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "treedepth"   && <TreeDepthViz     root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "invertree"   && <InvertTreeViz    root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "sametree"    && <SameTreeViz      p={input.p || []}         q={input.q || []} stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "linkedlist"  && <LinkedListViz    head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "threesum"    && <ThreeSumViz      nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "container"  && <ContainerViz     heights={input.heights || []} stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "mergelists" && <MergeListsViz    list1={input.list1 || []} list2={input.list2 || []} stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "intervals"  && <IntervalsViz     stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "cycle"      && <CycleViz         head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
+            </div>
+            <div style={{ flexShrink: 0, borderTop: `1.5px solid ${t.border}` }}>
+              <StepControls {...player} t={t} mobile={mobile} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Keyboard shortcuts overlay */}
       {showShortcuts && (
@@ -308,6 +375,10 @@ export default function AppPage({
           <CardHeader icon="🎨" title="Whiteboard" t={t}
             extra={
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button onClick={() => setWhiteboardMaximized(true)} title="Maximize whiteboard"
+                  style={{ width: 26, height: 26, borderRadius: 7, border: `1.5px solid ${t.border}`, background: t.surfaceAlt, color: t.inkMuted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></svg>
+                </button>
                 <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts (?)"
                   style={{ width: 26, height: 26, borderRadius: 7, border: `1.5px solid ${t.border}`, background: t.surfaceAlt, color: t.inkMuted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 700, padding: 0 }}>
                   ?
