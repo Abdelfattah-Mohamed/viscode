@@ -2,7 +2,9 @@ import { useState } from "react";
 import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 
-export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, mobile }) {
+import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
+
+export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, mobile, recent, onSelectProblem }) {
   const [userMenuOpen, setMenuOpen] = useState(false);
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
@@ -78,6 +80,35 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
           </div>
         ))}
       </div>
+
+      {/* Continue where you left off */}
+      {recent?.length > 0 && (
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "32px 12px 0" : "48px 24px 0" }}>
+          <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "1.6rem", fontWeight: 700, color: t.ink, margin: "0 0 16px" }}>
+            Continue Where You Left Off
+          </h2>
+          <div style={{ display: "flex", gap: 12, overflowX: mobile ? "auto" : "hidden", WebkitOverflowScrolling: "touch", paddingBottom: 8 }}>
+            {recent.slice(0, 5).map(id => {
+              const p = PROB_LIST.find(x => x.id === id);
+              if (!p) return null;
+              const dc = DIFF_COLOR[p.difficulty] || {};
+              return (
+                <div key={id} onClick={() => onSelectProblem(id)}
+                  style={{ flex: mobile ? "0 0 180px" : "1 1 0%", minWidth: 0, padding: "14px 16px", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = ""}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: "1.1rem" }}>{CAT_ICON[p.category] || "📌"}</span>
+                    <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7rem", fontWeight: 700, padding: "1px 8px", border: `1.5px solid ${t.border}`, borderRadius: 8, ...dc }}>{p.difficulty}</span>
+                  </div>
+                  <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05rem", fontWeight: 700, color: t.ink, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
+                  <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", color: t.blue, marginTop: 6, fontWeight: 700 }}>Resume →</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* How it works */}
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "60px 24px" }}>

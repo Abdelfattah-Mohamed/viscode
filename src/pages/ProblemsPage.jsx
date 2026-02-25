@@ -16,7 +16,7 @@ const FlagIcon = ({ filled, size = 18 }) => (
   </svg>
 );
 
-export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem, onLogout, username, fav, mobile }) {
+export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem, onLogout, username, fav, mobile, recent }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [flagFilter, setFlagFilter] = useState("all");
@@ -100,6 +100,35 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
             ))}
           </div>
         </div>
+
+        {/* Recently Visited */}
+        {recent?.length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <h3 style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink, margin: "0 0 12px" }}>
+              Recently Visited
+            </h3>
+            <div style={{ display: "flex", gap: 10, overflowX: mobile ? "auto" : "hidden", WebkitOverflowScrolling: "touch", paddingBottom: 6 }}>
+              {recent.slice(0, 5).map(id => {
+                const p = PROB_LIST.find(x => x.id === id);
+                if (!p) return null;
+                const dc = DIFF_COLOR[p.difficulty] || {};
+                return (
+                  <div key={id} onClick={() => onSelectProblem(id)}
+                    style={{ flex: mobile ? "0 0 170px" : "1 1 0%", minWidth: 0, padding: "12px 14px", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
+                    onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                    onMouseLeave={e => e.currentTarget.style.transform = ""}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ fontSize: "1rem" }}>{CAT_ICON[p.category] || "📌"}</span>
+                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", border: `1.5px solid ${t.border}`, borderRadius: 8, ...dc }}>{p.difficulty}</span>
+                    </div>
+                    <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, color: t.ink, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
+                    <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.78rem", color: t.inkMuted, marginTop: 2 }}>{p.category}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Grid */}
         {list.length === 0

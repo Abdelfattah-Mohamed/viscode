@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useTheme }     from "./hooks/useTheme";
-import { useAuth }      from "./hooks/useAuth";
-import { useFavorites } from "./hooks/useFavorites";
-import { useIsMobile }  from "./hooks/useIsMobile";
-import { PROBLEMS }     from "./data/problems";
+import { useTheme }           from "./hooks/useTheme";
+import { useAuth }            from "./hooks/useAuth";
+import { useFavorites }       from "./hooks/useFavorites";
+import { useIsMobile }        from "./hooks/useIsMobile";
+import { useRecentProblems }  from "./hooks/useRecentProblems";
+import { PROBLEMS }           from "./data/problems";
 import AuthScreen   from "./components/ui/AuthScreen";
 import HomePage     from "./pages/HomePage";
 import ProblemsPage from "./pages/ProblemsPage";
@@ -11,6 +12,19 @@ import AppPage      from "./pages/AppPage";
 import ProfilePage  from "./pages/ProfilePage";
 
 const DEFAULT_PROBLEM = "two-sum";
+
+function parseShareUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get("p");
+    if (pid && PROBLEMS[pid]) {
+      const inputRaw = params.get("input");
+      const input = inputRaw ? JSON.parse(decodeURIComponent(inputRaw)) : null;
+      return { pid, input };
+    }
+  } catch {}
+  return null;
+}
 
 export default function App() {
   const [themeMode, setThemeModeRaw] = useState(() => {
@@ -24,19 +38,38 @@ export default function App() {
     setThemeModeRaw(mode);
     try { localStorage.setItem("vc:theme", mode); } catch {}
   };
-  const [page, setPage]                 = useState("home");
-  const [selectedProblem, setSelected]  = useState(DEFAULT_PROBLEM);
+
+  const shared = useRef(parseShareUrl());
+  const [page, setPage]                = useState(shared.current ? "app" : "home");
+  const [selectedProblem, setSelected] = useState(shared.current?.pid || DEFAULT_PROBLEM);
+  const [sharedInput, setSharedInput]  = useState(shared.current?.input || null);
+
   const t      = useTheme(themeMode);
   const mobile = useIsMobile();
   const auth   = useAuth();
   const favData = useFavorites(auth.user);
   const fav  = auth.user?.isGuest ? null : favData;
+  const { recent, track } = useRecentProblems();
   const prevUser = useRef(null);
 
   useEffect(() => {
-    if (!prevUser.current && auth.user) setPage("home");
+    if (shared.current) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!prevUser.current && auth.user && !shared.current) setPage("home");
     prevUser.current = auth.user;
   }, [auth.user]);
+
+  const selectProblem = (id) => {
+    if (!PROBLEMS[id]) return;
+    setSelected(id);
+    setSharedInput(null);
+    setPage("app");
+    track(id);
+  };
 
   if (auth.loading) {
     return (
@@ -52,18 +85,13 @@ export default function App() {
 
   const navigate = dest => setPage(dest);
 
-  const selectProblem = id => {
-    if (!PROBLEMS[id]) return;
-    setSelected(id);
-    setPage("app");
-  };
-
   if (page === "home") {
     return (
       <HomePage
         t={t} themeMode={themeMode} setThemeMode={setThemeMode}
         onNavigate={navigate} onLogout={auth.logout}
         username={auth.user?.username} mobile={mobile}
+        recent={recent} onSelectProblem={selectProblem}
       />
     );
   }
@@ -76,6 +104,7 @@ export default function App() {
         onLogout={auth.logout}
         username={auth.user?.username}
         fav={fav} mobile={mobile}
+        recent={recent}
       />
     );
   }
@@ -98,16 +127,16 @@ export default function App() {
     );
   }
 
-  // "app" page
   return (
     <AppPage
       selectedProblem={selectedProblem}
-      setSelectedProblem={id => { if (PROBLEMS[id]) setSelected(id); }}
+      setSelectedProblem={id => { if (PROBLEMS[id]) { setSelected(id); track(id); } }}
       t={t} themeMode={themeMode} setThemeMode={setThemeMode}
       onNavigate={navigate}
       onLogout={auth.logout}
       username={auth.user.username}
       fav={fav} mobile={mobile}
+      sharedInput={sharedInput}
     />
   );
 }
