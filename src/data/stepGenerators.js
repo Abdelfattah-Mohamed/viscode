@@ -873,6 +873,46 @@ function stubArraySteps(input) {
   steps.push({ stepType: "done", description: "Done", state: { done: true, nums: [...nums], i: nums.length - 1, highlight: [] } });
   return steps;
 }
+export function generateInsertIntervalSteps(input) {
+  const nums = input?.nums || [];
+  const pairs = [];
+  for (let i = 0; i < nums.length; i += 2)
+    if (nums[i] != null && nums[i + 1] != null) pairs.push([nums[i], nums[i + 1]]);
+  if (pairs.length < 2) {
+    const intervals = pairs.length ? [pairs[0]] : [];
+    return [
+      { stepType: "init", description: "No intervals or only newInterval", state: { intervals, merged: [], current: -1, newInterval: pairs[0] || null } },
+      { stepType: "done", description: "Done", state: { intervals, merged: intervals, current: -1, done: true } },
+    ];
+  }
+  const intervals = pairs.slice(0, -1);
+  let newInterval = [...pairs[pairs.length - 1]];
+  const steps = [];
+  const merged = [];
+
+  steps.push({ stepType: "init", description: "Initialize result list", state: { intervals: [...intervals], merged: [], current: -1, newInterval: [...newInterval] } });
+
+  for (let k = 0; k < intervals.length; k++) {
+    const in_ = intervals[k];
+    if (in_[1] < newInterval[0]) {
+      merged.push(in_);
+      steps.push({ stepType: "add_before", description: `[${in_}]: end < newInterval start → add to result`, state: { intervals: [...intervals], merged: [...merged], current: k, newInterval: [...newInterval] } });
+    } else if (in_[0] > newInterval[1]) {
+      merged.push(newInterval);
+      newInterval = in_;
+      steps.push({ stepType: "add_after", description: `[${in_}]: start > newInterval end → add newInterval, then set newInterval = current`, state: { intervals: [...intervals], merged: [...merged], current: k, newInterval: [...newInterval] } });
+    } else {
+      newInterval = [Math.min(in_[0], newInterval[0]), Math.max(in_[1], newInterval[1])];
+      steps.push({ stepType: "merge", description: `[${in_}] overlaps → merge into newInterval = [${newInterval[0]},${newInterval[1]}]`, state: { intervals: [...intervals], merged: [...merged], current: k, newInterval: [...newInterval] } });
+    }
+  }
+
+  merged.push(newInterval);
+  steps.push({ stepType: "push_new", description: `Push final newInterval [${newInterval[0]},${newInterval[1]}]`, state: { intervals: [...intervals], merged: [...merged], current: -1, newInterval: [...newInterval] } });
+  steps.push({ stepType: "done", description: "Return result", state: { intervals: [...intervals], merged: [...merged], current: -1, done: true } });
+  return steps;
+}
+
 function stubIntervalSteps(input) {
   const nums = input?.nums || [];
   const pairs = [];
@@ -1188,7 +1228,7 @@ export const STEP_GENERATORS = {
   "decode-ways":             generateDecodeWaysSteps,
   "unique-paths":            (i) => stubArraySteps(i),
   "jump-game":               (i) => stubArraySteps(i),
-  "insert-interval":         (i) => stubIntervalSteps(i),
+  "insert-interval":         generateInsertIntervalSteps,
   "non-overlapping-intervals": (i) => stubIntervalSteps(i),
   "meeting-rooms":          (i) => stubIntervalSteps(i),
   "meeting-rooms-ii":        (i) => stubIntervalSteps(i),
