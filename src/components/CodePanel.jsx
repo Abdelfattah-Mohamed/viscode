@@ -42,16 +42,18 @@ function tokenizeLine(line) {
   return parts;
 }
 
-export default function CodePanel({ lines, activeLine }) {
+export default function CodePanel({ lines, activeLine, disableScrollIntoView = false }) {
   const activeRef = useRef(null);
   const scrollRef = useRef(null);
   const [copied, setCopied] = useState(false);
+  const safeActiveLine = activeLine >= 1 && activeLine <= lines.length ? activeLine : -1;
 
   useEffect(() => {
+    if (disableScrollIntoView || safeActiveLine < 1) return;
     if (activeRef.current && scrollRef.current) {
       activeRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
-  }, [activeLine]);
+  }, [safeActiveLine, disableScrollIntoView]);
 
   const handleCopy = useCallback(() => {
     const text = lines.join("\n");
@@ -99,7 +101,7 @@ export default function CodePanel({ lines, activeLine }) {
         <div style={{ minWidth: "max-content" }}>
           {lines.map((line, idx) => {
             const num = idx + 1;
-            const active = num === activeLine;
+            const active = num === safeActiveLine;
             return (
               <div key={idx} ref={active ? activeRef : null} style={{
                 display: "flex", alignItems: "center",

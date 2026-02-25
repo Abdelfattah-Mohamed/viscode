@@ -863,23 +863,37 @@ export function generateMaxAreaOfIslandSteps({ grid: flat, rows }) {
 
 // Stub step generators for problems that don't have full visualization yet
 function stubArraySteps(input) {
-  const nums = input.nums != null ? input.nums : (Array.isArray(input) ? input : []);
-  return [
-    { stepType: "init", description: "Start", state: { i: -1, highlight: [], nums: [...nums] } },
-    { stepType: "done", description: "Done", state: { done: true, nums: [...nums] } },
+  const nums = input && input.nums != null ? input.nums : (Array.isArray(input) ? input : []);
+  const steps = [
+    { stepType: "init", description: "Initialize", state: { i: -1, highlight: [], nums: [...nums] } },
   ];
+  for (let i = 0; i < Math.min(nums.length, 5); i++) {
+    steps.push({ stepType: "loop", description: `Step ${i + 1}/${Math.min(nums.length, 5)}`, state: { i, highlight: [i], nums: [...nums] } });
+  }
+  steps.push({ stepType: "done", description: "Done", state: { done: true, nums: [...nums], i: nums.length - 1, highlight: [] } });
+  return steps;
 }
 function stubIntervalSteps(input) {
-  const nums = input.nums || [];
+  const nums = input?.nums || [];
   const pairs = [];
   for (let i = 0; i < nums.length; i += 2)
     if (nums[i] != null && nums[i + 1] != null) pairs.push([nums[i], nums[i + 1]]);
-  return [
+  const steps = [
     { stepType: "init", description: "Start", state: { intervals: [...pairs], merged: [], current: -1 } },
-    { stepType: "done", description: "Done", state: { intervals: pairs, merged: pairs, current: -1, done: true } },
   ];
+  for (let k = 0; k < pairs.length; k++) {
+    steps.push({ stepType: "compare", description: `Process interval ${k + 1}`, state: { intervals: pairs, merged: pairs.slice(0, k + 1), current: k } });
+  }
+  steps.push({ stepType: "done", description: "Done", state: { intervals: pairs, merged: pairs, current: -1, done: true } });
+  return steps;
 }
 function stubGridSteps(input) {
+  if (!input || input.grid == null || input.rows == null) {
+    return [
+      { stepType: "init", description: "Enter grid and rows", state: { grid: [], visited: [], current: null } },
+      { stepType: "done", description: "Done", state: { grid: [], visited: [], current: null, done: true } },
+    ];
+  }
   const grid = buildGrid2D(input.grid, input.rows);
   if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], visited: [], current: null, done: true } }];
   const visited = grid.map(row => row.map(() => false));
@@ -889,34 +903,121 @@ function stubGridSteps(input) {
   ];
 }
 function stubWithNumsTarget(input) {
-  const nums = input.nums || [];
-  const target = input.target != null ? input.target : 0;
-  return [
-    { stepType: "init", description: "Start", state: { nums: [...nums], target, i: -1, highlight: [] } },
-    { stepType: "done", description: "Done", state: { nums: [...nums], target, done: true } },
+  const nums = input?.nums || [];
+  const target = input?.target != null ? input.target : 0;
+  const steps = [
+    { stepType: "init", description: "Initialize", state: { nums: [...nums], target, i: -1, highlight: [] } },
   ];
+  for (let i = 0; i < Math.min(nums.length, 4); i++) {
+    steps.push({ stepType: "loop", description: `Check index ${i}`, state: { nums: [...nums], target, i, highlight: [i] } });
+  }
+  steps.push({ stepType: "done", description: "Done", state: { nums: [...nums], target, done: true } });
+  return steps;
 }
 function stubWithN(input) {
-  const n = input.n != null ? input.n : 0;
-  const nums = input.nums || [];
-  return [
-    { stepType: "init", description: "Start", state: { n, nums: [...nums], i: -1, highlight: [] } },
-    { stepType: "done", description: "Done", state: { n, nums: [...nums], done: true } },
+  const n = input?.n != null ? input.n : 0;
+  const nums = input?.nums || [];
+  const steps = [
+    { stepType: "init", description: "Initialize", state: { n, nums: [...nums], i: -1, highlight: [] } },
   ];
+  for (let i = 0; i < Math.min(n, 4); i++) {
+    steps.push({ stepType: "loop", description: `Step ${i + 1}`, state: { n, nums: [...nums], i, highlight: [i] } });
+  }
+  steps.push({ stepType: "done", description: "Done", state: { n, nums: [...nums], done: true } });
+  return steps;
 }
 function stubWithS(input) {
-  const s = input.s != null ? String(input.s) : "";
-  return [
+  const s = input?.s != null ? String(input.s) : "";
+  const steps = [
     { stepType: "init", description: "Start", state: { s, i: -1, highlight: [] } },
-    { stepType: "done", description: "Done", state: { s, done: true } },
   ];
+  for (let i = 0; i < Math.min(s.length, 4); i++) {
+    steps.push({ stepType: "loop", description: `Position ${i}`, state: { s, i, highlight: [i] } });
+  }
+  steps.push({ stepType: "done", description: "Done", state: { s, done: true } });
+  return steps;
 }
 function stubLinkedListSteps(input) {
-  const head = input.head || [];
-  return [
+  const head = input?.head || [];
+  const steps = [
     { stepType: "init", description: "Start", state: { head: [...head], slow: -1, fast: -1 } },
-    { stepType: "done", description: "Done", state: { head: [...head], done: true } },
   ];
+  for (let i = 0; i < Math.min(head.length, 3); i++) {
+    steps.push({ stepType: "loop", description: `Step ${i + 1}`, state: { head: [...head], slow: i, fast: Math.min(i * 2, head.length - 1) } });
+  }
+  steps.push({ stepType: "done", description: "Done", state: { head: [...head], done: true } });
+  return steps;
+}
+// Build edges from flat nums: [a1,b1, a2,b2, ...] -> [[a1,b1],[a2,b2],...]
+function buildEdgesFromNums(n, nums) {
+  const edges = [];
+  for (let i = 0; i + 1 < (nums || []).length; i += 2) {
+    const a = Number(nums[i]), b = Number(nums[i + 1]);
+    if (!isNaN(a) && !isNaN(b)) edges.push([a, b]);
+  }
+  return edges;
+}
+export function generateEvalRpnSteps(input) {
+  const s = input?.s != null ? String(input.s).trim() : "";
+  const tokens = s ? s.split(",").map(t => t.trim()).filter(Boolean) : [];
+  const steps = [];
+  const stack = [];
+
+  steps.push({
+    stepType: "init",
+    description: "Initialize empty stack",
+    state: { tokens: [...tokens], currentIndex: -1, stack: [], action: null },
+  });
+
+  const OPS = new Set(["+", "-", "*", "/"]);
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    if (OPS.has(tok)) {
+      const b = stack.pop();
+      const a = stack.pop();
+      let res;
+      if (tok === "+") res = a + b;
+      else if (tok === "-") res = a - b;
+      else if (tok === "*") res = a * b;
+      else res = Math.trunc(a / b);
+      stack.push(res);
+      steps.push({
+        stepType: "op",
+        description: `Apply ${tok}: pop ${a}, ${b} → ${res}`,
+        state: { tokens: [...tokens], currentIndex: i, stack: [...stack], action: `${a} ${tok} ${b} = ${res}` },
+      });
+    } else {
+      const num = Number(tok);
+      if (!isNaN(num)) {
+        stack.push(num);
+        steps.push({
+          stepType: "push",
+          description: `Push ${num}`,
+          state: { tokens: [...tokens], currentIndex: i, stack: [...stack], action: "push" },
+        });
+      }
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `Result = ${stack[stack.length - 1] ?? "?"}`,
+    state: { tokens: [...tokens], currentIndex: tokens.length, stack: [...stack], action: null, done: true },
+  });
+  return steps;
+}
+
+function stubGraphSteps(input) {
+  const n = input?.n != null ? input.n : 0;
+  const edges = buildEdgesFromNums(n, input?.nums || []);
+  const steps = [
+    { stepType: "init", description: "Graph: nodes 0.." + (n - 1) + ", " + edges.length + " edges", state: { n, edges: [...edges], highlighted: [] } },
+  ];
+  for (let i = 0; i < Math.min(edges.length, 4); i++) {
+    steps.push({ stepType: "visit", description: "Edge " + edges[i][0] + "–" + edges[i][1], state: { n, edges: [...edges], highlighted: [edges[i][0], edges[i][1]] } });
+  }
+  steps.push({ stepType: "done", description: "Done", state: { n, edges: [...edges], highlighted: [], done: true } });
+  return steps;
 }
 
 export const STEP_GENERATORS = {
@@ -969,11 +1070,11 @@ export const STEP_GENERATORS = {
   "remove-nth-node":        (i) => stubLinkedListSteps(i),
   "reorder-list":           (i) => stubLinkedListSteps(i),
   "copy-list-random-pointer": (i) => stubLinkedListSteps(i),
-  "clone-graph":            (i) => stubArraySteps(i),
-  "course-schedule":        (i) => stubWithN(i),
+  "clone-graph":            (i) => stubGraphSteps(i),
+  "course-schedule":        (i) => stubGraphSteps(i),
   "pacific-atlantic":        (i) => stubGridSteps(i),
-  "num-connected-components": (i) => stubWithN(i),
-  "graph-valid-tree":        (i) => stubWithN(i),
+  "num-connected-components": (i) => stubGraphSteps(i),
+  "graph-valid-tree":        (i) => stubGraphSteps(i),
   "group-anagrams":          (i) => stubWithS(i),
   "longest-substring-no-repeat": (i) => stubWithS(i),
   "longest-palindromic-substring": (i) => stubWithS(i),
@@ -981,7 +1082,7 @@ export const STEP_GENERATORS = {
   "subsets":                 (i) => stubArraySteps(i),
   "permutations":            (i) => stubArraySteps(i),
   "min-stack":               (i) => stubArraySteps(i),
-  "eval-rpn":               (i) => stubWithS(i),
+  "eval-rpn":               generateEvalRpnSteps,
   "generate-parentheses":    (i) => stubWithN(i),
   "trapping-rain-water":     (i) => stubArraySteps(i),
 };

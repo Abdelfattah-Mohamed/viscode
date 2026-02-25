@@ -12,7 +12,7 @@ import {
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
   PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
   MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
-  ThreeSumViz, ContainerViz, MergeListsViz, IntervalsViz, CycleViz, GridViz,
+  ThreeSumViz, ContainerViz, MergeListsViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -74,17 +74,35 @@ export default function AppPage({
   const steps = useMemo(() => {
     const gen  = STEP_GENERATORS[selectedProblem];
     const prob = PROBLEMS[selectedProblem];
-    if (!gen || !prob) return [];
+    if (!gen || !prob) return [{ stepType: "init", description: "Select a problem", state: {} }];
     const safeInput = prob.inputFields.every(f => input[f] !== undefined && input[f] !== null)
-      ? input : prob.defaultInput;
-    try { return gen(safeInput); } catch (_) { return []; }
+      ? input : (prob.defaultInput || {});
+    try {
+      const result = gen(safeInput);
+      const arr = Array.isArray(result) ? result : [];
+      if (arr.length === 0) return [{ stepType: "init", description: "Start", state: {} }, { stepType: "done", description: "Done", state: { done: true } }];
+      return arr;
+    } catch (_) {
+      return [{ stepType: "init", description: "Start", state: {} }, { stepType: "done", description: "Done", state: { done: true } }];
+    }
   }, [selectedProblem, input]);
 
   const player = useStepPlayer(steps, 900);
   const { currentStep } = player;
 
-  const langDef    = problem.languages[lang];
-  const activeLine = currentStep ? (langDef.lineMap[currentStep.stepType] ?? -1) : -1;
+  const langDef = problem.languages[lang];
+  const codeLines = langDef?.code?.length ?? 0;
+  const activeLine = (() => {
+    if (!currentStep || !langDef?.lineMap || codeLines === 0) return -1;
+    const raw = langDef.lineMap[currentStep.stepType]
+      ?? langDef.lineMap["loop"]
+      ?? langDef.lineMap["compare"]
+      ?? langDef.lineMap["visit"]
+      ?? langDef.lineMap["init"]
+      ?? 1;
+    if (raw < 1) return -1;
+    return Math.min(raw, codeLines);
+  })();
   const isFinished = currentStep?.stepType === "found" || currentStep?.stepType === "done";
   const stepDescColor = isFinished ? t.green : t.yellow;
 
@@ -225,6 +243,8 @@ export default function AppPage({
               {problem.visualizer === "intervals"  && <IntervalsViz     stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "cycle"      && <CycleViz         head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "grid"       && <GridViz         stepState={currentStep?.state ?? {}} input={input} problemId={selectedProblem} t={t} />}
+              {problem.visualizer === "graph"       && <GraphViz        stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "rpn"         && <RpnViz          stepState={currentStep?.state ?? {}} t={t} />}
             </div>
             <div style={{ flexShrink: 0, borderTop: `1.5px solid ${t.border}` }}>
               <StepControls {...player} t={t} mobile={mobile} />
@@ -367,7 +387,7 @@ export default function AppPage({
             </div>
             <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
               {solutionTab === "Solution"
-                ? <CodePanel lines={langDef.code} activeLine={activeLine} />
+                ? <CodePanel lines={langDef.code} activeLine={activeLine} disableScrollIntoView={whiteboardMaximized} />
                 : <ExplanationPanel explanation={problem.explanation} t={t} />}
             </div>
           </Card>
@@ -463,6 +483,8 @@ export default function AppPage({
             {problem.visualizer === "intervals"  && <IntervalsViz     stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "cycle"      && <CycleViz         head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "grid"       && <GridViz         stepState={currentStep?.state ?? {}} input={input} problemId={selectedProblem} t={t} />}
+            {problem.visualizer === "graph"       && <GraphViz        stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "rpn"         && <RpnViz          stepState={currentStep?.state ?? {}} t={t} />}
           </div>
           <StepControls {...player} t={t} mobile={mobile} />
         </Card>

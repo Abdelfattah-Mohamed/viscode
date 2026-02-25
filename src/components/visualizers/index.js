@@ -22,3 +22,5 @@ export { default as MergeListsViz }         from "./MergeListsViz";
 export { default as IntervalsViz }          from "./IntervalsViz";
 export { default as CycleViz }              from "./CycleViz";
 export { default as GridViz }               from "./GridViz";
+export { default as GraphViz }              from "./GraphViz";
+export { default as RpnViz }                from "./RpnViz";
