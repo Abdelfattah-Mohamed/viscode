@@ -33,7 +33,7 @@ const XIcon = ({ size = 16 }) => (
   </svg>
 );
 
-export default function ProfilePage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, onDeleteAccount, onUpdateProfile, fav, onSelectProblem }) {
+export default function ProfilePage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, onDeleteAccount, onUpdateProfile, fav, onSelectProblem, mobile }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -52,10 +52,11 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
         onNavigate={onNavigate}
         t={t}
         themeMode={themeMode}
+        mobile={mobile}
         right={
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <ThemeToggle mode={themeMode} setMode={setThemeMode} t={t} />
-            <div style={{ width: 1, height: 28, background: t.border, opacity: 0.3 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: mobile ? 8 : 12 }}>
+            {!mobile && <ThemeToggle mode={themeMode} setMode={setThemeMode} t={t} />}
+            {!mobile && <div style={{ width: 1, height: 28, background: t.border, opacity: 0.3 }} />}
             <button
               type="button"
               onClick={onLogout}

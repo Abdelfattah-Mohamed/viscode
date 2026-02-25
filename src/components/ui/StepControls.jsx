@@ -121,6 +121,7 @@ export default function StepControls({
   reset,
   setSpeed,
   t,
+  mobile,
 }) {
   const progress = totalSteps > 1 ? (stepIndex / (totalSteps - 1)) * 100 : 0;
   return (
@@ -128,11 +129,13 @@ export default function StepControls({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 8,
-        padding: "12px 16px",
+        gap: mobile ? 4 : 8,
+        padding: mobile ? "10px 8px" : "12px 16px",
         borderTop: `1.5px solid ${t.border}`,
         background: t.surfaceAlt,
         flexShrink: 0,
+        flexWrap: mobile ? "wrap" : "nowrap",
+        justifyContent: mobile ? "center" : undefined,
       }}
     >
       {/* Jump to start (all the way back) */}

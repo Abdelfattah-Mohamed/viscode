@@ -33,7 +33,7 @@ const FlagIcon = ({ filled, size = 18 }) => (
 export default function AppPage({
   selectedProblem, setSelectedProblem,
   t, themeMode, setThemeMode,
-  onNavigate, onLogout, username, fav,
+  onNavigate, onLogout, username, fav, mobile,
 }) {
   const [lang, setLang]              = useState("cpp");
   const [solutionTab, setSolTab]     = useState("Solution");
@@ -79,23 +79,23 @@ export default function AppPage({
         ::-webkit-scrollbar-thumb { background: ${t.border}; border-radius: 3px; }
       `}</style>
 
-      <NavBar page="app" onNavigate={onNavigate} t={t} themeMode={themeMode}
+      <NavBar page="app" onNavigate={onNavigate} t={t} themeMode={themeMode} mobile={mobile}
         right={
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <ThemeToggle mode={themeMode} setMode={setThemeMode} t={t} />
-            <div style={{ width: 1, height: 28, background: t.border, opacity: 0.3 }} />
-            {/* User menu */}
+          <div style={{ display: "flex", alignItems: "center", gap: mobile ? 8 : 12 }}>
+            {!mobile && <ThemeToggle mode={themeMode} setMode={setThemeMode} t={t} />}
+            {!mobile && <div style={{ width: 1, height: 28, background: t.border, opacity: 0.3 }} />}
             <div style={{ position: "relative" }}>
               <button onClick={() => setMenuOpen(o => !o)}
                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", border: `2px solid ${t.border}`, borderRadius: 8, background: "transparent", color: t.ink, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700, boxShadow: t.shadowSm }}>
                 <div style={{ width: 26, height: 26, borderRadius: "50%", background: t.blue, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "0.8rem" }}>
                   {username?.[0]?.toUpperCase() || "G"}
                 </div>
-                {username ?? "User"} ▾
+                {!mobile && (username ?? "User")} ▾
               </button>
               {userMenuOpen && (
                 <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, boxShadow: t.shadow, zIndex: 300, minWidth: 160, overflow: "hidden" }}>
                   <div style={{ padding: "10px 16px", fontFamily: "'Caveat',cursive", fontSize: "0.9rem", color: t.inkMuted, borderBottom: `1.5px solid ${t.border}` }}>{username ?? "User"}</div>
+                  {mobile && <div style={{ padding: "8px 16px", borderBottom: `1.5px solid ${t.border}` }}><ThemeToggle mode={themeMode} setMode={setThemeMode} t={t} /></div>}
                   <button onClick={() => { setMenuOpen(false); onNavigate("profile"); }}
                     style={{ width: "100%", padding: "10px 16px", textAlign: "left", border: "none", background: "transparent", color: t.ink, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700 }}>
                     Profile
@@ -112,10 +112,16 @@ export default function AppPage({
       />
 
       {/* Main grid: left column scrolls, whiteboard keeps min width */}
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr minmax(380px, 1.2fr)", gridTemplateRows: "1fr auto", gap: 16, padding: 16, overflow: "hidden", minWidth: 0 }}>
+      <div style={{
+        flex: 1, display: mobile ? "flex" : "grid",
+        ...(mobile
+          ? { flexDirection: "column", gap: 12, padding: 10, overflow: "auto" }
+          : { gridTemplateColumns: "1fr minmax(380px, 1.2fr)", gridTemplateRows: "1fr auto", gap: 16, padding: 16, overflow: "hidden", minWidth: 0 }
+        ),
+      }}>
 
-        {/* LEFT — Problem statement + Code (scrollable so whiteboard isn't squeezed) */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: 0, minWidth: 0, overflow: "auto" }}>
+        {/* LEFT — Problem statement + Code */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: 0, minWidth: 0, overflow: mobile ? "visible" : "auto" }}>
 
           {/* Problem statement */}
           <Card t={t} style={{ flexShrink: 0 }}>
@@ -160,7 +166,7 @@ export default function AppPage({
             t={t}
             style={{
               flexShrink: 0,
-              height: "clamp(340px, 45vh, 560px)",
+              height: mobile ? 320 : "clamp(340px, 45vh, 560px)",
               display: "flex",
               flexDirection: "column",
               minHeight: 0,
@@ -195,7 +201,7 @@ export default function AppPage({
         </div>
 
         {/* RIGHT — Visualizer */}
-        <Card t={t} style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+        <Card t={t} style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: mobile ? 420 : 0 }}>
           <CardHeader
             icon="🎨"
             title="Whiteboard"
@@ -270,7 +276,7 @@ export default function AppPage({
             {problem.visualizer === "sametree"    && <SameTreeViz      p={input.p || []}         q={input.q || []} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "linkedlist"  && <LinkedListViz    head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
           </div>
-          <StepControls {...player} t={t} />
+          <StepControls {...player} t={t} mobile={mobile} />
         </Card>
 
         {/* BOTTOM — Similar problems (spans both columns) */}

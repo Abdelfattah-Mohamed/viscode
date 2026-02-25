@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTheme }     from "./hooks/useTheme";
 import { useAuth }      from "./hooks/useAuth";
 import { useFavorites } from "./hooks/useFavorites";
+import { useIsMobile }  from "./hooks/useIsMobile";
 import { PROBLEMS }     from "./data/problems";
 import AuthScreen   from "./components/ui/AuthScreen";
 import HomePage     from "./pages/HomePage";
@@ -12,11 +13,22 @@ import ProfilePage  from "./pages/ProfilePage";
 const DEFAULT_PROBLEM = "two-sum";
 
 export default function App() {
-  const [themeMode, setThemeMode]       = useState("light");
+  const [themeMode, setThemeModeRaw] = useState(() => {
+    try {
+      const saved = localStorage.getItem("vc:theme");
+      if (saved === "light" || saved === "dark") return saved;
+    } catch {}
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
+  const setThemeMode = mode => {
+    setThemeModeRaw(mode);
+    try { localStorage.setItem("vc:theme", mode); } catch {}
+  };
   const [page, setPage]                 = useState("home");
   const [selectedProblem, setSelected]  = useState(DEFAULT_PROBLEM);
-  const t    = useTheme(themeMode);
-  const auth = useAuth();
+  const t      = useTheme(themeMode);
+  const mobile = useIsMobile();
+  const auth   = useAuth();
   const favData = useFavorites(auth.user);
   const fav  = auth.user?.isGuest ? null : favData;
   const prevUser = useRef(null);
@@ -51,7 +63,7 @@ export default function App() {
       <HomePage
         t={t} themeMode={themeMode} setThemeMode={setThemeMode}
         onNavigate={navigate} onLogout={auth.logout}
-        username={auth.user?.username}
+        username={auth.user?.username} mobile={mobile}
       />
     );
   }
@@ -63,7 +75,7 @@ export default function App() {
         onNavigate={navigate} onSelectProblem={selectProblem}
         onLogout={auth.logout}
         username={auth.user?.username}
-        fav={fav}
+        fav={fav} mobile={mobile}
       />
     );
   }
@@ -81,6 +93,7 @@ export default function App() {
         onDeleteAccount={auth.deleteAccount}
         fav={fav}
         onSelectProblem={selectProblem}
+        mobile={mobile}
       />
     );
   }
@@ -94,7 +107,7 @@ export default function App() {
       onNavigate={navigate}
       onLogout={auth.logout}
       username={auth.user.username}
-      fav={fav}
+      fav={fav} mobile={mobile}
     />
   );
 }

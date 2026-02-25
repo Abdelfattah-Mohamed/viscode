@@ -1,6 +1,6 @@
 import LogoMark from "./LogoMark";
 
-export default function NavBar({ page, onNavigate, t, themeMode, right }) {
+export default function NavBar({ page, onNavigate, t, themeMode, right, mobile }) {
   const links = [
     { id: "home",     label: "🏠 Home" },
     { id: "problems", label: "📋 Problems" },
@@ -9,7 +9,7 @@ export default function NavBar({ page, onNavigate, t, themeMode, right }) {
   return (
     <nav style={{
       display: "flex", alignItems: "center", gap: 0,
-      padding: "0 20px", height: 52,
+      padding: mobile ? "0 10px" : "0 20px", height: 52,
       background: t.surface,
       borderBottom: `1.5px solid ${t.border}`,
       position: "sticky", top: 0, zIndex: 200,
@@ -19,18 +19,20 @@ export default function NavBar({ page, onNavigate, t, themeMode, right }) {
       <button
         onClick={() => onNavigate("home")}
         style={{
-          display: "flex", alignItems: "center", gap: 10, marginRight: 4,
+          display: "flex", alignItems: "center", gap: mobile ? 6 : 10, marginRight: 4,
           background: "none", border: "none", padding: 0, cursor: "pointer",
         }}
       >
-        <LogoMark size={38} darkBorder={themeMode === "dark"} />
-        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.55rem", fontWeight: 700, color: t.ink }}>
-          Vis<span style={{ color: t.blue }}>Code</span>
-        </span>
+        <LogoMark size={mobile ? 30 : 38} darkBorder={themeMode === "dark"} />
+        {!mobile && (
+          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.55rem", fontWeight: 700, color: t.ink }}>
+            Vis<span style={{ color: t.blue }}>Code</span>
+          </span>
+        )}
       </button>
 
       {/* Divider */}
-      <div style={{ width: 1, height: 22, background: t.border, opacity: 0.25, margin: "0 14px" }} />
+      <div style={{ width: 1, height: 22, background: t.border, opacity: 0.25, margin: mobile ? "0 6px" : "0 14px" }} />
 
       {/* Nav links */}
       {links.map(({ id, label }) => {
@@ -38,8 +40,8 @@ export default function NavBar({ page, onNavigate, t, themeMode, right }) {
         return (
           <button key={id} onClick={() => onNavigate(id)}
             style={{
-              fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700,
-              padding: "6px 12px", border: "none", borderRadius: 7,
+              fontFamily: "'Caveat',cursive", fontSize: mobile ? "0.88rem" : "1rem", fontWeight: 700,
+              padding: mobile ? "6px 8px" : "6px 12px", border: "none", borderRadius: 7,
               background: active ? t.surfaceAlt : "transparent",
               color: active ? t.ink : t.inkMuted,
               cursor: "pointer", transition: "background 0.15s, color 0.15s",
@@ -53,7 +55,7 @@ export default function NavBar({ page, onNavigate, t, themeMode, right }) {
 
       <div style={{ flex: 1 }} />
 
-      {/* Right slot — theme toggle, user menu, etc. */}
+      {/* Right slot */}
       {right}
     </nav>
   );
