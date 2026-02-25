@@ -17,6 +17,7 @@ import {
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
 import { useStepPlayer } from "../hooks/useStepPlayer";
+import { useProblemNotes } from "../hooks/useProblemNotes";
 
 const StarIcon = ({ filled, size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#f59e0b" : "none"} stroke={filled ? "#f59e0b" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -47,7 +48,7 @@ const LANG_ORDER = Object.keys(LANG_META);
 export default function AppPage({
   selectedProblem, setSelectedProblem,
   t, themeMode, setThemeMode,
-  onNavigate, onLogout, username, fav, mobile,
+  onNavigate, onLogout, user, username, fav, mobile,
   sharedInput,
 }) {
   const [lang, setLang]              = useState("cpp");
@@ -60,6 +61,7 @@ export default function AppPage({
   const [whiteboardMaximized, setWhiteboardMaximized] = useState(false);
 
   const problem = PROBLEMS[selectedProblem];
+  const notesData = useProblemNotes(user, selectedProblem);
 
   useMemo(() => {
     if (!sharedInput) setInput(PROBLEMS[selectedProblem].defaultInput);
@@ -368,6 +370,38 @@ export default function AppPage({
                 : <ExplanationPanel explanation={problem.explanation} t={t} />}
             </div>
           </Card>
+
+          {/* Personal notes (only for logged-in, non-guest users) */}
+          {notesData && (
+            <Card t={t} style={{ flexShrink: 0 }}>
+              <CardHeader icon="📝" title="Personal notes" t={t} />
+              <div style={{ padding: "0 14px 14px", marginTop: 10 }}>
+                <textarea
+                  value={notesData.notes}
+                  onChange={notesData.handleChange}
+                  onBlur={notesData.handleBlur}
+                  placeholder="Edge cases, hints, observations…"
+                  disabled={notesData.loading}
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "10px 12px",
+                    border: `1.5px solid ${t.border}`,
+                    borderRadius: 8,
+                    background: t.surfaceAlt,
+                    color: t.ink,
+                    fontFamily: "'DM Sans',sans-serif",
+                    fontSize: "0.85rem",
+                    lineHeight: 1.5,
+                    resize: "vertical",
+                    minHeight: 72,
+                    outline: "none",
+                  }}
+                />
+              </div>
+            </Card>
+          )}
         </div>
 
         {/* RIGHT — Visualizer */}

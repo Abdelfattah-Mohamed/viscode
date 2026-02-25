@@ -91,10 +91,10 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 4 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", paddingBottom: 4 }}>
             {cats.map(cat => (
               <button key={cat} onClick={() => setFilter(cat)}
-                style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9rem", fontWeight: 700, padding: "6px 14px", border: `1.5px solid ${t.border}`, borderRadius: 20, cursor: "pointer", background: filter === cat ? t.ink : "transparent", color: filter === cat ? t.yellow : t.inkMuted, transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}>
+                style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9rem", fontWeight: 700, padding: "6px 14px", border: `1.5px solid ${t.border}`, borderRadius: 20, cursor: "pointer", background: filter === cat ? t.ink : "transparent", color: filter === cat ? t.yellow : t.inkMuted, transition: "all 0.15s" }}>
                 {cat}
               </button>
             ))}

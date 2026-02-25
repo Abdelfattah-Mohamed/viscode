@@ -86,3 +86,32 @@ create policy "flags_insert" on public.user_problem_flags for insert with check 
 
 drop policy if exists "flags_delete" on public.user_problem_flags;
 create policy "flags_delete" on public.user_problem_flags for delete using (true);
+
+-- =============================================================================
+-- User problem notes (personal notes per problem, per user)
+-- =============================================================================
+create table if not exists public.user_problem_notes (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  problem_id text not null,
+  notes text not null default '',
+  updated_at timestamptz not null default now(),
+  unique(email, problem_id)
+);
+
+create index if not exists user_problem_notes_email_idx on public.user_problem_notes (email);
+create index if not exists user_problem_notes_problem_idx on public.user_problem_notes (problem_id);
+
+alter table public.user_problem_notes enable row level security;
+
+drop policy if exists "notes_select" on public.user_problem_notes;
+create policy "notes_select" on public.user_problem_notes for select using (true);
+
+drop policy if exists "notes_insert" on public.user_problem_notes;
+create policy "notes_insert" on public.user_problem_notes for insert with check (true);
+
+drop policy if exists "notes_update" on public.user_problem_notes;
+create policy "notes_update" on public.user_problem_notes for update using (true);
+
+drop policy if exists "notes_delete" on public.user_problem_notes;
+create policy "notes_delete" on public.user_problem_notes for delete using (true);

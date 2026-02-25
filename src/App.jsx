@@ -134,6 +134,7 @@ export default function App() {
       t={t} themeMode={themeMode} setThemeMode={setThemeMode}
       onNavigate={navigate}
       onLogout={auth.logout}
+      user={auth.user}
       username={auth.user.username}
       fav={fav} mobile={mobile}
       sharedInput={sharedInput}
