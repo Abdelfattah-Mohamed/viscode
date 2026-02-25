@@ -589,6 +589,197 @@ export function generateReverseLinkedListSteps({ head }) {
   return steps;
 }
 
+// ── 3Sum: sort + two pointers for each i ─────────────────────────────────
+export function generateThreeSumSteps({ nums }) {
+  if (!nums || nums.length < 3) return [];
+  const sorted = [...nums].sort((a, b) => a - b);
+  const steps = [];
+  const triples = [];
+
+  steps.push({ stepType: "sort", description: "Sort array so we can use two pointers", state: { nums: sorted, i: -1, left: -1, right: -1, triples: [] } });
+
+  for (let i = 0; i < sorted.length - 2; i++) {
+    if (i > 0 && sorted[i] === sorted[i - 1]) continue;
+    let left = i + 1, right = sorted.length - 1;
+    steps.push({ stepType: "fix_i", description: `Fix i=${i} → nums[${i}]=${sorted[i]}`, state: { nums: sorted, i, left, right, triples: [...triples] } });
+
+    while (left < right) {
+      const sum = sorted[i] + sorted[left] + sorted[right];
+      steps.push({ stepType: "loop", description: `left=${left}, right=${right} → sum=${sorted[i]}+${sorted[left]}+${sorted[right]}=${sum}`, state: { nums: sorted, i, left, right, triples: [...triples] } });
+
+      if (sum === 0) {
+        triples.push([sorted[i], sorted[left], sorted[right]]);
+        steps.push({ stepType: "found", description: `✅ Triple [${sorted[i]}, ${sorted[left]}, ${sorted[right]}]`, state: { nums: sorted, i, left, right, triples: [...triples], highlight: [i, left, right] } });
+        while (left < right && sorted[left] === sorted[left + 1]) left++;
+        while (left < right && sorted[right] === sorted[right - 1]) right--;
+        left++;
+        right--;
+      } else if (sum < 0) {
+        steps.push({ stepType: "move_left", description: `sum<0 → move left to ${left + 1}`, state: { nums: sorted, i, left: left + 1, right, triples: [...triples] } });
+        left++;
+      } else {
+        steps.push({ stepType: "move_right", description: `sum>0 → move right to ${right - 1}`, state: { nums: sorted, i, left, right: right - 1, triples: [...triples] } });
+        right--;
+      }
+    }
+  }
+
+  steps.push({ stepType: "done", description: `✅ Found ${triples.length} triple(s)`, state: { nums: sorted, i: -1, left: -1, right: -1, triples: [...triples], done: true } });
+  return steps;
+}
+
+// ── Container With Most Water: two pointers ───────────────────────────────
+export function generateContainerSteps({ heights }) {
+  if (!heights || heights.length < 2) return [];
+  const steps = [];
+  let left = 0, right = heights.length - 1, maxArea = 0, bestLeft = -1, bestRight = -1;
+
+  steps.push({ stepType: "init", description: `left=0, right=${right}`, state: { left, right, maxArea: 0, bestLeft: -1, bestRight: -1 } });
+
+  while (left < right) {
+    const w = right - left;
+    const h = Math.min(heights[left], heights[right]);
+    const area = w * h;
+    steps.push({ stepType: "loop", description: `left=${left}, right=${right} → area=(${right}-${left})*min(${heights[left]},${heights[right]})=${area}`, state: { left, right, maxArea, bestLeft, bestRight, currentArea: area } });
+
+    if (area > maxArea) {
+      maxArea = area;
+      bestLeft = left;
+      bestRight = right;
+      steps.push({ stepType: "update", description: `New max area = ${maxArea}`, state: { left, right, maxArea, bestLeft, bestRight, currentArea: area } });
+    }
+
+    if (heights[left] < heights[right]) {
+      steps.push({ stepType: "move_left", description: `h[${left}]<h[${right}] → move left`, state: { left: left + 1, right, maxArea, bestLeft, bestRight } });
+      left++;
+    } else {
+      steps.push({ stepType: "move_right", description: `move right`, state: { left, right: right - 1, maxArea, bestLeft, bestRight } });
+      right--;
+    }
+  }
+
+  steps.push({ stepType: "done", description: `✅ Max area = ${maxArea}`, state: { left, right, maxArea, bestLeft, bestRight, done: true } });
+  return steps;
+}
+
+// ── Merge Two Sorted Lists ────────────────────────────────────────────────
+export function generateMergeTwoListsSteps({ list1, list2 }) {
+  const a = Array.isArray(list1) ? list1 : [];
+  const b = Array.isArray(list2) ? list2 : [];
+  const steps = [];
+  const merged = [];
+  let i = 0, j = 0;
+
+  steps.push({ stepType: "init", description: "i=0 (list1), j=0 (list2), merged=[]", state: { i, j, merged: [], list1: a, list2: b } });
+
+  while (i < a.length && j < b.length) {
+    steps.push({ stepType: "compare", description: `Compare list1[${i}]=${a[i]} vs list2[${j}]=${b[j]}`, state: { i, j, merged: [...merged], list1: a, list2: b } });
+    if (a[i] <= b[j]) {
+      merged.push(a[i]);
+      steps.push({ stepType: "take1", description: `Take ${a[i]} from list1 → merged`, state: { i: i + 1, j, merged: [...merged], list1: a, list2: b } });
+      i++;
+    } else {
+      merged.push(b[j]);
+      steps.push({ stepType: "take2", description: `Take ${b[j]} from list2 → merged`, state: { i, j: j + 1, merged: [...merged], list1: a, list2: b } });
+      j++;
+    }
+  }
+
+  while (i < a.length) {
+    merged.push(a[i]);
+    steps.push({ stepType: "append1", description: `Append rest of list1: ${a[i]}`, state: { i: i + 1, j, merged: [...merged], list1: a, list2: b } });
+    i++;
+  }
+  while (j < b.length) {
+    merged.push(b[j]);
+    steps.push({ stepType: "append2", description: `Append rest of list2: ${b[j]}`, state: { i, j: j + 1, merged: [...merged], list1: a, list2: b } });
+    j++;
+  }
+
+  steps.push({ stepType: "done", description: `✅ Merged: [${merged.join(",")}]`, state: { i, j, merged: [...merged], list1: a, list2: b, done: true } });
+  return steps;
+}
+
+// ── Merge Intervals: sort by start, merge overlapping ─────────────────────
+export function generateMergeIntervalsSteps({ intervals }) {
+  if (!intervals || intervals.length < 2) return [];
+  const pairs = [];
+  for (let i = 0; i < intervals.length; i += 2) {
+    if (intervals[i] != null && intervals[i + 1] != null) pairs.push([intervals[i], intervals[i + 1]]);
+  }
+  if (pairs.length < 2) return [];
+
+  const sorted = [...pairs].sort((a, b) => a[0] - b[0]);
+  const steps = [];
+  const merged = [sorted[0]];
+
+  steps.push({ stepType: "sort", description: "Sort intervals by start", state: { intervals: sorted, merged: [...merged], current: 0 } });
+
+  for (let k = 1; k < sorted.length; k++) {
+    const [start, end] = sorted[k];
+    const last = merged[merged.length - 1];
+    steps.push({ stepType: "compare", description: `Compare [${start},${end}] with last [${last[0]},${last[1]}]`, state: { intervals: sorted, merged: [...merged], current: k } });
+
+    if (start <= last[1]) {
+      const newEnd = Math.max(last[1], end);
+      merged[merged.length - 1] = [last[0], newEnd];
+      steps.push({ stepType: "merge", description: `Overlap → merge to [${last[0]},${newEnd}]`, state: { intervals: sorted, merged: [...merged], current: k } });
+    } else {
+      merged.push([start, end]);
+      steps.push({ stepType: "add", description: `No overlap → add [${start},${end}]`, state: { intervals: sorted, merged: [...merged], current: k } });
+    }
+  }
+
+  steps.push({ stepType: "done", description: `✅ Merged ${merged.length} interval(s)`, state: { intervals: sorted, merged: [...merged], current: -1, done: true } });
+  return steps;
+}
+
+// ── Linked List Cycle: tortoise & hare ────────────────────────────────────
+function nextIndex(i, n, pos) {
+  if (i < 0 || i >= n) return -1;
+  if (i === n - 1) return pos >= 0 && pos < n ? pos : -1;
+  return i + 1;
+}
+
+export function generateLinkedListCycleSteps({ head, pos }) {
+  const arr = Array.isArray(head) ? head : [];
+  const steps = [];
+  const n = arr.length;
+  const cyclePos = typeof pos === "number" && pos >= 0 && pos < n ? pos : -1;
+
+  if (n === 0) {
+    steps.push({ stepType: "done", description: "Empty list → no cycle", state: { slow: -1, fast: -1, hasCycle: false, pos: -1, done: true } });
+    return steps;
+  }
+
+  let slow = 0, fast = 0;
+  steps.push({ stepType: "init", description: "slow = fast = head", state: { slow: 0, fast: 0, hasCycle: null, pos: cyclePos } });
+
+  for (let step = 0; step < n * 2 + 2; step++) {
+    steps.push({ stepType: "loop", description: `slow=${slow}, fast=${fast}`, state: { slow, fast, hasCycle: null, pos: cyclePos } });
+
+    const nextSlow = nextIndex(slow, n, cyclePos);
+    const midFast = nextIndex(fast, n, cyclePos);
+    const nextFast = midFast >= 0 ? nextIndex(midFast, n, cyclePos) : -1;
+
+    if (nextSlow < 0 && nextFast < 0) {
+      steps.push({ stepType: "done", description: "Reached end → no cycle", state: { slow, fast, hasCycle: false, pos: cyclePos, done: true } });
+      return steps;
+    }
+
+    slow = nextSlow >= 0 ? nextSlow : slow;
+    fast = nextFast >= 0 ? nextFast : fast;
+
+    if (slow === fast && step > 0) {
+      steps.push({ stepType: "found", description: "slow == fast → cycle detected!", state: { slow, fast, hasCycle: true, pos: cyclePos, done: true } });
+      return steps;
+    }
+  }
+
+  steps.push({ stepType: "done", description: "No cycle", state: { slow: -1, fast: -1, hasCycle: false, pos: cyclePos, done: true } });
+  return steps;
+}
+
 export const STEP_GENERATORS = {
   "two-sum":              generateTwoSumSteps,
   "longest-consecutive":  generateLongestConsecutiveSteps,
@@ -609,4 +800,9 @@ export const STEP_GENERATORS = {
   "invert-tree":             generateInvertTreeSteps,
   "same-tree":               generateSameTreeSteps,
   "reverse-linked-list":     generateReverseLinkedListSteps,
+  "three-sum":                generateThreeSumSteps,
+  "container-most-water":     generateContainerSteps,
+  "merge-two-sorted-lists":   generateMergeTwoListsSteps,
+  "merge-intervals":         generateMergeIntervalsSteps,
+  "linked-list-cycle":       generateLinkedListCycleSteps,
 };

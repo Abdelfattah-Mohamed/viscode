@@ -20,6 +20,7 @@ export const CAT_ICON = {
   "Two Pointers":        "👆",
   "Stack":               "📚",
   "Linked Lists":        "🔗",
+  "Intervals":           "📐",
 };
 
 export const PROBLEMS = {
@@ -744,6 +745,128 @@ export const PROBLEMS = {
       },
     },
   },
+
+  "three-sum": {
+    title:           "3Sum",
+    difficulty:      "Medium",
+    category:        "Two Pointers",
+    timeComplexity:  "O(n²)",
+    spaceComplexity: "O(1) or O(log n) for sort",
+    visualizer:      "threesum",
+    description:     "Given an integer array <code>nums</code>, return all <strong>triplets</strong> [nums[i], nums[j], nums[k]] such that i≠j≠k and nums[i]+nums[j]+nums[k]=0.",
+    example:         { input: "nums = [-1,0,1,2,-1,-4]", output: "[[-1,-1,2],[-1,0,1]]", note: "Sort then two pointers for each fixed i." },
+    defaultInput:    { nums: [-1, 0, 1, 2, -1, -4] },
+    inputFields:     ["nums"],
+    explanation: [
+      { emoji: "🤔", title: "Brute Force", body: "Three nested loops → O(n³). Too slow." },
+      { emoji: "💡", title: "Sort + Two Pointers", body: "Sort the array. For each index i, use two pointers left (i+1) and right (end) to find pairs that sum to -nums[i]." },
+      { emoji: "👣", title: "Step by Step", body: "1. Sort. 2. For i from 0 to n-3: if nums[i] duplicate skip. 3. left=i+1, right=n-1. 4. Sum = nums[i]+nums[left]+nums[right]. If 0 → add triple, move both. If <0 → left++. If >0 → right--." },
+      { emoji: "⚡", title: "Why O(n²)", body: "Outer loop O(n), inner two pointers O(n). Skip duplicates to avoid duplicate triples." },
+    ],
+    languages: {
+      cpp:    { code: ["vector<vector<int>> threeSum(vector<int>& nums) {","    sort(nums.begin(), nums.end());","    vector<vector<int>> res;","    for (int i = 0; i < (int)nums.size() - 2; i++) {","        if (i && nums[i] == nums[i-1]) continue;","        int left = i + 1, right = nums.size() - 1;","        while (left < right) {","            int sum = nums[i] + nums[left] + nums[right];","            if (sum == 0) {","                res.push_back({nums[i], nums[left], nums[right]});","                while (left < right && nums[left] == nums[left+1]) left++;","                while (left < right && nums[right] == nums[right-1]) right--;","                left++; right--;","            } else if (sum < 0) left++;","            else right--;","        }","    }","    return res;","}"], lineMap: { sort: 2, fix_i: 4, loop: 7, found: 10, move_left: 12, move_right: 13, done: 15 } },
+      java:   { code: ["public List<List<Integer>> threeSum(int[] nums) {","    Arrays.sort(nums);","    List<List<Integer>> res = new ArrayList<>();","    for (int i = 0; i < nums.length - 2; i++) {","        if (i > 0 && nums[i] == nums[i-1]) continue;","        int left = i + 1, right = nums.length - 1;","        while (left < right) {","            int sum = nums[i] + nums[left] + nums[right];","            if (sum == 0) {","                res.add(Arrays.asList(nums[i], nums[left], nums[right]));","                while (left < right && nums[left] == nums[left+1]) left++;","                while (left < right && nums[right] == nums[right-1]) right--;","                left++; right--;","            } else if (sum < 0) left++;","            else right--;","        }","    }","    return res;","}"], lineMap: { sort: 2, fix_i: 4, loop: 7, found: 10, move_left: 12, move_right: 13, done: 15 } },
+      javascript: { code: ["function threeSum(nums) {","  nums.sort((a,b) => a - b);","  const res = [];","  for (let i = 0; i < nums.length - 2; i++) {","    if (i > 0 && nums[i] === nums[i-1]) continue;","    let left = i + 1, right = nums.length - 1;","    while (left < right) {","      const sum = nums[i] + nums[left] + nums[right];","      if (sum === 0) {","        res.push([nums[i], nums[left], nums[right]]);","        while (left < right && nums[left] === nums[left+1]) left++;","        while (left < right && nums[right] === nums[right-1]) right--;","        left++; right--;","      } else if (sum < 0) left++;","      else right--;","    }","  }","  return res;","}"], lineMap: { sort: 2, fix_i: 4, loop: 7, found: 10, move_left: 12, move_right: 13, done: 15 } },
+      python: { code: ["def threeSum(nums):","    nums.sort()","    res = []","    for i in range(len(nums) - 2):","        if i and nums[i] == nums[i-1]: continue","        left, right = i + 1, len(nums) - 1","        while left < right:","            s = nums[i] + nums[left] + nums[right]","            if s == 0:","                res.append([nums[i], nums[left], nums[right]])","                while left < right and nums[left] == nums[left+1]: left += 1","                while left < right and nums[right] == nums[right-1]: right -= 1","                left += 1","                right -= 1","            elif s < 0: left += 1","            else: right -= 1","    return res"], lineMap: { sort: 2, fix_i: 4, loop: 6, found: 10, move_left: 12, move_right: 13, done: 15 } },
+    },
+  },
+
+  "container-most-water": {
+    title:           "Container With Most Water",
+    difficulty:      "Medium",
+    category:        "Two Pointers",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(1)",
+    visualizer:      "container",
+    description:     "You are given an integer array <code>heights</code> of length n. Find two lines that form a container with the x-axis such that the container holds the most water.",
+    example:         { input: "heights = [1,8,6,2,5,4,8,3,7]", output: "49", note: "Max area between index 1 and 8." },
+    defaultInput:    { heights: [1, 8, 6, 2, 5, 4, 8, 3, 7] },
+    inputFields:     ["heights"],
+    explanation: [
+      { emoji: "🤔", title: "Brute Force", body: "Check every pair (i,j) → O(n²)." },
+      { emoji: "💡", title: "Two Pointers", body: "Start left=0, right=n-1. Area = (right-left)*min(h[left], h[right]). Move the shorter pointer inward (only way to possibly get a taller line)." },
+      { emoji: "👣", title: "Step by Step", body: "1. left=0, right=n-1, maxArea=0. 2. Compute area, update max. 3. If h[left]<h[right] → left++, else right--. 4. Repeat until left>=right." },
+      { emoji: "⚡", title: "Why O(n)", body: "Single pass; one pointer always moves." },
+    ],
+    languages: {
+      cpp:    { code: ["int maxArea(vector<int>& heights) {","    int left = 0, right = heights.size() - 1;","    int maxArea = 0;","    while (left < right) {","        int area = (right - left) * min(heights[left], heights[right]);","        maxArea = max(maxArea, area);","        if (heights[left] < heights[right]) left++;","        else right--;","    }","    return maxArea;","}"], lineMap: { init: 2, loop: 4, update: 6, move_left: 7, move_right: 8, done: 10 } },
+      java:   { code: ["public int maxArea(int[] heights) {","    int left = 0, right = heights.length - 1;","    int maxArea = 0;","    while (left < right) {","        int area = (right - left) * Math.min(heights[left], heights[right]);","        maxArea = Math.max(maxArea, area);","        if (heights[left] < heights[right]) left++;","        else right--;","    }","    return maxArea;","}"], lineMap: { init: 2, loop: 4, update: 6, move_left: 7, move_right: 8, done: 10 } },
+      javascript: { code: ["function maxArea(heights) {","  let left = 0, right = heights.length - 1;","  let maxArea = 0;","  while (left < right) {","    const area = (right - left) * Math.min(heights[left], heights[right]);","    maxArea = Math.max(maxArea, area);","    if (heights[left] < heights[right]) left++;","    else right--;","  }","  return maxArea;","}"], lineMap: { init: 2, loop: 4, update: 6, move_left: 7, move_right: 8, done: 10 } },
+      python: { code: ["def maxArea(heights):","    left, right = 0, len(heights) - 1","    max_area = 0","    while left < right:","        area = (right - left) * min(heights[left], heights[right])","        max_area = max(max_area, area)","        if heights[left] < heights[right]:","            left += 1","        else:","            right -= 1","    return max_area"], lineMap: { init: 2, loop: 4, update: 6, move_left: 7, move_right: 9, done: 10 } },
+    },
+  },
+
+  "merge-two-sorted-lists": {
+    title:           "Merge Two Sorted Lists",
+    difficulty:      "Easy",
+    category:        "Linked Lists",
+    timeComplexity:  "O(n+m)",
+    spaceComplexity: "O(1) (if reusing nodes)",
+    visualizer:      "mergelists",
+    description:     "Merge two sorted linked lists into one sorted list. Return the head of the merged list.",
+    example:         { input: "list1 = [1,2,4], list2 = [1,3,4]", output: "[1,1,2,3,4,4]", note: "Compare heads, take smaller, advance." },
+    defaultInput:    { list1: [1, 2, 4], list2: [1, 3, 4] },
+    inputFields:     ["list1", "list2"],
+    explanation: [
+      { emoji: "💡", title: "Two Pointers", body: "Use two pointers (one per list). Compare current nodes, append the smaller to the result, advance that pointer." },
+      { emoji: "👣", title: "Step by Step", body: "1. Dummy head. 2. While both have nodes: if list1.val <= list2.val, attach list1 and advance list1; else attach list2 and advance list2. 3. Attach remaining." },
+      { emoji: "⚡", title: "Why O(n+m)", body: "Each node visited once." },
+    ],
+    languages: {
+      cpp:    { code: ["ListNode* mergeTwoLists(ListNode* list1, ListNode* list2) {","    ListNode dummy(0);","    ListNode* tail = &dummy;","    while (list1 && list2) {","        if (list1->val <= list2->val) {","            tail->next = list1; list1 = list1->next;","        } else {","            tail->next = list2; list2 = list2->next;","        }","        tail = tail->next;","    }","    tail->next = list1 ? list1 : list2;","    return dummy.next;","}"], lineMap: { init: 2, compare: 4, take1: 5, take2: 7, append1: 11, append2: 11, done: 12 } },
+      java:   { code: ["public ListNode mergeTwoLists(ListNode list1, ListNode list2) {","    ListNode dummy = new ListNode(0);","    ListNode tail = dummy;","    while (list1 != null && list2 != null) {","        if (list1.val <= list2.val) {","            tail.next = list1; list1 = list1.next;","        } else {","            tail.next = list2; list2 = list2.next;","        }","        tail = tail.next;","    }","    tail.next = list1 != null ? list1 : list2;","    return dummy.next;","}"], lineMap: { init: 2, compare: 4, take1: 5, take2: 7, append1: 11, append2: 11, done: 12 } },
+      javascript: { code: ["function mergeTwoLists(list1, list2) {","  const dummy = new ListNode(0);","  let tail = dummy;","  while (list1 && list2) {","    if (list1.val <= list2.val) {","      tail.next = list1; list1 = list1.next;","    } else {","      tail.next = list2; list2 = list2.next;","    }","    tail = tail.next;","  }","  tail.next = list1 || list2;","  return dummy.next;","}"], lineMap: { init: 2, compare: 4, take1: 5, take2: 7, append1: 11, append2: 11, done: 12 } },
+      python: { code: ["def mergeTwoLists(list1, list2):","    dummy = ListNode(0)","    tail = dummy","    while list1 and list2:","        if list1.val <= list2.val:","            tail.next = list1","            list1 = list1.next","        else:","            tail.next = list2","            list2 = list2.next","        tail = tail.next","    tail.next = list1 or list2","    return dummy.next"], lineMap: { init: 2, compare: 4, take1: 6, take2: 9, append1: 12, append2: 12, done: 13 } },
+    },
+  },
+
+  "merge-intervals": {
+    title:           "Merge Intervals",
+    difficulty:      "Medium",
+    category:        "Intervals",
+    timeComplexity:  "O(n log n)",
+    spaceComplexity: "O(n)",
+    visualizer:      "intervals",
+    description:     "Given an array of <code>intervals</code> where intervals[i] = [start_i, end_i], merge all overlapping intervals and return the merged list.",
+    example:         { input: "[[1,3],[2,6],[8,10]]", output: "[[1,6],[8,10]]", note: "Sort by start, then merge if overlap." },
+    defaultInput:    { intervals: [1, 3, 2, 6, 8, 10] },
+    inputFields:     ["intervals"],
+    explanation: [
+      { emoji: "💡", title: "Sort + Linear Merge", body: "Sort intervals by start. Then traverse: if current overlaps with last merged (start <= last.end), extend last merged; else add new interval." },
+      { emoji: "👣", title: "Step by Step", body: "1. Sort by start. 2. merged = [first]. 3. For each next: if next.start <= merged[-1].end → merged[-1].end = max(merged[-1].end, next.end). Else push next." },
+      { emoji: "⚡", title: "Why O(n log n)", body: "Sorting O(n log n), one pass O(n)." },
+    ],
+    languages: {
+      cpp:    { code: ["vector<vector<int>> merge(vector<vector<int>>& intervals) {","    sort(intervals.begin(), intervals.end());","    vector<vector<int>> merged;","    for (auto& in : intervals) {","        if (merged.empty() || in[0] > merged.back()[1])","            merged.push_back(in);","        else","            merged.back()[1] = max(merged.back()[1], in[1]);","    }","    return merged;","}"], lineMap: { sort: 2, compare: 4, merge: 6, add: 5, done: 9 } },
+      java:   { code: ["public int[][] merge(int[][] intervals) {","    Arrays.sort(intervals, (a,b) -> a[0]-b[0]);","    List<int[]> merged = new ArrayList<>();","    for (int[] in : intervals) {","        if (merged.isEmpty() || in[0] > merged.get(merged.size()-1)[1])","            merged.add(in);","        else","            merged.get(merged.size()-1)[1] = Math.max(merged.get(merged.size()-1)[1], in[1]);","    }","    return merged.toArray(new int[0][]);","}"], lineMap: { sort: 2, compare: 4, merge: 7, add: 5, done: 10 } },
+      javascript: { code: ["function merge(intervals) {","  intervals.sort((a,b) => a[0] - b[0]);","  const merged = [];","  for (const in of intervals) {","    if (!merged.length || in[0] > merged[merged.length-1][1])","      merged.push(in);","    else","      merged[merged.length-1][1] = Math.max(merged[merged.length-1][1], in[1]);","  }","  return merged;","}"], lineMap: { sort: 2, compare: 4, merge: 7, add: 5, done: 9 } },
+      python: { code: ["def merge(intervals):","    intervals.sort(key=lambda x: x[0])","    merged = []","    for s, e in intervals:","        if not merged or s > merged[-1][1]:","            merged.append([s, e])","        else:","            merged[-1][1] = max(merged[-1][1], e)","    return merged"], lineMap: { sort: 2, compare: 4, merge: 7, add: 5, done: 8 } },
+    },
+  },
+
+  "linked-list-cycle": {
+    title:           "Linked List Cycle",
+    difficulty:      "Easy",
+    category:        "Linked Lists",
+    timeComplexity:  "O(n)",
+    spaceComplexity: "O(1)",
+    visualizer:      "cycle",
+    description:     "Given <code>head</code> of a linked list, determine if it has a cycle. <code>pos</code> is the index where the tail's next points (or -1 for no cycle).",
+    example:         { input: "head = [3,2,0,-4], pos = 1", output: "true", note: "Tail connects to index 1." },
+    defaultInput:    { head: [3, 2, 0, -4], pos: 1 },
+    inputFields:     ["head", "pos"],
+    explanation: [
+      { emoji: "💡", title: "Tortoise & Hare", body: "Use slow (1 step) and fast (2 steps). If there is a cycle, they will eventually meet. If fast reaches null, no cycle." },
+      { emoji: "👣", title: "Step by Step", body: "1. slow = fast = head. 2. While fast and fast.next: slow=slow.next, fast=fast.next.next. 3. If slow==fast → cycle. 4. If fast reaches end → no cycle." },
+      { emoji: "⚡", title: "Why O(n)", body: "Within a few cycles slow and fast meet if cycle exists." },
+    ],
+    languages: {
+      cpp:    { code: ["bool hasCycle(ListNode* head) {","    ListNode* slow = head;","    ListNode* fast = head;","    while (fast && fast->next) {","        slow = slow->next;","        fast = fast->next->next;","        if (slow == fast) return true;","    }","    return false;","}"], lineMap: { init: 2, loop: 4, found: 7, done: 9 } },
+      java:   { code: ["public boolean hasCycle(ListNode head) {","    ListNode slow = head, fast = head;","    while (fast != null && fast.next != null) {","        slow = slow.next;","        fast = fast.next.next;","        if (slow == fast) return true;","    }","    return false;","}"], lineMap: { init: 2, loop: 4, found: 7, done: 9 } },
+      javascript: { code: ["function hasCycle(head) {","  let slow = head, fast = head;","  while (fast && fast.next) {","    slow = slow.next;","    fast = fast.next.next;","    if (slow === fast) return true;","  }","  return false;","}"], lineMap: { init: 2, loop: 4, found: 7, done: 9 } },
+      python: { code: ["def hasCycle(head):","    slow = fast = head","    while fast and fast.next:","        slow = slow.next","        fast = fast.next.next","        if slow == fast:","            return True","    return False"], lineMap: { init: 2, loop: 4, found: 7, done: 9 } },
+    },
+  },
 };
 
 // ── Problem list for browse/search ───────────────────────────────────────
@@ -767,6 +890,11 @@ export const PROB_LIST = [
   { id: "invert-tree",           title: "Invert Binary Tree",             difficulty: "Easy",   category: "Trees",               desc: "Mirror a binary tree by swapping left and right children.", tags: ["trees", "dfs", "recursion"] },
   { id: "same-tree",             title: "Same Tree",                      difficulty: "Easy",   category: "Trees",               desc: "Check if two binary trees are structurally identical with same values.", tags: ["trees", "dfs", "recursion"] },
   { id: "reverse-linked-list",   title: "Reverse Linked List",            difficulty: "Easy",   category: "Linked Lists",        desc: "Reverse a singly linked list using three pointers.", tags: ["linked-lists", "pointers"] },
+  { id: "three-sum",             title: "3Sum",                           difficulty: "Medium", category: "Two Pointers",        desc: "Find all unique triplets that sum to zero using sort and two pointers.", tags: ["two-pointers", "arrays", "sorting"] },
+  { id: "container-most-water",  title: "Container With Most Water",      difficulty: "Medium", category: "Two Pointers",        desc: "Maximize area between two vertical lines with two pointers.", tags: ["two-pointers", "arrays", "greedy"] },
+  { id: "merge-two-sorted-lists", title: "Merge Two Sorted Lists",        difficulty: "Easy",   category: "Linked Lists",        desc: "Merge two sorted linked lists into one sorted list.", tags: ["linked-lists", "two-pointers"] },
+  { id: "merge-intervals",       title: "Merge Intervals",                 difficulty: "Medium", category: "Intervals",           desc: "Merge all overlapping intervals after sorting by start.", tags: ["intervals", "sorting", "arrays"] },
+  { id: "linked-list-cycle",     title: "Linked List Cycle",               difficulty: "Easy",   category: "Linked Lists",        desc: "Detect cycle in linked list using tortoise and hare.", tags: ["linked-lists", "two-pointers", "cycle"] },
 ];
 
 export function getSimilar(currentId, max = 3) {

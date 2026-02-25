@@ -16,3 +16,8 @@ export { default as TreeDepthViz }          from "./TreeDepthViz";
 export { default as InvertTreeViz }         from "./InvertTreeViz";
 export { default as SameTreeViz }           from "./SameTreeViz";
 export { default as LinkedListViz }         from "./LinkedListViz";
+export { default as ThreeSumViz }           from "./ThreeSumViz";
+export { default as ContainerViz }         from "./ContainerViz";
+export { default as MergeListsViz }         from "./MergeListsViz";
+export { default as IntervalsViz }          from "./IntervalsViz";
+export { default as CycleViz }              from "./CycleViz";

@@ -64,7 +64,7 @@ User profile with **Favorites** and **Flagged** problem lists. Manage account an
 
 ## Features
 
-- **19 Blind 75–style problems** across Arrays, Sliding Window, Binary Search, DP, Trees, Two Pointers, Stack, and Linked Lists
+- **24 Blind 75–style problems** across Arrays, Sliding Window, Binary Search, DP, Trees, Two Pointers, Stack, and Linked Lists
 - **4 languages** — C++, Java, JavaScript, Python — with syntax highlighting and per-step line mapping
 - **Step-by-step playback** — play/pause, speed control, next/previous, jump to start/end
 - **Custom inputs** — edit any input and re-run the visualization instantly
@@ -103,6 +103,11 @@ User profile with **Favorites** and **Flagged** problem lists. Manage account an
 | Invert Binary Tree | Trees | Easy |
 | Same Tree | Trees | Easy |
 | Reverse Linked List | Linked Lists | Easy |
+| 3Sum | Two Pointers | Medium |
+| Container With Most Water | Two Pointers | Medium |
+| Merge Two Sorted Lists | Linked Lists | Easy |
+| Merge Intervals | Intervals | Medium |
+| Linked List Cycle | Linked Lists | Easy |
 
 ---
 
