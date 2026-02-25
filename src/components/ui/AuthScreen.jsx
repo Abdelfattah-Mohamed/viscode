@@ -71,16 +71,26 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
             <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.6rem", fontWeight: 700, color: t.ink }}>Verify your email</span>
           </div>
           <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 14, boxShadow: t.shadow, padding: 24 }}>
-            <p style={{ margin: "0 0 16px", color: t.inkMuted, fontSize: "0.9rem" }}>
-              We sent a 6-digit code to <strong style={{ color: t.ink }}>{pending.email}</strong>. Enter it below.
-            </p>
-            {pending.sendError && (
-              <p style={{ margin: "0 0 16px", color: t.red, fontSize: "0.8rem" }}>{pending.sendError}</p>
-            )}
-            {pending.demoHint && (
-              <p style={{ margin: "0 0 16px", color: t.inkMuted, fontSize: "0.8rem" }}>
-                For testing use <code style={{ background: t.surfaceAlt, padding: "2px 6px", borderRadius: 4 }}>123456</code>.
-              </p>
+            {pending.demoHint ? (
+              <div style={{ margin: "0 0 16px", padding: "10px 14px", background: t.blue + "15", border: `1.5px solid ${t.blue}44`, borderRadius: 8 }}>
+                <p style={{ margin: 0, color: t.ink, fontSize: "0.9rem", fontWeight: 500 }}>
+                  Enter code <code style={{ background: t.surfaceAlt, padding: "2px 8px", borderRadius: 4, fontFamily: "'JetBrains Mono',monospace", fontSize: "1rem", fontWeight: 700, letterSpacing: 2 }}>123456</code> to continue.
+                </p>
+                {pending.sendError && (
+                  <p style={{ margin: "6px 0 0", color: t.inkMuted, fontSize: "0.78rem" }}>{pending.sendError}</p>
+                )}
+              </div>
+            ) : (
+              <>
+                <p style={{ margin: "0 0 12px", color: t.inkMuted, fontSize: "0.9rem" }}>
+                  We sent a 6-digit code to <strong style={{ color: t.ink }}>{pending.email}</strong>. Enter it below.
+                </p>
+                {pending.sendError && (
+                  <div style={{ margin: "0 0 16px", padding: "8px 12px", background: t.red + "15", border: `1.5px solid ${t.red}44`, borderRadius: 8, color: t.red, fontSize: "0.82rem" }}>
+                    ⚠️ {pending.sendError}
+                  </div>
+                )}
+              </>
             )}
             <form onSubmit={handleVerify} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <input

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "./hooks/useTheme";
 import { useAuth }  from "./hooks/useAuth";
 import { PROBLEMS } from "./data/problems";
@@ -16,6 +16,12 @@ export default function App() {
   const [selectedProblem, setSelected]  = useState(DEFAULT_PROBLEM);
   const t    = useTheme(themeMode);
   const auth = useAuth();
+  const prevUser = useRef(null);
+
+  useEffect(() => {
+    if (!prevUser.current && auth.user) setPage("home");
+    prevUser.current = auth.user;
+  }, [auth.user]);
 
   if (auth.loading) {
     return (

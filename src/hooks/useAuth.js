@@ -92,6 +92,7 @@ export function useAuth() {
       email: normalizedEmail,
       password,
       code,
+      clientVerify: !!sendResult.clientVerify,
       demoHint: sendResult.demo,
       sendError: sendResult.ok ? null : sendResult.error,
     });
@@ -108,9 +109,17 @@ export function useAuth() {
   const verifyEmail = async (code) => {
     if (!pendingVerification) return { error: "No pending verification" };
     const normalized = String(code).replace(/\D/g, "").slice(0, VERIFICATION_CODE_LENGTH);
-    const apiResult = await verifyCodeWithApi(pendingVerification.email, normalized);
-    const accepted = apiResult.ok || (isDemoCode(normalized) && (apiResult.demo || !getSupabase()));
-    if (!accepted) return { error: apiResult.error || "Invalid or expired code" };
+
+    let accepted = false;
+    if (pendingVerification.clientVerify) {
+      accepted = normalized === pendingVerification.code;
+      if (!accepted) return { error: "Invalid code. Please check and try again." };
+    } else {
+      const apiResult = await verifyCodeWithApi(pendingVerification.email, normalized);
+      accepted = apiResult.ok || (isDemoCode(normalized) && (apiResult.demo || !getSupabase()));
+      if (!accepted) return { error: apiResult.error || "Invalid or expired code" };
+    }
+
     const { username, email, password } = pendingVerification;
     const profile = { username, email, createdAt: new Date().toISOString(), avatarId: 1 };
     localStorage.setItem(`vc:user:${username}`, JSON.stringify({ password, profile }));
