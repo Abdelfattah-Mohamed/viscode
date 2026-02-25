@@ -67,17 +67,18 @@ async function parseInvokeError(error) {
 /* ── Public API ── */
 
 export async function sendVerificationCode(email, code) {
-  // Priority 1: EmailJS — works from the browser, no backend needed
   if (emailjsReady) {
     try {
       await sendViaEmailJS(email, code);
       return { ok: true, clientVerify: true };
     } catch (e) {
+      console.warn("[VisCode] EmailJS send failed:", e.message);
       return { ok: false, error: e.message || "Failed to send email", clientVerify: true };
     }
   }
 
-  // Priority 2: Supabase Edge Functions (send-verification-code + Resend)
+  console.warn("[VisCode] EmailJS not ready. SERVICE:", !!EMAILJS_SERVICE, "TEMPLATE:", !!EMAILJS_TEMPLATE, "KEY:", !!EMAILJS_KEY);
+
   const sb = getSupabase();
   if (!sb) return { ok: false, error: "No email service configured. Set up EmailJS or Supabase Edge Functions.", demo: true };
 
