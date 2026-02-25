@@ -62,6 +62,7 @@ export function useAuth() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pendingVerification, setPendingVerification] = useState(null);
+  const [pendingReset, setPendingReset] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -197,6 +198,62 @@ export function useAuth() {
     return { ok: true };
   };
 
+  const requestPasswordReset = async (email) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const username = localStorage.getItem(`vc:email:${normalizedEmail}`);
+    if (!username) return { error: "No account found with that email" };
+    const raw = localStorage.getItem(`vc:user:${username}`);
+    if (!raw) return { error: "No account found with that email" };
+
+    const code = generateCode();
+    const sendResult = await sendVerificationCode(normalizedEmail, code);
+    setPendingReset({
+      email: normalizedEmail,
+      username,
+      code,
+      clientVerify: !!sendResult.clientVerify,
+      demoHint: sendResult.demo,
+      sendError: sendResult.ok ? null : sendResult.error,
+      codeVerified: false,
+    });
+    return { ok: true, sendFailed: !sendResult.ok, demoHint: sendResult.demo };
+  };
+
+  const verifyResetCode = async (code) => {
+    if (!pendingReset) return { error: "No pending reset" };
+    const normalized = String(code).replace(/\D/g, "").slice(0, VERIFICATION_CODE_LENGTH);
+
+    let accepted = false;
+    if (pendingReset.clientVerify) {
+      accepted = normalized === pendingReset.code;
+      if (!accepted) return { error: "Invalid code. Please check and try again." };
+    } else {
+      const apiResult = await verifyCodeWithApi(pendingReset.email, normalized);
+      accepted = apiResult.ok || (isDemoCode(normalized) && (apiResult.demo || !getSupabase()));
+      if (!accepted) return { error: apiResult.error || "Invalid or expired code" };
+    }
+
+    setPendingReset(prev => ({ ...prev, codeVerified: true }));
+    return { ok: true };
+  };
+
+  const confirmPasswordReset = (newPassword) => {
+    if (!pendingReset?.codeVerified) return { error: "Code not verified" };
+    try {
+      const raw = localStorage.getItem(`vc:user:${pendingReset.username}`);
+      if (!raw) return { error: "Account not found" };
+      const data = JSON.parse(raw);
+      data.password = newPassword;
+      localStorage.setItem(`vc:user:${pendingReset.username}`, JSON.stringify(data));
+    } catch (_) {
+      return { error: "Failed to update password" };
+    }
+    setPendingReset(null);
+    return { ok: true };
+  };
+
+  const cancelReset = () => setPendingReset(null);
+
   return {
     user,
     loading,
@@ -209,5 +266,10 @@ export function useAuth() {
     loginAsGuest,
     updateProfile,
     deleteAccount,
+    pendingReset,
+    requestPasswordReset,
+    verifyResetCode,
+    confirmPasswordReset,
+    cancelReset,
   };
 }
