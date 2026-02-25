@@ -780,6 +780,87 @@ export function generateLinkedListCycleSteps({ head, pos }) {
   return steps;
 }
 
+// Build 2D grid from flat array and row count
+function buildGrid2D(flat, rows) {
+  if (!flat?.length || !rows) return [];
+  const cols = Math.floor(flat.length / rows);
+  const grid = [];
+  for (let r = 0; r < rows; r++) {
+    grid.push(flat.slice(r * cols, (r + 1) * cols).map(v => Number(v)));
+  }
+  return grid;
+}
+
+function cloneVisited(visited) {
+  return visited.map(row => [...row]);
+}
+
+export function generateNumberOfIslandsSteps({ grid: flat, rows }) {
+  const grid = buildGrid2D(flat, rows);
+  if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], visited: [], current: null, islandCount: 0, done: true } }];
+  const R = grid.length, C = grid[0].length;
+  const visited = grid.map(row => row.map(() => false));
+  const steps = [];
+  let islandCount = 0;
+
+  steps.push({ stepType: "init", description: "Initialize grid and island count", state: { grid, visited: cloneVisited(visited), current: null, islandCount: 0 } });
+
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) {
+      steps.push({ stepType: "scan", description: `Scan cell (${r},${c})`, state: { grid, visited: cloneVisited(visited), current: [r, c], islandCount } });
+      if (grid[r][c] === 0) continue;
+      if (visited[r][c]) continue;
+      islandCount++;
+      steps.push({ stepType: "new_island", description: `New island #${islandCount} at (${r},${c})`, state: { grid, visited: cloneVisited(visited), current: [r, c], islandCount } });
+      const stack = [[r, c]];
+      while (stack.length) {
+        const [r0, c0] = stack.pop();
+        if (r0 < 0 || r0 >= R || c0 < 0 || c0 >= C || grid[r0][c0] === 0 || visited[r0][c0]) continue;
+        visited[r0][c0] = true;
+        steps.push({ stepType: "dfs_visit", description: `DFS visit (${r0},${c0})`, state: { grid, visited: cloneVisited(visited), current: [r0, c0], islandCount } });
+        stack.push([r0 + 1, c0], [r0 - 1, c0], [r0, c0 + 1], [r0, c0 - 1]);
+      }
+    }
+  }
+
+  steps.push({ stepType: "done", description: `Done. Number of islands = ${islandCount}`, state: { grid, visited: cloneVisited(visited), current: null, islandCount, done: true } });
+  return steps;
+}
+
+export function generateMaxAreaOfIslandSteps({ grid: flat, rows }) {
+  const grid = buildGrid2D(flat, rows);
+  if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], visited: [], current: null, maxArea: 0, currentArea: 0, done: true } }];
+  const R = grid.length, C = grid[0].length;
+  const visited = grid.map(row => row.map(() => false));
+  const steps = [];
+  let maxArea = 0;
+
+  steps.push({ stepType: "init", description: "Initialize; maxArea = 0", state: { grid, visited: cloneVisited(visited), current: null, maxArea: 0, currentArea: 0 } });
+
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) {
+      steps.push({ stepType: "scan", description: `Scan cell (${r},${c})`, state: { grid, visited: cloneVisited(visited), current: [r, c], maxArea, currentArea: 0 } });
+      if (grid[r][c] === 0) continue;
+      if (visited[r][c]) continue;
+      let area = 0;
+      const stack = [[r, c]];
+      while (stack.length) {
+        const [r0, c0] = stack.pop();
+        if (r0 < 0 || r0 >= R || c0 < 0 || c0 >= C || grid[r0][c0] === 0 || visited[r0][c0]) continue;
+        visited[r0][c0] = true;
+        area++;
+        steps.push({ stepType: "dfs_visit", description: `DFS visit (${r0},${c0}), area = ${area}`, state: { grid, visited: cloneVisited(visited), current: [r0, c0], maxArea, currentArea: area } });
+        stack.push([r0 + 1, c0], [r0 - 1, c0], [r0, c0 + 1], [r0, c0 - 1]);
+      }
+      maxArea = Math.max(maxArea, area);
+      steps.push({ stepType: "update_max", description: `Island area = ${area}, maxArea = ${maxArea}`, state: { grid, visited: cloneVisited(visited), current: null, maxArea, currentArea: area } });
+    }
+  }
+
+  steps.push({ stepType: "done", description: `Done. Max area = ${maxArea}`, state: { grid, visited: cloneVisited(visited), current: null, maxArea, currentArea: 0, done: true } });
+  return steps;
+}
+
 export const STEP_GENERATORS = {
   "two-sum":              generateTwoSumSteps,
   "longest-consecutive":  generateLongestConsecutiveSteps,
@@ -805,4 +886,6 @@ export const STEP_GENERATORS = {
   "merge-two-sorted-lists":   generateMergeTwoListsSteps,
   "merge-intervals":         generateMergeIntervalsSteps,
   "linked-list-cycle":       generateLinkedListCycleSteps,
+  "number-of-islands":       generateNumberOfIslandsSteps,
+  "max-area-of-island":      generateMaxAreaOfIslandSteps,
 };

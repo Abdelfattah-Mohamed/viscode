@@ -21,6 +21,7 @@ export const CAT_ICON = {
   "Stack":               "📚",
   "Linked Lists":        "🔗",
   "Intervals":           "📐",
+  "Graphs":               "🕸️",
 };
 
 export const PROBLEMS = {
@@ -867,6 +868,56 @@ export const PROBLEMS = {
       python: { code: ["def hasCycle(head):","    slow = fast = head","    while fast and fast.next:","        slow = slow.next","        fast = fast.next.next","        if slow == fast:","            return True","    return False"], lineMap: { init: 2, loop: 4, found: 7, done: 9 } },
     },
   },
+
+  "number-of-islands": {
+    title:           "Number of Islands",
+    difficulty:      "Medium",
+    category:        "Graphs",
+    timeComplexity:  "O(m×n)",
+    spaceComplexity: "O(m×n)",
+    visualizer:      "grid",
+    description:     "Given a 2D grid <code>grid</code> of <code>1</code> (land) and <code>0</code> (water), return the number of islands. An island is formed by connecting adjacent lands horizontally or vertically.",
+    example:         { input: "grid = [[1,1,0],[1,1,0],[0,0,1]], rows = 3", output: "2", note: "Two separate islands of connected 1s." },
+    defaultInput:    { grid: [1, 1, 0, 1, 1, 0, 0, 0, 1], rows: 3 },
+    inputFields:     ["grid", "rows"],
+    explanation: [
+      { emoji: "🕸️", title: "Graph on a Grid", body: "Treat each cell as a node; adjacent land cells share an edge. Counting islands = counting connected components (DFS/BFS)." },
+      { emoji: "💡", title: "The Idea", body: "Scan the grid. When you find unvisited land, run DFS (or BFS) to mark the whole island visited, then increment the island count." },
+      { emoji: "👣", title: "Step by Step", body: "1. For each cell (r,c), if grid[r][c]==1 and not visited, islandCount++, DFS(r,c). 2. In DFS: mark (r,c) visited, recurse on 4 neighbors (in bounds, land, unvisited)." },
+      { emoji: "⚡", title: "Complexity", body: "Each cell is visited at most once. Time and space O(m×n)." },
+    ],
+    languages: {
+      cpp:    { code: ["int numIslands(vector<vector<char>>& grid) {","    int count = 0;","    for (int r = 0; r < grid.size(); r++)","        for (int c = 0; c < grid[0].size(); c++)","            if (grid[r][c] == '1') {","                count++;","                dfs(grid, r, c);","            }","    return count;","}","void dfs(vector<vector<char>>& g, int r, int c) {","    if (r<0||r>=g.size()||c<0||c>=g[0].size()||g[r][c]!='1') return;","    g[r][c] = '0';","    dfs(g,r+1,c); dfs(g,r-1,c); dfs(g,r,c+1); dfs(g,r,c-1);","}"], lineMap: { init: 2, scan: 4, new_island: 6, dfs: 7, dfs_visit: 12, visit: 12, recurse: 13, done: 9 } },
+      java:   { code: ["public int numIslands(char[][] grid) {","    int count = 0;","    for (int r = 0; r < grid.length; r++)","        for (int c = 0; c < grid[0].length; c++)","            if (grid[r][c] == '1') {","                count++;","                dfs(grid, r, c);","            }","    return count;","}","void dfs(char[][] g, int r, int c) {","    if (r<0||r>=g.length||c<0||c>=g[0].length||g[r][c]!='1') return;","    g[r][c] = '0';","    dfs(g,r+1,c); dfs(g,r-1,c); dfs(g,r,c+1); dfs(g,r,c-1);","}"], lineMap: { init: 2, scan: 4, new_island: 6, dfs: 7, dfs_visit: 12, visit: 12, recurse: 13, done: 9 } },
+      javascript: { code: ["function numIslands(grid) {","  let count = 0;","  for (let r = 0; r < grid.length; r++)","    for (let c = 0; c < grid[0].length; c++)","      if (grid[r][c] === '1') {","        count++;","        dfs(grid, r, c);","      }","  return count;","}","function dfs(g, r, c) {","  if (r<0||r>=g.length||c<0||c>=g[0].length||g[r][c]!=='1') return;","  g[r][c] = '0';","  dfs(g,r+1,c); dfs(g,r-1,c); dfs(g,r,c+1); dfs(g,r,c-1);","}"], lineMap: { init: 2, scan: 4, new_island: 6, dfs: 7, dfs_visit: 12, visit: 12, recurse: 13, done: 9 } },
+      python: { code: ["def num_islands(grid):","    count = 0","    for r in range(len(grid)):","        for c in range(len(grid[0])):","            if grid[r][c] == '1':","                count += 1","                dfs(grid, r, c)","    return count","def dfs(g, r, c):","    if r<0 or r>=len(g) or c<0 or c>=len(g[0]) or g[r][c]!='1': return","    g[r][c] = '0'","    dfs(g,r+1,c); dfs(g,r-1,c); dfs(g,r,c+1); dfs(g,r,c-1)"], lineMap: { init: 2, scan: 4, new_island: 6, dfs: 7, dfs_visit: 12, visit: 12, recurse: 13, done: 8 } },
+    },
+  },
+
+  "max-area-of-island": {
+    title:           "Max Area of Island",
+    difficulty:      "Medium",
+    category:        "Graphs",
+    timeComplexity:  "O(m×n)",
+    spaceComplexity: "O(m×n)",
+    visualizer:      "grid",
+    description:     "Given a 2D grid of <code>1</code> (land) and <code>0</code> (water), return the <strong>maximum area</strong> of an island. Area is the number of cells with value 1 connected 4-directionally.",
+    example:         { input: "grid = [[1,1,0],[1,1,0],[0,0,1]], rows = 3", output: "4", note: "Largest island has 4 cells." },
+    defaultInput:    { grid: [1, 1, 0, 1, 1, 0, 0, 0, 1], rows: 3 },
+    inputFields:     ["grid", "rows"],
+    explanation: [
+      { emoji: "🕸️", title: "Same Grid, Different Question", body: "Again treat the grid as a graph. For each island (DFS/BFS), count its size and track the maximum." },
+      { emoji: "💡", title: "The Idea", body: "For each unvisited land cell, run DFS that returns the area of that island. Update maxArea = max(maxArea, area)." },
+      { emoji: "👣", title: "Step by Step", body: "1. For each (r,c) with land and not visited, area = dfs(r,c). 2. dfs returns 1 + sum of dfs on valid neighbors. 3. maxArea = max(maxArea, area)." },
+      { emoji: "⚡", title: "Complexity", body: "Each cell visited at most once. O(m×n) time and space." },
+    ],
+    languages: {
+      cpp:    { code: ["int maxAreaOfIsland(vector<vector<int>>& grid) {","    int maxArea = 0;","    for (int r = 0; r < grid.size(); r++)","        for (int c = 0; c < grid[0].size(); c++)","            if (grid[r][c] == 1)","                maxArea = max(maxArea, dfs(grid, r, c));","    return maxArea;","}","int dfs(vector<vector<int>>& g, int r, int c) {","    if (r<0||r>=g.size()||c<0||c>=g[0].size()||g[r][c]!=1) return 0;","    g[r][c] = 0;","    return 1 + dfs(g,r+1,c)+dfs(g,r-1,c)+dfs(g,r,c+1)+dfs(g,r,c-1);","}"], lineMap: { init: 2, scan: 4, dfs: 6, dfs_visit: 11, update_max: 6, visit: 11, recurse: 12, done: 7 } },
+      java:   { code: ["public int maxAreaOfIsland(int[][] grid) {","    int maxArea = 0;","    for (int r = 0; r < grid.length; r++)","        for (int c = 0; c < grid[0].length; c++)","            if (grid[r][c] == 1)","                maxArea = Math.max(maxArea, dfs(grid, r, c));","    return maxArea;","}","int dfs(int[][] g, int r, int c) {","    if (r<0||r>=g.length||c<0||c>=g[0].length||g[r][c]!=1) return 0;","    g[r][c] = 0;","    return 1 + dfs(g,r+1,c)+dfs(g,r-1,c)+dfs(g,r,c+1)+dfs(g,r,c-1);","}"], lineMap: { init: 2, scan: 4, dfs: 6, dfs_visit: 11, update_max: 6, visit: 11, recurse: 12, done: 7 } },
+      javascript: { code: ["function maxAreaOfIsland(grid) {","  let maxArea = 0;","  for (let r = 0; r < grid.length; r++)","    for (let c = 0; c < grid[0].length; c++)","      if (grid[r][c] === 1)","        maxArea = Math.max(maxArea, dfs(grid, r, c));","  return maxArea;","}","function dfs(g, r, c) {","  if (r<0||r>=g.length||c<0||c>=g[0].length||g[r][c]!==1) return 0;","  g[r][c] = 0;","  return 1 + dfs(g,r+1,c)+dfs(g,r-1,c)+dfs(g,r,c+1)+dfs(g,r,c-1);","}"], lineMap: { init: 2, scan: 4, dfs: 6, dfs_visit: 11, update_max: 6, visit: 11, recurse: 12, done: 7 } },
+      python: { code: ["def max_area_of_island(grid):","    max_area = 0","    for r in range(len(grid)):","        for c in range(len(grid[0])):","            if grid[r][c] == 1:","                max_area = max(max_area, dfs(grid, r, c))","    return max_area","def dfs(g, r, c):","    if r<0 or r>=len(g) or c<0 or c>=len(g[0]) or g[r][c]!=1: return 0","    g[r][c] = 0","    return 1 + dfs(g,r+1,c)+dfs(g,r-1,c)+dfs(g,r,c+1)+dfs(g,r,c-1)"], lineMap: { init: 2, scan: 4, dfs: 6, dfs_visit: 11, update_max: 6, visit: 11, recurse: 12, done: 7 } },
+    },
+  },
 };
 
 // ── Problem list for browse/search ───────────────────────────────────────
@@ -895,6 +946,8 @@ export const PROB_LIST = [
   { id: "merge-two-sorted-lists", title: "Merge Two Sorted Lists",        difficulty: "Easy",   category: "Linked Lists",        desc: "Merge two sorted linked lists into one sorted list.", tags: ["linked-lists", "two-pointers"] },
   { id: "merge-intervals",       title: "Merge Intervals",                 difficulty: "Medium", category: "Intervals",           desc: "Merge all overlapping intervals after sorting by start.", tags: ["intervals", "sorting", "arrays"] },
   { id: "linked-list-cycle",     title: "Linked List Cycle",               difficulty: "Easy",   category: "Linked Lists",        desc: "Detect cycle in linked list using tortoise and hare.", tags: ["linked-lists", "two-pointers", "cycle"] },
+  { id: "number-of-islands",    title: "Number of Islands",               difficulty: "Medium", category: "Graphs",              desc: "Count islands in a 2D grid using DFS or BFS.", tags: ["graphs", "dfs", "bfs", "grid"] },
+  { id: "max-area-of-island",   title: "Max Area of Island",              difficulty: "Medium", category: "Graphs",              desc: "Find the largest island by area in a 2D grid.", tags: ["graphs", "dfs", "bfs", "grid"] },
 ];
 
 export function getSimilar(currentId, max = 3) {

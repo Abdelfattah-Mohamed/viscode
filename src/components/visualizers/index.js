@@ -21,3 +21,4 @@ export { default as ContainerViz }         from "./ContainerViz";
 export { default as MergeListsViz }         from "./MergeListsViz";
 export { default as IntervalsViz }          from "./IntervalsViz";
 export { default as CycleViz }              from "./CycleViz";
+export { default as GridViz }               from "./GridViz";
