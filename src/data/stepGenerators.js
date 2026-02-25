@@ -861,6 +861,64 @@ export function generateMaxAreaOfIslandSteps({ grid: flat, rows }) {
   return steps;
 }
 
+// Stub step generators for problems that don't have full visualization yet
+function stubArraySteps(input) {
+  const nums = input.nums != null ? input.nums : (Array.isArray(input) ? input : []);
+  return [
+    { stepType: "init", description: "Start", state: { i: -1, highlight: [], nums: [...nums] } },
+    { stepType: "done", description: "Done", state: { done: true, nums: [...nums] } },
+  ];
+}
+function stubIntervalSteps(input) {
+  const nums = input.nums || [];
+  const pairs = [];
+  for (let i = 0; i < nums.length; i += 2)
+    if (nums[i] != null && nums[i + 1] != null) pairs.push([nums[i], nums[i + 1]]);
+  return [
+    { stepType: "init", description: "Start", state: { intervals: [...pairs], merged: [], current: -1 } },
+    { stepType: "done", description: "Done", state: { intervals: pairs, merged: pairs, current: -1, done: true } },
+  ];
+}
+function stubGridSteps(input) {
+  const grid = buildGrid2D(input.grid, input.rows);
+  if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], visited: [], current: null, done: true } }];
+  const visited = grid.map(row => row.map(() => false));
+  return [
+    { stepType: "init", description: "Start", state: { grid, visited: visited.map(r => [...r]), current: null } },
+    { stepType: "done", description: "Done", state: { grid, visited: visited.map(r => [...r]), current: null, done: true } },
+  ];
+}
+function stubWithNumsTarget(input) {
+  const nums = input.nums || [];
+  const target = input.target != null ? input.target : 0;
+  return [
+    { stepType: "init", description: "Start", state: { nums: [...nums], target, i: -1, highlight: [] } },
+    { stepType: "done", description: "Done", state: { nums: [...nums], target, done: true } },
+  ];
+}
+function stubWithN(input) {
+  const n = input.n != null ? input.n : 0;
+  const nums = input.nums || [];
+  return [
+    { stepType: "init", description: "Start", state: { n, nums: [...nums], i: -1, highlight: [] } },
+    { stepType: "done", description: "Done", state: { n, nums: [...nums], done: true } },
+  ];
+}
+function stubWithS(input) {
+  const s = input.s != null ? String(input.s) : "";
+  return [
+    { stepType: "init", description: "Start", state: { s, i: -1, highlight: [] } },
+    { stepType: "done", description: "Done", state: { s, done: true } },
+  ];
+}
+function stubLinkedListSteps(input) {
+  const head = input.head || [];
+  return [
+    { stepType: "init", description: "Start", state: { head: [...head], slow: -1, fast: -1 } },
+    { stepType: "done", description: "Done", state: { head: [...head], done: true } },
+  ];
+}
+
 export const STEP_GENERATORS = {
   "two-sum":              generateTwoSumSteps,
   "longest-consecutive":  generateLongestConsecutiveSteps,
@@ -888,4 +946,42 @@ export const STEP_GENERATORS = {
   "linked-list-cycle":       generateLinkedListCycleSteps,
   "number-of-islands":       generateNumberOfIslandsSteps,
   "max-area-of-island":      generateMaxAreaOfIslandSteps,
+  "min-rotated-sorted":      (i) => stubArraySteps(i),
+  "search-rotated-sorted":   (i) => stubWithNumsTarget(i),
+  "sum-two-integers":        (i) => stubArraySteps(i),
+  "number-of-1-bits":        (i) => stubArraySteps(i),
+  "counting-bits":           (i) => stubWithN(i),
+  "reverse-bits":            (i) => stubArraySteps(i),
+  "coin-change":             (i) => stubWithNumsTarget(i),
+  "longest-increasing-subsequence": (i) => stubArraySteps(i),
+  "longest-common-subsequence": (i) => stubWithS(i),
+  "word-break":              (i) => stubWithS(i),
+  "combination-sum":         (i) => stubWithNumsTarget(i),
+  "house-robber-ii":         (i) => stubArraySteps(i),
+  "decode-ways":             (i) => stubWithS(i),
+  "unique-paths":            (i) => stubArraySteps(i),
+  "jump-game":               (i) => stubArraySteps(i),
+  "insert-interval":         (i) => stubIntervalSteps(i),
+  "non-overlapping-intervals": (i) => stubIntervalSteps(i),
+  "meeting-rooms":          (i) => stubIntervalSteps(i),
+  "meeting-rooms-ii":        (i) => stubIntervalSteps(i),
+  "merge-k-sorted-lists":    (i) => stubArraySteps(i),
+  "remove-nth-node":        (i) => stubLinkedListSteps(i),
+  "reorder-list":           (i) => stubLinkedListSteps(i),
+  "copy-list-random-pointer": (i) => stubLinkedListSteps(i),
+  "clone-graph":            (i) => stubArraySteps(i),
+  "course-schedule":        (i) => stubWithN(i),
+  "pacific-atlantic":        (i) => stubGridSteps(i),
+  "num-connected-components": (i) => stubWithN(i),
+  "graph-valid-tree":        (i) => stubWithN(i),
+  "group-anagrams":          (i) => stubWithS(i),
+  "longest-substring-no-repeat": (i) => stubWithS(i),
+  "longest-palindromic-substring": (i) => stubWithS(i),
+  "top-k-frequent":          (i) => stubWithNumsTarget(i),
+  "subsets":                 (i) => stubArraySteps(i),
+  "permutations":            (i) => stubArraySteps(i),
+  "min-stack":               (i) => stubArraySteps(i),
+  "eval-rpn":               (i) => stubWithS(i),
+  "generate-parentheses":    (i) => stubWithN(i),
+  "trapping-rain-water":     (i) => stubArraySteps(i),
 };
