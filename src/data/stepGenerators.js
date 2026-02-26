@@ -913,6 +913,69 @@ export function generatePacificAtlanticSteps(input) {
   return steps;
 }
 
+function minHeapPush(heap, freq, num) {
+  heap.push({ freq, num });
+  let i = heap.length - 1;
+  while (i > 0) {
+    const p = (i - 1) >> 1;
+    if (heap[p].freq <= heap[i].freq) break;
+    [heap[p], heap[i]] = [heap[i], heap[p]];
+    i = p;
+  }
+}
+function minHeapPop(heap) {
+  const top = heap[0];
+  heap[0] = heap[heap.length - 1];
+  heap.pop();
+  let i = 0;
+  while (true) {
+    const l = 2 * i + 1, r = 2 * i + 2;
+    let s = i;
+    if (l < heap.length && heap[l].freq < heap[s].freq) s = l;
+    if (r < heap.length && heap[r].freq < heap[s].freq) s = r;
+    if (s === i) break;
+    [heap[i], heap[s]] = [heap[s], heap[i]];
+    i = s;
+  }
+  return top;
+}
+
+export function generateTopKFrequentSteps(input) {
+  const nums = input?.nums ?? [];
+  const k = Math.max(0, Number(input?.k) ?? 0);
+  const steps = [];
+  if (!nums.length || k <= 0) {
+    steps.push({ stepType: "init", description: "Enter nums and k", state: { nums: [], k: 0, count: {}, heap: [], res: [], phase: "init" } });
+    steps.push({ stepType: "done", description: "Done", state: { nums: [], k: 0, count: {}, heap: [], res: [], done: true } });
+    return steps;
+  }
+  const count = {};
+  for (const x of nums) count[x] = (count[x] || 0) + 1;
+  steps.push({ stepType: "init", description: "Count frequencies, then min-heap of size k", state: { nums: [...nums], k, count: {}, heap: [], res: [], phase: "count" } });
+  for (let idx = 0; idx < Math.min(nums.length, 8); idx++) {
+    const x = nums[idx];
+    const soFar = {};
+    for (let j = 0; j <= idx; j++) { const v = nums[j]; soFar[v] = (soFar[v] || 0) + 1; }
+    steps.push({ stepType: "count_loop", description: `Count: ${x} → freq ${soFar[x]}`, state: { nums: [...nums], k, count: { ...soFar }, heap: [], res: [], phase: "count", countIdx: idx } });
+  }
+  const countFinal = { ...count };
+  steps.push({ stepType: "count_done", description: "Frequencies: " + Object.entries(countFinal).map(([a, b]) => `${a}→${b}`).join(", "), state: { nums: [...nums], k, count: { ...countFinal }, heap: [], res: [], phase: "heap" } });
+  const heap = [];
+  for (const [num, c] of Object.entries(count)) {
+    const numN = Number(num), freqN = Number(c);
+    minHeapPush(heap, freqN, numN);
+    steps.push({ stepType: "heap_push", description: `Push (${numN}, freq ${freqN}) to heap`, state: { nums: [...nums], k, count: { ...countFinal }, heap: heap.map(x => ({ ...x })), res: [], phase: "heap", heapNum: numN, heapFreq: freqN } });
+    if (heap.length > k) {
+      const popped = minHeapPop(heap);
+      steps.push({ stepType: "heap_pop", description: `Pop min (${popped.num}, freq ${popped.freq})`, state: { nums: [...nums], k, count: { ...countFinal }, heap: heap.map(x => ({ ...x })), res: [], phase: "heap", poppedNum: popped.num, poppedFreq: popped.freq } });
+    }
+  }
+  const res = heap.map(x => x.num);
+  steps.push({ stepType: "extract", description: `Extract top ${k} from heap`, state: { nums: [...nums], k, count: { ...countFinal }, heap: heap.map(x => ({ ...x })), res: [...res], phase: "heap" } });
+  steps.push({ stepType: "done", description: `Top ${k} frequent: [${res.join(", ")}]`, state: { nums: [...nums], k, count: { ...countFinal }, heap: heap.map(x => ({ ...x })), res: [...res], done: true } });
+  return steps;
+}
+
 // Stub step generators for problems that don't have full visualization yet
 function stubArraySteps(input) {
   const nums = input && input.nums != null ? input.nums : (Array.isArray(input) ? input : []);
@@ -1296,7 +1359,7 @@ export const STEP_GENERATORS = {
   "group-anagrams":          (i) => stubWithS(i),
   "longest-substring-no-repeat": (i) => stubWithS(i),
   "longest-palindromic-substring": (i) => stubWithS(i),
-  "top-k-frequent":          (i) => stubWithNumsTarget(i),
+  "top-k-frequent":          generateTopKFrequentSteps,
   "subsets":                 (i) => stubArraySteps(i),
   "permutations":            (i) => stubArraySteps(i),
   "min-stack":               (i) => stubArraySteps(i),

@@ -26,3 +26,4 @@ export { default as GraphViz }              from "./GraphViz";
 export { default as RpnViz }                from "./RpnViz";
 export { default as DecodeWaysViz }         from "./DecodeWaysViz";
 export { default as GenerateParenthesesViz } from "./GenerateParenthesesViz";
+export { default as TopKFrequentViz } from "./TopKFrequentViz";
