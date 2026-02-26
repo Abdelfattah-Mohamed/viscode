@@ -1006,6 +1006,41 @@ export function generateSumTwoIntegersSteps(input) {
   return steps;
 }
 
+export function generateHammingWeightSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums : [];
+  let n = Number(nums[0]);
+  if (Number.isNaN(n) || n < 0) n = 0;
+  n = n >>> 0; // 32-bit unsigned
+  let count = 0;
+  const steps = [];
+  steps.push({ stepType: "init", description: `hammingWeight(${n}) — count set bits`, state: { n, count: 0, highlight: "count", phase: "init" } });
+  const maxIter = 35;
+  let iter = 0;
+  while (n !== 0 && iter < maxIter) {
+    iter++;
+    steps.push({ stepType: "loop_check", description: `while (n != 0): n = ${n} ≠ 0 → enter loop`, state: { n, count, highlight: "n", phase: "loop_check" } });
+    n = (n & (n - 1)) >>> 0;
+    count++;
+    steps.push({ stepType: "body", description: `n &= n - 1 → n = ${n}; count++ → count = ${count}`, state: { n, count, highlight: "both", phase: "body" } });
+  }
+  steps.push({ stepType: "done", description: `n == 0 → return count = ${count}`, state: { n: 0, count, done: true, highlight: "count", phase: "done" } });
+  return steps;
+}
+
+export function generateCountingBitsSteps(input) {
+  const n = Math.max(0, Math.min(Number(input?.n) || 0, 32));
+  const ans = Array(n + 1).fill(0);
+  const steps = [];
+  steps.push({ stepType: "init", description: `countBits(${n}) — ans[0..${n}] = 0`, state: { nums: [...ans], i: 0, highlight: [], phase: "init" } });
+  for (let i = 1; i <= n; i++) {
+    steps.push({ stepType: "loop", description: `for i = ${i}: ans[${i}] = ans[${i >> 1}] + (${i} & 1)`, state: { nums: [...ans], i, highlight: [i], phase: "loop" } });
+    ans[i] = ans[i >> 1] + (i & 1);
+    steps.push({ stepType: "body", description: `ans[${i}] = ${ans[i]}`, state: { nums: [...ans], i, highlight: [i], phase: "body" } });
+  }
+  steps.push({ stepType: "done", description: `return [${ans.join(", ")}]`, state: { nums: [...ans], i: n, highlight: [], done: true, phase: "done" } });
+  return steps;
+}
+
 // Stub step generators for problems that don't have full visualization yet
 function stubArraySteps(input) {
   const nums = input && input.nums != null ? input.nums : (Array.isArray(input) ? input : []);
@@ -1429,8 +1464,8 @@ export const STEP_GENERATORS = {
   "min-rotated-sorted":      (i) => stubArraySteps(i),
   "search-rotated-sorted":   generateSearchRotatedSteps,
   "sum-two-integers":        generateSumTwoIntegersSteps,
-  "number-of-1-bits":        (i) => stubArraySteps(i),
-  "counting-bits":           (i) => stubWithN(i),
+  "number-of-1-bits":        generateHammingWeightSteps,
+  "counting-bits":           generateCountingBitsSteps,
   "reverse-bits":            (i) => stubArraySteps(i),
   "coin-change":             (i) => stubWithNumsTarget(i),
   "longest-increasing-subsequence": (i) => stubArraySteps(i),

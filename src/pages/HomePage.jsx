@@ -73,7 +73,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
 
       {/* Stats bar */}
       <div style={{ display: "flex", justifyContent: "center", borderTop: `1.5px solid ${t.border}`, borderBottom: `1.5px solid ${t.border}`, background: t.surface, flexWrap: "wrap" }}>
-        {[{ n: "+25", l: "Problems Visualized" }, { n: "4", l: "Languages" }, { n: "Blind 75", l: "Coverage" }, { n: "∞", l: "Practice Runs" }].map((s, i, a) => (
+        {[{ n: "+50", l: "Problems Visualized" }, { n: "4", l: "Languages" }, { n: "Blind 75", l: "Coverage" }, { n: "∞", l: "Practice Runs" }].map((s, i, a) => (
           <div key={i} style={{ padding: mobile ? "14px 20px" : "22px 40px", textAlign: "center", borderRight: i < a.length - 1 ? `1.5px solid ${t.border}` : "none", flex: mobile ? "1 1 40%" : undefined }}>
             <div style={{ fontFamily: "'Caveat',cursive", fontSize: "2rem", fontWeight: 700, color: t.blue }}>{s.n}</div>
             <div style={{ fontSize: "0.82rem", color: t.inkMuted, marginTop: 2 }}>{s.l}</div>

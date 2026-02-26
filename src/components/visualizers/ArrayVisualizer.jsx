@@ -1,6 +1,8 @@
-export default function ArrayVisualizer({ nums, stepState = {}, t }) {
+export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel }) {
   const { highlight = [], found = false, i: ci, map = {}, complement, maxSum, currentSum, done } = stepState;
   const isKadane = maxSum !== undefined;
+  const label = arrayLabel ?? "nums";
+  const showTarget = !arrayLabel && !isKadane;
   const cellBg = idx => {
     if (isKadane) return highlight.includes(idx) ? t.yellow : t.surface;
     return found && highlight.includes(idx) ? t.green : highlight.includes(idx) ? t.yellow : t.surface;
@@ -10,7 +12,7 @@ export default function ArrayVisualizer({ nums, stepState = {}, t }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div>
         <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.95em", fontWeight: 600, color: t.inkMuted, marginBottom: 10 }}>
-          nums {!isKadane && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7em" }}>(target = {stepState.target ?? "?"})</span>}
+          {label} {showTarget && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7em" }}>(target = {stepState.target ?? "?"})</span>}
         </div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 8, flexWrap: "wrap", paddingTop: 64 }}>
           {nums.map((val, idx) => (

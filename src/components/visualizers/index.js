@@ -29,3 +29,4 @@ export { default as GenerateParenthesesViz } from "./GenerateParenthesesViz";
 export { default as TopKFrequentViz } from "./TopKFrequentViz";
 export { default as MinStackViz } from "./MinStackViz";
 export { default as SumTwoIntegersViz } from "./SumTwoIntegersViz";
+export { default as NumberOf1BitsViz } from "./NumberOf1BitsViz";

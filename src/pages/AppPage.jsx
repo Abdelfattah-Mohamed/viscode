@@ -12,7 +12,7 @@ import {
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
   PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
   MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
-  ThreeSumViz, ContainerViz, MergeListsViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz, MinStackViz, SumTwoIntegersViz,
+  ThreeSumViz, ContainerViz, MergeListsViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz, MinStackViz, SumTwoIntegersViz, NumberOf1BitsViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -219,7 +219,7 @@ export default function AppPage({
               </div>
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: "8px 20px 20px", fontSize: `${whiteboardFontScale}rem` }}>
-              {problem.visualizer === "array"       && <ArrayVisualizer       nums={input.nums || []}   stepState={{ ...currentStep?.state, target: input.target }} t={t} />}
+              {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : undefined} />}
               {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "duplicate"   && <DuplicateViz          nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
               {problem.visualizer === "anagram"     && <AnagramViz            s={input.s || ""}         tStr={input.t || ""} stepState={currentStep?.state} t={t} />}
@@ -250,6 +250,7 @@ export default function AppPage({
               {problem.visualizer === "topk"          && <TopKFrequentViz       nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "minstack"      && <MinStackViz           stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "sumtwo"       && <SumTwoIntegersViz     stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "onebits"     && <NumberOf1BitsViz     stepState={currentStep?.state ?? {}} t={t} />}
             </div>
             <div style={{ flexShrink: 0, borderTop: `1.5px solid ${t.border}` }}>
               <StepControls {...player} t={t} mobile={mobile} />
@@ -396,38 +397,6 @@ export default function AppPage({
                 : <ExplanationPanel explanation={problem.explanation} t={t} />}
             </div>
           </Card>
-
-          {/* Personal notes (only for logged-in, non-guest users) */}
-          {notesData && (
-            <Card t={t} style={{ flexShrink: 0 }}>
-              <CardHeader icon="📝" title="Personal notes" t={t} />
-              <div style={{ padding: "0 14px 14px", marginTop: 10 }}>
-                <textarea
-                  value={notesData.notes}
-                  onChange={notesData.handleChange}
-                  onBlur={notesData.handleBlur}
-                  placeholder="Edge cases, hints, observations…"
-                  disabled={notesData.loading}
-                  rows={3}
-                  style={{
-                    width: "100%",
-                    boxSizing: "border-box",
-                    padding: "10px 12px",
-                    border: `1.5px solid ${t.border}`,
-                    borderRadius: 8,
-                    background: t.surfaceAlt,
-                    color: t.ink,
-                    fontFamily: "'DM Sans',sans-serif",
-                    fontSize: "0.85rem",
-                    lineHeight: 1.5,
-                    resize: "vertical",
-                    minHeight: 72,
-                    outline: "none",
-                  }}
-                />
-              </div>
-            </Card>
-          )}
         </div>
 
         {/* RIGHT — Visualizer */}
@@ -464,7 +433,7 @@ export default function AppPage({
             </div>
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "4px 18px 18px", fontSize: `${whiteboardFontScale}rem` }}>
-            {problem.visualizer === "array"       && <ArrayVisualizer       nums={input.nums || []}   stepState={{ ...currentStep?.state, target: input.target }} t={t} />}
+            {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : undefined} />}
             {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "duplicate"   && <DuplicateViz          nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
             {problem.visualizer === "anagram"     && <AnagramViz            s={input.s || ""}         tStr={input.t || ""} stepState={currentStep?.state} t={t} />}
@@ -495,8 +464,38 @@ export default function AppPage({
             {problem.visualizer === "topk"          && <TopKFrequentViz       nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "minstack"      && <MinStackViz           stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "sumtwo"       && <SumTwoIntegersViz     stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "onebits"     && <NumberOf1BitsViz     stepState={currentStep?.state ?? {}} t={t} />}
           </div>
           <StepControls {...player} t={t} mobile={mobile} />
+          {/* Personal notes (under whiteboard) */}
+          {notesData && (
+            <div style={{ borderTop: `1.5px solid ${t.border}`, padding: "12px 14px 14px", background: t.surfaceAlt + "80" }}>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, color: t.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>📝 Personal notes</div>
+              <textarea
+                value={notesData.notes}
+                onChange={notesData.handleChange}
+                onBlur={notesData.handleBlur}
+                placeholder="Edge cases, hints, observations…"
+                disabled={notesData.loading}
+                rows={3}
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: "10px 12px",
+                  border: `1.5px solid ${t.border}`,
+                  borderRadius: 8,
+                  background: t.surface,
+                  color: t.ink,
+                  fontFamily: "'DM Sans',sans-serif",
+                  fontSize: "0.85rem",
+                  lineHeight: 1.5,
+                  resize: "vertical",
+                  minHeight: 72,
+                  outline: "none",
+                }}
+              />
+            </div>
+          )}
         </Card>
 
         {/* BOTTOM — Similar problems */}
