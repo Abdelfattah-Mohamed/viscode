@@ -1476,6 +1476,70 @@ export function generateLongestIncreasingSubsequenceSteps(input) {
   return steps;
 }
 
+export function generateCombinationSumSteps(input) {
+  const c = Array.isArray(input?.nums) ? input.nums.map(Number) : (input?.nums != null ? [Number(input.nums)] : []);
+  const target = Number(input?.target) ?? 0;
+  const steps = [];
+  const res = [];
+  steps.push({
+    stepType: "init",
+    description: `combinationSum(candidates, ${target}) — res=[], path=[], call backtrack(c, ${target}, 0, path, res)`,
+    state: { c: [...c], target, t: target, start: 0, path: [], res: [], done: false },
+  });
+  function backtrack(t, start, path) {
+    steps.push({
+      stepType: "enter",
+      description: `backtrack(t=${t}, start=${start})  path = [${path.join(", ")}]`,
+      state: { c: [...c], target, t, start, path: [...path], res: res.map(r => [...r]), done: false },
+    });
+    if (t === 0) {
+      res.push([...path]);
+      steps.push({
+        stepType: "hit_target",
+        description: `t == 0 → res.push([${path.join(", ")}])  ✓`,
+        state: { c: [...c], target, t, start, path: [...path], res: res.map(r => [...r]), done: false },
+      });
+      return;
+    }
+    if (t < 0) {
+      steps.push({
+        stepType: "overflow",
+        description: `t < 0 → return`,
+        state: { c: [...c], target, t, start, path: [...path], res: res.map(r => [...r]), done: false },
+      });
+      return;
+    }
+    for (let i = start; i < c.length; i++) {
+      const val = c[i];
+      steps.push({
+        stepType: "loop",
+        description: `for i=${i}: try candidate c[${i}]=${val}`,
+        state: { c: [...c], target, t, start, path: [...path], res: res.map(r => [...r]), i, candidate: val, done: false },
+      });
+      path.push(val);
+      steps.push({
+        stepType: "push",
+        description: `path.push(${val}) → path = [${path.join(", ")}], recurse backtrack(${t - val}, ${i}, path)`,
+        state: { c: [...c], target, t: t - val, start: i, path: [...path], res: res.map(r => [...r]), i, candidate: val, done: false },
+      });
+      backtrack(t - val, i, path);
+      path.pop();
+      steps.push({
+        stepType: "pop",
+        description: `path.pop() → path = [${path.join(", ")}], continue loop`,
+        state: { c: [...c], target, t, start, path: [...path], res: res.map(r => [...r]), i, done: false },
+      });
+    }
+  }
+  if (c.length && target > 0) backtrack(target, 0, []);
+  steps.push({
+    stepType: "done",
+    description: `return res = [${res.map(r => "[" + r.join(",") + "]").join(", ")}]`,
+    state: { c: [...c], target, t: 0, start: 0, path: [], res: res.map(r => [...r]), done: true },
+  });
+  return steps;
+}
+
 export function generateParenthesesSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const steps = [];
@@ -1654,7 +1718,7 @@ export const STEP_GENERATORS = {
   "longest-increasing-subsequence": generateLongestIncreasingSubsequenceSteps,
   "longest-common-subsequence": generateLongestCommonSubsequenceSteps,
   "word-break":              generateWordBreakSteps,
-  "combination-sum":         (i) => stubWithNumsTarget(i),
+  "combination-sum":         generateCombinationSumSteps,
   "house-robber-ii":         (i) => stubArraySteps(i),
   "decode-ways":             generateDecodeWaysSteps,
   "unique-paths":            (i) => stubArraySteps(i),
