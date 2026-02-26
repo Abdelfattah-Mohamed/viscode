@@ -1311,6 +1311,67 @@ export function generateDecodeWaysSteps(input) {
   return steps;
 }
 
+export function generateWordBreakSteps(input) {
+  const s = input?.s != null ? String(input.s).trim() : "";
+  const dictStr = input?.dict != null ? String(input.dict).trim() : "";
+  const wordDict = dictStr ? dictStr.split(",").map(w => w.trim()).filter(Boolean) : [];
+  const set = new Set(wordDict);
+  if (!s.length) {
+    return [
+      { stepType: "init", description: "Empty string", state: { s: [], dp: [true], i: 0, j: 0, word: "", dict: wordDict, highlight: [], done: true } },
+      { stepType: "done", description: "return true (empty)", state: { s: [], dp: [true], i: 0, j: 0, word: "", dict: wordDict, highlight: [], done: true } },
+    ];
+  }
+  const n = s.length;
+  const dp = Array(n + 1).fill(false);
+  dp[0] = true;
+  const steps = [];
+  steps.push({
+    stepType: "init",
+    description: `dp[0]=true; dict = {${wordDict.join(", ")}}`,
+    state: { s: s.split(""), dp: [...dp], i: 0, j: 0, word: "", dict: wordDict, highlight: [], phase: "init" },
+  });
+  for (let i = 1; i <= n; i++) {
+    steps.push({
+      stepType: "loop_i",
+      description: `for i = ${i} (check s[0..${i}])`,
+      state: { s: s.split(""), dp: [...dp], i, j: 0, word: "", dict: wordDict, highlight: Array.from({ length: i }, (_, k) => k), phase: "loop_i" },
+    });
+    let matched = false;
+    for (let j = 0; j < i; j++) {
+      const word = s.slice(j, i);
+      steps.push({
+        stepType: "loop_j",
+        description: `j = ${j}: s[${j}..${i}] = "${word}"`,
+        state: { s: s.split(""), dp: [...dp], i, j, word, dict: wordDict, highlight: Array.from({ length: i - j }, (_, k) => j + k), phase: "loop_j" },
+      });
+      if (dp[j] && set.has(word)) {
+        dp[i] = true;
+        steps.push({
+          stepType: "match",
+          description: `dp[${j}]=true and "${word}" in dict → dp[${i}] = true`,
+          state: { s: s.split(""), dp: [...dp], i, j, word, dict: wordDict, highlight: Array.from({ length: i - j }, (_, k) => j + k), phase: "match" },
+        });
+        matched = true;
+        break;
+      }
+    }
+    if (!matched && steps[steps.length - 1].stepType !== "match") {
+      steps.push({
+        stepType: "no_match",
+        description: `No j < ${i} with dp[j] and s[j..${i}] in dict → dp[${i}] stays false`,
+        state: { s: s.split(""), dp: [...dp], i, j: i - 1, word: "", dict: wordDict, highlight: [], phase: "no_match" },
+      });
+    }
+  }
+  steps.push({
+    stepType: "done",
+    description: `return dp[${n}] = ${dp[n]}`,
+    state: { s: s.split(""), dp: [...dp], i: n, j: 0, word: "", dict: wordDict, highlight: [], done: true, phase: "done" },
+  });
+  return steps;
+}
+
 export function generateParenthesesSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const steps = [];
@@ -1488,7 +1549,7 @@ export const STEP_GENERATORS = {
   "coin-change":             (i) => stubWithNumsTarget(i),
   "longest-increasing-subsequence": (i) => stubArraySteps(i),
   "longest-common-subsequence": (i) => stubWithS(i),
-  "word-break":              (i) => stubWithS(i),
+  "word-break":              generateWordBreakSteps,
   "combination-sum":         (i) => stubWithNumsTarget(i),
   "house-robber-ii":         (i) => stubArraySteps(i),
   "decode-ways":             generateDecodeWaysSteps,
