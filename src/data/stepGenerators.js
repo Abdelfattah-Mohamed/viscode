@@ -1317,6 +1317,45 @@ export function generateReorderListSteps(input) {
   return steps;
 }
 
+export function generateNumConnectedComponentsSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+  if (n <= 0) {
+    steps.push({ stepType: "init", description: "Enter n and edges", state: { n: 0, edges: [], vis: [], count: 0, componentId: [], current: null, highlighted: [] } });
+    steps.push({ stepType: "done", description: "Done", state: { n: 0, edges: [], vis: [], count: 0, componentId: [], done: true } });
+    return steps;
+  }
+  const graph = Array.from({ length: n }, () => []);
+  for (const [a, b] of edges) {
+    if (a >= 0 && a < n && b >= 0 && b < n) { graph[a].push(b); graph[b].push(a); }
+  }
+  const vis = Array(n).fill(false);
+  const componentId = Array(n).fill(0);
+  let count = 0;
+  steps.push({ stepType: "init", description: `Build graph: ${n} nodes, ${edges.length} edges`, state: { n, edges: [...edges], vis: [...vis], count: 0, componentId: [...componentId], current: null, highlighted: [] } });
+  function dfs(u, comp, stepsRef) {
+    vis[u] = true;
+    componentId[u] = comp;
+    stepsRef.push({ stepType: "dfs_visit", description: `Visit node ${u} (component ${comp})`, state: { n, edges: [...edges], vis: [...vis], count, componentId: [...componentId], current: u, highlighted: [u] } });
+    for (const v of graph[u]) {
+      if (!vis[v]) {
+        stepsRef.push({ stepType: "dfs_recurse", description: `DFS ${u} → ${v}`, state: { n, edges: [...edges], vis: [...vis], count, componentId: [...componentId], current: v, highlighted: [u, v] } });
+        dfs(v, comp, stepsRef);
+      }
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    if (!vis[i]) {
+      count++;
+      steps.push({ stepType: "count_inc", description: `New component ${count}: start DFS from node ${i}`, state: { n, edges: [...edges], vis: [...vis], count, componentId: [...componentId], current: i, highlighted: [i] } });
+      dfs(i, count, steps);
+    }
+  }
+  steps.push({ stepType: "done", description: `Answer: ${count} connected component(s)`, state: { n, edges: [...edges], vis: [...vis], count, componentId: [...componentId], current: null, highlighted: [], done: true } });
+  return steps;
+}
+
 function stubGraphSteps(input) {
   const n = input?.n != null ? input.n : 0;
   const edges = buildEdgesFromNums(n, input?.nums || []);
@@ -1383,7 +1422,7 @@ export const STEP_GENERATORS = {
   "clone-graph":            (i) => stubGraphSteps(i),
   "course-schedule":        (i) => stubGraphSteps(i),
   "pacific-atlantic":        generatePacificAtlanticSteps,
-  "num-connected-components": (i) => stubGraphSteps(i),
+  "num-connected-components": generateNumConnectedComponentsSteps,
   "graph-valid-tree":        (i) => stubGraphSteps(i),
   "group-anagrams":          (i) => stubWithS(i),
   "longest-substring-no-repeat": (i) => stubWithS(i),

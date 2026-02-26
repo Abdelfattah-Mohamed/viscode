@@ -243,7 +243,7 @@ export default function AppPage({
               {problem.visualizer === "intervals"  && <IntervalsViz     stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "cycle"      && <CycleViz         head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "grid"       && <GridViz         stepState={currentStep?.state ?? {}} input={input} problemId={selectedProblem} t={t} />}
-              {problem.visualizer === "graph"       && <GraphViz        stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "graph"       && <GraphViz        stepState={currentStep?.state ?? {}} problemId={selectedProblem} t={t} />}
               {problem.visualizer === "rpn"         && <RpnViz          stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "decodeways"    && <DecodeWaysViz         s={input.s ?? ""}  stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "genparentheses" && <GenerateParenthesesViz stepState={currentStep?.state ?? {}} t={t} />}
@@ -487,7 +487,7 @@ export default function AppPage({
             {problem.visualizer === "intervals"  && <IntervalsViz     stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "cycle"      && <CycleViz         head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "grid"       && <GridViz         stepState={currentStep?.state ?? {}} input={input} problemId={selectedProblem} t={t} />}
-            {problem.visualizer === "graph"       && <GraphViz        stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "graph"       && <GraphViz        stepState={currentStep?.state ?? {}} problemId={selectedProblem} t={t} />}
             {problem.visualizer === "rpn"         && <RpnViz          stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "decodeways"    && <DecodeWaysViz         s={input.s ?? ""}  stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "genparentheses" && <GenerateParenthesesViz stepState={currentStep?.state ?? {}} t={t} />}
