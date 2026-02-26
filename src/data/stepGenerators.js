@@ -1540,6 +1540,76 @@ export function generateCombinationSumSteps(input) {
   return steps;
 }
 
+function runRobRange(nums, l, r, steps, state) {
+  let prev = 0, curr = 0;
+  for (let i = l; i <= r; i++) {
+    const nextCurr = Math.max(prev + nums[i], curr);
+    const nextPrev = curr;
+    steps.push({
+      stepType: "loop",
+      description: `i=${i}: curr = max(prev+nums[${i}], curr) = max(${prev}+${nums[i]}, ${curr}) = ${nextCurr}`,
+      state: { ...state, pass: state.pass, l, r, i, prev: nextPrev, curr: nextCurr, choice: prev + nums[i] > curr ? "rob" : "skip" },
+    });
+    prev = nextPrev;
+    curr = nextCurr;
+  }
+  return curr;
+}
+
+export function generateHouseRobberIISteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : (input?.nums != null ? [Number(input.nums)] : []);
+  const n = nums.length;
+  const steps = [];
+  const state = { nums: [...nums], n, pass: 1, l: 0, r: 0, i: -1, prev: 0, curr: 0, result1: null, result2: null, done: false };
+  steps.push({
+    stepType: "init",
+    description: n <= 1 ? `rob(nums) — n=${n}` : `rob(nums) — two passes: exclude last, then exclude first`,
+    state: { ...state },
+  });
+  if (n === 0) {
+    steps.push({ stepType: "done", description: "return 0", state: { ...state, done: true } });
+    return steps;
+  }
+  if (n === 1) {
+    steps.push({
+      stepType: "single_house",
+      description: `nums.size() == 1 → return nums[0] = ${nums[0]}`,
+      state: { ...state, i: 0, done: false },
+    });
+    steps.push({ stepType: "done", description: `return ${nums[0]}`, state: { ...state, result1: nums[0], done: true } });
+    return steps;
+  }
+  steps.push({
+    stepType: "pass1_start",
+    description: `robRange(nums, 0, ${n - 2}) — exclude last house`,
+    state: { ...state, pass: 1, l: 0, r: n - 2, prev: 0, curr: 0 },
+  });
+  const result1 = runRobRange(nums, 0, n - 2, steps, { ...state, pass: 1, l: 0, r: n - 2 });
+  steps.push({
+    stepType: "pass1_end",
+    description: `robRange returns ${result1}`,
+    state: { ...state, pass: 1, result1, l: 0, r: n - 2, i: -1 },
+  });
+  steps.push({
+    stepType: "pass2_start",
+    description: `robRange(nums, 1, ${n - 1}) — exclude first house`,
+    state: { ...state, pass: 2, l: 1, r: n - 1, result1, prev: 0, curr: 0 },
+  });
+  const result2 = runRobRange(nums, 1, n - 1, steps, { ...state, pass: 2, l: 1, r: n - 1, result1 });
+  steps.push({
+    stepType: "pass2_end",
+    description: `robRange returns ${result2}`,
+    state: { ...state, pass: 2, result1, result2, l: 1, r: n - 1, i: -1 },
+  });
+  const ans = Math.max(result1, result2);
+  steps.push({
+    stepType: "done",
+    description: `return max(${result1}, ${result2}) = ${ans}`,
+    state: { ...state, result1, result2, done: true },
+  });
+  return steps;
+}
+
 export function generateParenthesesSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const steps = [];
@@ -1719,7 +1789,7 @@ export const STEP_GENERATORS = {
   "longest-common-subsequence": generateLongestCommonSubsequenceSteps,
   "word-break":              generateWordBreakSteps,
   "combination-sum":         generateCombinationSumSteps,
-  "house-robber-ii":         (i) => stubArraySteps(i),
+  "house-robber-ii":         generateHouseRobberIISteps,
   "decode-ways":             generateDecodeWaysSteps,
   "unique-paths":            (i) => stubArraySteps(i),
   "jump-game":               (i) => stubArraySteps(i),
