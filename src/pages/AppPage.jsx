@@ -12,7 +12,7 @@ import {
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
   PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
   MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
-  ThreeSumViz, ContainerViz, MergeListsViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz, HouseRobberIIViz, UniquePathsViz,
+  ThreeSumViz, ContainerViz, MergeListsViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -258,6 +258,7 @@ export default function AppPage({
               {problem.visualizer === "combinationsum" && <CombinationSumViz stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "robberii" && <HouseRobberIIViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "uniquepaths" && <UniquePathsViz stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "jumpgame" && <JumpGameViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
             </div>
             <div style={{ flexShrink: 0, borderTop: `1.5px solid ${t.border}` }}>
               <StepControls {...player} t={t} mobile={mobile} />
@@ -479,6 +480,7 @@ export default function AppPage({
             {problem.visualizer === "combinationsum" && <CombinationSumViz stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "robberii" && <HouseRobberIIViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "uniquepaths" && <UniquePathsViz stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "jumpgame" && <JumpGameViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
           </div>
           <StepControls {...player} t={t} mobile={mobile} />
           {/* Personal notes (under whiteboard) */}

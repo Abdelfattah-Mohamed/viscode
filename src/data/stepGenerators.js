@@ -1654,6 +1654,45 @@ export function generateUniquePathsSteps(input) {
   return steps;
 }
 
+export function generateJumpGameSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : (input?.nums != null ? [Number(input.nums)] : []);
+  const steps = [];
+  let reach = 0;
+  steps.push({
+    stepType: "init",
+    description: "reach = 0 (furthest index we can reach)",
+    state: { nums: [...nums], i: -1, reach: 0, unreachable: false, done: false },
+  });
+  for (let i = 0; i < nums.length; i++) {
+    steps.push({
+      stepType: "loop",
+      description: `i = ${i}`,
+      state: { nums: [...nums], i, reach, unreachable: false, done: false },
+    });
+    if (i > reach) {
+      steps.push({
+        stepType: "unreachable",
+        description: `i (${i}) > reach (${reach}) → return false`,
+        state: { nums: [...nums], i, reach, unreachable: true, done: false },
+      });
+      return steps;
+    }
+    const newReach = Math.max(reach, i + nums[i]);
+    steps.push({
+      stepType: "update",
+      description: `reach = max(reach, i + nums[i]) = max(${reach}, ${i} + ${nums[i]}) = ${newReach}`,
+      state: { nums: [...nums], i, reach: newReach, unreachable: false, done: false },
+    });
+    reach = newReach;
+  }
+  steps.push({
+    stepType: "done",
+    description: "Loop finished → return true",
+    state: { nums: [...nums], i: nums.length - 1, reach, unreachable: false, done: true },
+  });
+  return steps;
+}
+
 export function generateParenthesesSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const steps = [];
@@ -1836,7 +1875,7 @@ export const STEP_GENERATORS = {
   "house-robber-ii":         generateHouseRobberIISteps,
   "decode-ways":             generateDecodeWaysSteps,
   "unique-paths":            generateUniquePathsSteps,
-  "jump-game":               (i) => stubArraySteps(i),
+  "jump-game":               generateJumpGameSteps,
   "insert-interval":         generateInsertIntervalSteps,
   "non-overlapping-intervals": (i) => stubIntervalSteps(i),
   "meeting-rooms":          (i) => stubIntervalSteps(i),

@@ -37,3 +37,4 @@ export { default as LongestIncreasingSubsequenceViz } from "./LongestIncreasingS
 export { default as CombinationSumViz } from "./CombinationSumViz";
 export { default as HouseRobberIIViz } from "./HouseRobberIIViz";
 export { default as UniquePathsViz } from "./UniquePathsViz";
+export { default as JumpGameViz } from "./JumpGameViz";
