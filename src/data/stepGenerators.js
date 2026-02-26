@@ -1372,6 +1372,58 @@ export function generateWordBreakSteps(input) {
   return steps;
 }
 
+export function generateLongestCommonSubsequenceSteps(input) {
+  const t1 = input?.s != null ? String(input.s).trim() : "";
+  const t2 = input?.t != null ? String(input.t).trim() : "";
+  const m = t1.length;
+  const n = t2.length;
+  if (!m || !n) {
+    const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+    return [
+      { stepType: "init", description: "One or both strings empty", state: { t1: t1.split(""), t2: t2.split(""), dp: dp.map(r => [...r]), i: 0, j: 0, done: true } },
+      { stepType: "done", description: `return ${0}`, state: { t1: t1.split(""), t2: t2.split(""), dp: dp.map(r => [...r]), i: m, j: n, done: true } },
+    ];
+  }
+  const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  const steps = [];
+  steps.push({
+    stepType: "init",
+    description: `dp[0..${m}][0..${n}] = 0`,
+    state: { t1: t1.split(""), t2: t2.split(""), dp: dp.map(r => [...r]), i: 0, j: 0, phase: "init" },
+  });
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const match = t1[i - 1] === t2[j - 1];
+      steps.push({
+        stepType: "loop",
+        description: `i=${i}, j=${j}: t1[${i - 1}]='${t1[i - 1]}', t2[${j - 1}]='${t2[j - 1]}'`,
+        state: { t1: t1.split(""), t2: t2.split(""), dp: dp.map(r => [...r]), i, j, phase: "loop" },
+      });
+      if (match) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        steps.push({
+          stepType: "match",
+          description: `match → dp[${i}][${j}] = 1 + dp[${i - 1}][${j - 1}] = ${dp[i][j]}`,
+          state: { t1: t1.split(""), t2: t2.split(""), dp: dp.map(r => [...r]), i, j, phase: "match" },
+        });
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        steps.push({
+          stepType: "no_match",
+          description: `no match → dp[${i}][${j}] = max(dp[${i - 1}][${j}], dp[${i}][${j - 1}]) = ${dp[i][j]}`,
+          state: { t1: t1.split(""), t2: t2.split(""), dp: dp.map(r => [...r]), i, j, phase: "no_match" },
+        });
+      }
+    }
+  }
+  steps.push({
+    stepType: "done",
+    description: `return dp[${m}][${n}] = ${dp[m][n]}`,
+    state: { t1: t1.split(""), t2: t2.split(""), dp: dp.map(r => [...r]), i: m, j: n, done: true, phase: "done" },
+  });
+  return steps;
+}
+
 export function generateParenthesesSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const steps = [];
@@ -1548,7 +1600,7 @@ export const STEP_GENERATORS = {
   "reverse-bits":            generateReverseBitsSteps,
   "coin-change":             (i) => stubWithNumsTarget(i),
   "longest-increasing-subsequence": (i) => stubArraySteps(i),
-  "longest-common-subsequence": (i) => stubWithS(i),
+  "longest-common-subsequence": generateLongestCommonSubsequenceSteps,
   "word-break":              generateWordBreakSteps,
   "combination-sum":         (i) => stubWithNumsTarget(i),
   "house-robber-ii":         (i) => stubArraySteps(i),

@@ -32,3 +32,4 @@ export { default as SumTwoIntegersViz } from "./SumTwoIntegersViz";
 export { default as NumberOf1BitsViz } from "./NumberOf1BitsViz";
 export { default as ReverseBitsViz } from "./ReverseBitsViz";
 export { default as WordBreakViz } from "./WordBreakViz";
+export { default as LongestCommonSubsequenceViz } from "./LongestCommonSubsequenceViz";
