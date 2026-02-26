@@ -1253,6 +1253,35 @@ export function generateParenthesesSteps(input) {
   return steps;
 }
 
+export function generateMinStackSteps(input) {
+  const nums = input?.nums ?? [];
+  const steps = [];
+  let st = [];
+  let minSt = [];
+  steps.push({ stepType: "init", description: "MinStack: two stacks (st, minSt)", state: { st: [], minSt: [], op: null, opVal: null, result: null } });
+  for (let i = 0; i < nums.length; i++) {
+    const val = Number(nums[i]);
+    st = [...st, val];
+    minSt = [...minSt, minSt.length === 0 ? val : Math.min(minSt[minSt.length - 1], val)];
+    steps.push({ stepType: "push", description: `push(${val}) → st=[${st.join(", ")}], minSt=[${minSt.join(", ")}]`, state: { st: [...st], minSt: [...minSt], op: "push", opVal: val, result: null } });
+  }
+  if (st.length > 0) {
+    const minVal = minSt[minSt.length - 1];
+    steps.push({ stepType: "getMin", description: `getMin() → ${minVal}`, state: { st: [...st], minSt: [...minSt], op: "getMin", opVal: null, result: minVal } });
+    st = st.slice(0, -1);
+    minSt = minSt.slice(0, -1);
+    steps.push({ stepType: "pop", description: `pop() → st=[${st.join(", ") || "empty"}], minSt=[${minSt.join(", ") || "empty"}]`, state: { st: [...st], minSt: [...minSt], op: "pop", opVal: null, result: null } });
+    if (st.length > 0) {
+      const topVal = st[st.length - 1];
+      steps.push({ stepType: "top", description: `top() → ${topVal}`, state: { st: [...st], minSt: [...minSt], op: "top", opVal: null, result: topVal } });
+      const minVal2 = minSt[minSt.length - 1];
+      steps.push({ stepType: "getMin", description: `getMin() → ${minVal2}`, state: { st: [...st], minSt: [...minSt], op: "getMin", opVal: null, result: minVal2 } });
+    }
+  }
+  steps.push({ stepType: "done", description: "Done", state: { st: [...st], minSt: [...minSt], op: null, opVal: null, result: null, done: true } });
+  return steps;
+}
+
 export function generateReorderListSteps(input) {
   const head = Array.isArray(input?.head) ? [...input.head] : [];
   if (head.length < 2) {
@@ -1362,7 +1391,7 @@ export const STEP_GENERATORS = {
   "top-k-frequent":          generateTopKFrequentSteps,
   "subsets":                 (i) => stubArraySteps(i),
   "permutations":            (i) => stubArraySteps(i),
-  "min-stack":               (i) => stubArraySteps(i),
+  "min-stack":               generateMinStackSteps,
   "eval-rpn":               generateEvalRpnSteps,
   "generate-parentheses":    generateParenthesesSteps,
   "trapping-rain-water":     (i) => stubArraySteps(i),
