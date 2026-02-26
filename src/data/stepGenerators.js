@@ -1424,6 +1424,58 @@ export function generateLongestCommonSubsequenceSteps(input) {
   return steps;
 }
 
+export function generateLongestIncreasingSubsequenceSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : (input?.nums != null ? [Number(input.nums)] : []);
+  const steps = [];
+  const tails = [];
+  steps.push({
+    stepType: "init",
+    description: "tails = [] (smallest tail for each IS length)",
+    state: { nums: [...nums], tails: [], i: -1, pos: -1, extend: false, replace: false },
+  });
+  for (let idx = 0; idx < nums.length; idx++) {
+    const x = nums[idx];
+    let lo = 0, hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (tails[mid] < x) lo = mid + 1;
+      else hi = mid;
+    }
+    const pos = lo;
+    steps.push({
+      stepType: "loop",
+      description: `x = nums[${idx}] = ${x}`,
+      state: { nums: [...nums], tails: [...tails], i: idx, pos: -1, extend: false, replace: false },
+    });
+    steps.push({
+      stepType: "search",
+      description: `lower_bound(tails, ${x}) → pos = ${pos}`,
+      state: { nums: [...nums], tails: [...tails], i: idx, pos, extend: false, replace: false },
+    });
+    if (pos === tails.length) {
+      tails.push(x);
+      steps.push({
+        stepType: "extend",
+        description: `pos == tails.size() → tails.push_back(${x}), tails = [${tails.join(", ")}]`,
+        state: { nums: [...nums], tails: [...tails], i: idx, pos, extend: true, replace: false },
+      });
+    } else {
+      tails[pos] = x;
+      steps.push({
+        stepType: "replace",
+        description: `tails[${pos}] = ${x} → tails = [${tails.join(", ")}]`,
+        state: { nums: [...nums], tails: [...tails], i: idx, pos, extend: false, replace: true },
+      });
+    }
+  }
+  steps.push({
+    stepType: "done",
+    description: `return tails.size() = ${tails.length}`,
+    state: { nums: [...nums], tails: [...tails], i: nums.length - 1, pos: -1, extend: false, replace: false, done: true },
+  });
+  return steps;
+}
+
 export function generateParenthesesSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const steps = [];
@@ -1599,7 +1651,7 @@ export const STEP_GENERATORS = {
   "counting-bits":           generateCountingBitsSteps,
   "reverse-bits":            generateReverseBitsSteps,
   "coin-change":             (i) => stubWithNumsTarget(i),
-  "longest-increasing-subsequence": (i) => stubArraySteps(i),
+  "longest-increasing-subsequence": generateLongestIncreasingSubsequenceSteps,
   "longest-common-subsequence": generateLongestCommonSubsequenceSteps,
   "word-break":              generateWordBreakSteps,
   "combination-sum":         (i) => stubWithNumsTarget(i),

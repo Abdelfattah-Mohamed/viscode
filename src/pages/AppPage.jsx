@@ -12,7 +12,7 @@ import {
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
   PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
   MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
-  ThreeSumViz, ContainerViz, MergeListsViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz, WordBreakViz, LongestCommonSubsequenceViz,
+  ThreeSumViz, ContainerViz, MergeListsViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz, WordBreakViz, LongestCommonSubsequenceViz, LongestIncreasingSubsequenceViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -471,6 +471,7 @@ export default function AppPage({
             {problem.visualizer === "reversebits" && <ReverseBitsViz       stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "wordbreak"  && <WordBreakViz         s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "lcs"        && <LongestCommonSubsequenceViz stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "lis"        && <LongestIncreasingSubsequenceViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
           </div>
           <StepControls {...player} t={t} mobile={mobile} />
           {/* Personal notes (under whiteboard) */}
