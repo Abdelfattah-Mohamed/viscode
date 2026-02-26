@@ -1610,6 +1610,50 @@ export function generateHouseRobberIISteps(input) {
   return steps;
 }
 
+export function generateUniquePathsSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : [];
+  const m = Math.max(0, nums[0] ?? 0);
+  const n = Math.max(0, nums[1] ?? 0);
+  const steps = [];
+  if (m === 0 || n === 0) {
+    steps.push({ stepType: "init", description: "m or n is 0", state: { m, n, dp: [], i: 0, j: 0, done: true } });
+    steps.push({ stepType: "done", description: "return 0", state: { m, n, dp: [], i: 0, j: 0, done: true } });
+    return steps;
+  }
+  const dp = Array(n).fill(1);
+  steps.push({
+    stepType: "init",
+    description: `dp = [1,1,...,1] (${n} columns); first row is all 1s`,
+    state: { m, n, dp: [...dp], i: 0, j: 0, done: false },
+  });
+  for (let i = 1; i < m; i++) {
+    steps.push({
+      stepType: "loop_i",
+      description: `Row i = ${i} (process row ${i + 1})`,
+      state: { m, n, dp: [...dp], i, j: 0, done: false },
+    });
+    for (let j = 1; j < n; j++) {
+      steps.push({
+        stepType: "loop_j",
+        description: `Column j = ${j}`,
+        state: { m, n, dp: [...dp], i, j, done: false },
+      });
+      dp[j] += dp[j - 1];
+      steps.push({
+        stepType: "update",
+        description: `dp[${j}] += dp[${j - 1}] → dp[${j}] = ${dp[j]}`,
+        state: { m, n, dp: [...dp], i, j, done: false },
+      });
+    }
+  }
+  steps.push({
+    stepType: "done",
+    description: `return dp[${n - 1}] = ${dp[n - 1]}`,
+    state: { m, n, dp: [...dp], i: m - 1, j: n - 1, done: true },
+  });
+  return steps;
+}
+
 export function generateParenthesesSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const steps = [];
@@ -1791,7 +1835,7 @@ export const STEP_GENERATORS = {
   "combination-sum":         generateCombinationSumSteps,
   "house-robber-ii":         generateHouseRobberIISteps,
   "decode-ways":             generateDecodeWaysSteps,
-  "unique-paths":            (i) => stubArraySteps(i),
+  "unique-paths":            generateUniquePathsSteps,
   "jump-game":               (i) => stubArraySteps(i),
   "insert-interval":         generateInsertIntervalSteps,
   "non-overlapping-intervals": (i) => stubIntervalSteps(i),
