@@ -861,6 +861,58 @@ export function generateMaxAreaOfIslandSteps({ grid: flat, rows }) {
   return steps;
 }
 
+export function generatePacificAtlanticSteps(input) {
+  if (!input || input.grid == null || input.rows == null) {
+    return [
+      { stepType: "init", description: "Enter grid and rows", state: { grid: [], pacific: [], atlantic: [], result: [], current: null, phase: null } },
+      { stepType: "done", description: "Done", state: { grid: [], pacific: [], atlantic: [], result: [], current: null, done: true } },
+    ];
+  }
+  const grid = buildGrid2D(input.grid, input.rows);
+  if (!grid.length) {
+    return [{ stepType: "done", description: "Empty grid", state: { grid: [], pacific: [], atlantic: [], result: [], current: null, done: true } }];
+  }
+  const R = grid.length, C = grid[0].length;
+  const pacific = grid.map(row => row.map(() => false));
+  const atlantic = grid.map(row => row.map(() => false));
+  const steps = [];
+
+  function bfsReachableWithSteps(reach, startRows, startCols, pushStep) {
+    const queue = [];
+    for (const r of startRows) for (let c = 0; c < C; c++) queue.push([r, c]);
+    for (const c of startCols) for (let r = 0; r < R; r++) queue.push([r, c]);
+    while (queue.length) {
+      const [r, c] = queue.shift();
+      if (r < 0 || r >= R || c < 0 || c >= C || reach[r][c]) continue;
+      reach[r][c] = true;
+      pushStep(r, c);
+      const h = grid[r][c];
+      if (r - 1 >= 0 && grid[r - 1][c] >= h) queue.push([r - 1, c]);
+      if (r + 1 < R && grid[r + 1][c] >= h) queue.push([r + 1, c]);
+      if (c - 1 >= 0 && grid[r][c - 1] >= h) queue.push([r, c - 1]);
+      if (c + 1 < C && grid[r][c + 1] >= h) queue.push([r, c + 1]);
+    }
+  }
+
+  steps.push({ stepType: "init", description: "Heights grid; BFS from Pacific and Atlantic edges", state: { grid, pacific: pacific.map(r => [...r]), atlantic: atlantic.map(r => [...r]), result: [], current: null, phase: "pacific" } });
+
+  bfsReachableWithSteps(pacific, [0], [0], (r, c) => {
+    steps.push({ stepType: "pacific_visit", description: `Pacific BFS: (${r},${c}) reachable`, state: { grid, pacific: pacific.map(row => [...row]), atlantic: atlantic.map(row => [...row]), result: [], current: [r, c], phase: "pacific" } });
+  });
+
+  steps.push({ stepType: "pacific_done", description: "Pacific BFS complete", state: { grid, pacific: pacific.map(r => [...r]), atlantic: atlantic.map(r => [...r]), result: [], current: null, phase: "atlantic" } });
+
+  bfsReachableWithSteps(atlantic, [R - 1], [C - 1], (r, c) => {
+    steps.push({ stepType: "atlantic_visit", description: `Atlantic BFS: (${r},${c}) reachable`, state: { grid, pacific: pacific.map(r => [...r]), atlantic: atlantic.map(row => [...row]), result: [], current: [r, c], phase: "atlantic" } });
+  });
+
+  const result = [];
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) if (pacific[r][c] && atlantic[r][c]) result.push([r, c]);
+  steps.push({ stepType: "result", description: `Cells that reach both oceans: ${result.length}`, state: { grid, pacific: pacific.map(r => [...r]), atlantic: atlantic.map(r => [...r]), result: [...result], current: null, phase: "done" } });
+  steps.push({ stepType: "done", description: `Done. ${result.length} cells flow to both Pacific and Atlantic`, state: { grid, pacific: pacific.map(r => [...r]), atlantic: atlantic.map(r => [...r]), result: [...result], current: null, done: true } });
+  return steps;
+}
+
 // Stub step generators for problems that don't have full visualization yet
 function stubArraySteps(input) {
   const nums = input && input.nums != null ? input.nums : (Array.isArray(input) ? input : []);
@@ -1238,7 +1290,7 @@ export const STEP_GENERATORS = {
   "copy-list-random-pointer": (i) => stubLinkedListSteps(i),
   "clone-graph":            (i) => stubGraphSteps(i),
   "course-schedule":        (i) => stubGraphSteps(i),
-  "pacific-atlantic":        (i) => stubGridSteps(i),
+  "pacific-atlantic":        generatePacificAtlanticSteps,
   "num-connected-components": (i) => stubGraphSteps(i),
   "graph-valid-tree":        (i) => stubGraphSteps(i),
   "group-anagrams":          (i) => stubWithS(i),
