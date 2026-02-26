@@ -1292,22 +1292,22 @@ export function generateDecodeWaysSteps(input) {
   const dp = new Array(n + 1).fill(0);
   dp[0] = 1;
   const steps = [];
-  steps.push({ stepType: "init", description: "dp[0] = 1 (empty string = 1 way)", state: { s: s.split(""), dp: [...dp], i: 0, highlight: [], done: false } });
+  steps.push({ stepType: "init", description: "dp[0] = 1 (empty string = 1 way)", state: { s: s.split(""), dp: [...dp], i: 0, highlight: [], contrib: null, done: false } });
   for (let i = 1; i <= n; i++) {
-    steps.push({ stepType: "loop", description: `Position i=${i} (s[${i - 1}]='${s[i - 1]}')`, state: { s: s.split(""), dp: [...dp], i, highlight: [i - 1], done: false } });
+    steps.push({ stepType: "loop", description: `i=${i}: consider s[${i - 1}]='${s[i - 1]}'`, state: { s: s.split(""), dp: [...dp], i, highlight: [i - 1], contrib: null, done: false } });
     if (s[i - 1] !== "0") {
       dp[i] += dp[i - 1];
-      steps.push({ stepType: "one_digit", description: `One digit: s[${i - 1}]='${s[i - 1]}' → dp[${i}] += dp[${i - 1}] = ${dp[i]}`, state: { s: s.split(""), dp: [...dp], i, highlight: [i - 1], done: false } });
+      steps.push({ stepType: "one_digit", description: `One digit: s[${i - 1}]≠'0' → dp[${i}] += dp[${i - 1}] = ${dp[i]}`, state: { s: s.split(""), dp: [...dp], i, highlight: [i - 1], contrib: i - 1, done: false } });
     }
     if (i >= 2) {
       const two = parseInt(s.slice(i - 2, i), 10);
       if (two >= 10 && two <= 26) {
         dp[i] += dp[i - 2];
-        steps.push({ stepType: "two_digit", description: `Two digits: "${s.slice(i - 2, i)}" = ${two} → dp[${i}] += dp[${i - 2}] = ${dp[i]}`, state: { s: s.split(""), dp: [...dp], i, highlight: [i - 2, i - 1], done: false } });
+        steps.push({ stepType: "two_digit", description: `Two digits: "${s.slice(i - 2, i)}" in [10,26] → dp[${i}] += dp[${i - 2}] = ${dp[i]}`, state: { s: s.split(""), dp: [...dp], i, highlight: [i - 2, i - 1], contrib: i - 2, done: false } });
       }
     }
   }
-  steps.push({ stepType: "done", description: `✅ Ways to decode = ${dp[n]}`, state: { s: s.split(""), dp: [...dp], i: n, highlight: [], done: true } });
+  steps.push({ stepType: "done", description: `return dp[${n}] = ${dp[n]}`, state: { s: s.split(""), dp: [...dp], i: n, highlight: [], contrib: null, done: true } });
   return steps;
 }
 
