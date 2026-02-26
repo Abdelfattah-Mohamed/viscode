@@ -976,6 +976,36 @@ export function generateTopKFrequentSteps(input) {
   return steps;
 }
 
+export function generateSumTwoIntegersSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums : [];
+  const a0 = Number(nums[0]);
+  const b0 = Number(nums[1]);
+  if (Number.isNaN(a0) || Number.isNaN(b0)) {
+    return [
+      { stepType: "init", description: "Enter two integers (e.g. nums: 1, 2)", state: { a: 0, b: 0, carry: null, result: null, highlight: null, phase: "init" } },
+      { stepType: "done", description: "Done", state: { a: 0, b: 0, carry: null, result: 0, done: true, highlight: "a", phase: "done" } },
+    ];
+  }
+  let a = a0;
+  let b = b0;
+  const steps = [];
+  steps.push({ stepType: "init", description: `getSum(${a0}, ${b0}) — add without + or -`, state: { a: a0, b: b0, carry: null, result: null, highlight: null, phase: "init" } });
+  const maxIter = 25;
+  let iter = 0;
+  while (b !== 0 && iter < maxIter) {
+    iter++;
+    steps.push({ stepType: "loop_check", description: `while (b != 0): b = ${b} ≠ 0 → enter loop`, state: { a, b, carry: null, result: null, highlight: "b", phase: "loop_check" } });
+    const carry = (a & b) << 1;
+    steps.push({ stepType: "carry", description: `carry = (a & b) << 1 = ${carry}`, state: { a, b, carry, result: null, highlight: "carry", phase: "carry" } });
+    a = a ^ b;
+    steps.push({ stepType: "xor", description: `a = a ^ b = ${a}`, state: { a, b, carry, result: null, highlight: "a", phase: "xor" } });
+    b = carry;
+    steps.push({ stepType: "assign_b", description: `b = carry = ${b}`, state: { a, b, carry, result: null, highlight: "b", phase: "assign_b" } });
+  }
+  steps.push({ stepType: "done", description: `b == 0 → return a = ${a}`, state: { a, b: 0, carry: null, result: a, done: true, highlight: "a", phase: "done" } });
+  return steps;
+}
+
 // Stub step generators for problems that don't have full visualization yet
 function stubArraySteps(input) {
   const nums = input && input.nums != null ? input.nums : (Array.isArray(input) ? input : []);
@@ -1398,7 +1428,7 @@ export const STEP_GENERATORS = {
   "max-area-of-island":      generateMaxAreaOfIslandSteps,
   "min-rotated-sorted":      (i) => stubArraySteps(i),
   "search-rotated-sorted":   generateSearchRotatedSteps,
-  "sum-two-integers":        (i) => stubArraySteps(i),
+  "sum-two-integers":        generateSumTwoIntegersSteps,
   "number-of-1-bits":        (i) => stubArraySteps(i),
   "counting-bits":           (i) => stubWithN(i),
   "reverse-bits":            (i) => stubArraySteps(i),
