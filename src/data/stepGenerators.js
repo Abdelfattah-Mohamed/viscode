@@ -1041,6 +1041,24 @@ export function generateCountingBitsSteps(input) {
   return steps;
 }
 
+export function generateReverseBitsSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums : [];
+  let n = Number(nums[0]);
+  if (Number.isNaN(n) || n < 0) n = 0;
+  n = n >>> 0;
+  let res = 0;
+  const steps = [];
+  steps.push({ stepType: "init", description: `reverseBits(${n}) — res = 0`, state: { n, res: 0, i: -1, highlight: "res", phase: "init" } });
+  for (let i = 0; i < 32; i++) {
+    steps.push({ stepType: "loop", description: `for i = ${i}: extract LSB, shift`, state: { n, res, i, highlight: "n", phase: "loop" } });
+    res = ((res << 1) | (n & 1)) >>> 0;
+    n = n >>> 1;
+    steps.push({ stepType: "body", description: `res = (res<<1)|(n&1) = ${res}; n >>= 1`, state: { n, res, i, highlight: "both", phase: "body" } });
+  }
+  steps.push({ stepType: "done", description: `return res = ${res}`, state: { n: 0, res, i: 32, done: true, highlight: "res", phase: "done" } });
+  return steps;
+}
+
 // Stub step generators for problems that don't have full visualization yet
 function stubArraySteps(input) {
   const nums = input && input.nums != null ? input.nums : (Array.isArray(input) ? input : []);
@@ -1466,7 +1484,7 @@ export const STEP_GENERATORS = {
   "sum-two-integers":        generateSumTwoIntegersSteps,
   "number-of-1-bits":        generateHammingWeightSteps,
   "counting-bits":           generateCountingBitsSteps,
-  "reverse-bits":            (i) => stubArraySteps(i),
+  "reverse-bits":            generateReverseBitsSteps,
   "coin-change":             (i) => stubWithNumsTarget(i),
   "longest-increasing-subsequence": (i) => stubArraySteps(i),
   "longest-common-subsequence": (i) => stubWithS(i),
