@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import TreeRoughView from "./TreeRoughView";
+import { EXCALIDRAW_TREE } from "./treeExcalidrawTheme";
 
 const NODE_R = 20;
 const NULL_R = 6;
@@ -78,64 +80,38 @@ function TreeView({ arr, label, icon, highlightSet, currentIndex, matchSet, t, w
       </div>
       <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ maxWidth: width, overflow: "visible" }}>
         <g transform="translate(0, 4)">
-          {edges.map((e, i) => {
-            const dx = e.to.x - e.from.x, dy = e.to.y - e.from.y;
-            const d = Math.hypot(dx, dy) || 1;
-            const hl = highlightSet.has(e.from.index) && highlightSet.has(e.to.index);
-            const mt = matchSet.has(e.from.index) && matchSet.has(e.to.index);
-            return (
-              <line key={`e${i}`}
-                x1={e.from.x + (dx / d) * NODE_R} y1={e.from.y + (dy / d) * NODE_R}
-                x2={e.to.x - (dx / d) * NODE_R} y2={e.to.y - (dy / d) * NODE_R}
-                stroke={mt ? t.green + "80" : hl ? t.blue + "70" : t.border + "44"}
-                strokeWidth={mt ? 2.5 : hl ? 2 : 1.5}
-                strokeLinecap="round"
-              />
-            );
-          })}
-
-          {nullMarkers.map((m, i) => {
-            if (!m.parentNode) return null;
-            const dx = m.x - m.parentNode.x, dy = m.y - m.parentNode.y;
-            const d = Math.hypot(dx, dy) || 1;
-            return (
-              <g key={`nm${i}`}>
-                <line
-                  x1={m.parentNode.x + (dx / d) * NODE_R} y1={m.parentNode.y + (dy / d) * NODE_R}
-                  x2={m.x} y2={m.y}
-                  stroke={t.border + "28"} strokeWidth={1} strokeDasharray="4,3"
-                />
-                <circle cx={m.x} cy={m.y} r={NULL_R}
-                  fill="none" stroke={t.border + "40"} strokeWidth={1.5} strokeDasharray="3,2" />
-                <text x={m.x} y={m.y + 0.5} textAnchor="middle" dominantBaseline="central"
-                  style={{ fontSize: "0.5em", fill: t.inkMuted + "77", fontFamily: "sans-serif" }}>
-                  ×
-                </text>
-              </g>
-            );
-          })}
-
-          {nodes.map(n => {
-            const isCur = n.index === currentIndex;
-            const isHl = highlightSet.has(n.index);
-            const isMt = matchSet.has(n.index);
-            const border = isMt ? t.green : isCur ? t.yellow : isHl ? t.blue : t.border + "66";
-            const bg = isMt ? t.green + "30" : isCur ? t.yellow + "30" : isHl ? t.blue + "20" : t.surface;
-            const sw = isMt || isCur ? 2.5 : 2;
-            return (
-              <g key={n.index}>
-                {(isMt || isCur) && (
-                  <circle cx={n.x} cy={n.y} r={NODE_R + 5}
-                    fill="none" stroke={border} strokeWidth={1} opacity={0.25} />
-                )}
-                <circle cx={n.x} cy={n.y} r={NODE_R} fill={bg} stroke={border} strokeWidth={sw} />
-                <text x={n.x} y={n.y} textAnchor="middle" dominantBaseline="central"
-                  style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15em", fontWeight: 700, fill: t.ink }}>
-                  {n.val}
-                </text>
-              </g>
-            );
-          })}
+          <TreeRoughView
+            nodes={nodes}
+            edges={edges}
+            nullMarkers={nullMarkers}
+            width={width}
+            height={height}
+            t={t}
+            getNodeStyle={(n) => {
+              const isCur = n.index === currentIndex;
+              const isHl = highlightSet.has(n.index);
+              const isMt = matchSet.has(n.index);
+              if (isMt) return { stroke: EXCALIDRAW_TREE.success, fill: EXCALIDRAW_TREE.success + "22", strokeWidth: 2.5, ring: EXCALIDRAW_TREE.success };
+              if (isCur) return { stroke: EXCALIDRAW_TREE.current, fill: EXCALIDRAW_TREE.current + "22", strokeWidth: 2.5, ring: EXCALIDRAW_TREE.current };
+              if (isHl) return { stroke: EXCALIDRAW_TREE.highlight, fill: EXCALIDRAW_TREE.highlight + "18", strokeWidth: 2 };
+              return null;
+            }}
+            getEdgeStyle={(e) => {
+              const mt = matchSet.has(e.from.index) && matchSet.has(e.to.index);
+              if (mt) return { stroke: EXCALIDRAW_TREE.success, strokeWidth: 2.5 };
+              return null;
+            }}
+          />
+          {nullMarkers.map((m, i) => (
+            <text key={`nm${i}`} x={m.x} y={m.y + 0.5} textAnchor="middle" dominantBaseline="central"
+              style={{ fontSize: "0.5em", fill: t.inkMuted + "77", fontFamily: "sans-serif" }}>×</text>
+          ))}
+          {nodes.map((n) => (
+            <text key={n.index} x={n.x} y={n.y} textAnchor="middle" dominantBaseline="central"
+              style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15em", fontWeight: 700, fill: t.ink }}>
+              {n.val}
+            </text>
+          ))}
         </g>
       </svg>
     </div>

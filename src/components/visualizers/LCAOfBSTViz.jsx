@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import { leetcodeToComplete } from "../../utils/treeFormat";
+import TreeRoughView from "./TreeRoughView";
+import { EXCALIDRAW_TREE } from "./treeExcalidrawTheme";
 
 const NODE_R = 22;
 const NULL_R = 6;
@@ -107,93 +109,51 @@ export default function LCAOfBSTViz({ root = [], stepState = {}, t }) {
 
       <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ maxWidth: width, overflow: "visible" }}>
         <g transform="translate(0, 4)">
-          {edges.map((e, i) => {
-            const dx = e.to.x - e.from.x, dy = e.to.y - e.from.y;
-            const d = Math.hypot(dx, dy) || 1;
-            return (
-              <line key={`e${i}`}
-                x1={e.from.x + (dx / d) * NODE_R} y1={e.from.y + (dy / d) * NODE_R}
-                x2={e.to.x - (dx / d) * NODE_R} y2={e.to.y - (dy / d) * NODE_R}
-                stroke={t.border + "44"} strokeWidth={1.5} strokeLinecap="round"
-              />
-            );
-          })}
-
-          {nullMarkers.map((m, i) => {
-            if (!m.parentNode) return null;
-            const dx = m.x - m.parentNode.x, dy = m.y - m.parentNode.y;
-            const d = Math.hypot(dx, dy) || 1;
-            return (
-              <g key={`nm${i}`}>
-                <line
-                  x1={m.parentNode.x + (dx / d) * NODE_R} y1={m.parentNode.y + (dy / d) * NODE_R}
-                  x2={m.x} y2={m.y}
-                  stroke={t.border + "28"} strokeWidth={1} strokeDasharray="4,3"
-                />
-                <circle cx={m.x} cy={m.y} r={NULL_R}
-                  fill="none" stroke={t.border + "40"} strokeWidth={1.5} strokeDasharray="3,2" />
-                <text x={m.x} y={m.y + 0.5} textAnchor="middle" dominantBaseline="central"
-                  style={{ fontSize: "0.5em", fill: t.inkMuted + "77", fontFamily: "sans-serif" }}>
-                  ×
-                </text>
-              </g>
-            );
-          })}
-
+          <TreeRoughView
+            nodes={nodes}
+            edges={edges}
+            nullMarkers={nullMarkers}
+            width={width}
+            height={height}
+            nodeR={NODE_R}
+            t={t}
+            getNodeStyle={(n) => {
+              const isVisiting = n.index === visiting;
+              const isP = n.index === pIdx;
+              const isQ = n.index === qIdx;
+              const isLCA = lca != null && n.val === lca;
+              if (isLCA && done) return { stroke: EXCALIDRAW_TREE.success, fill: EXCALIDRAW_TREE.success + "22", strokeWidth: 2.5, ring: EXCALIDRAW_TREE.success };
+              if (isVisiting && lca != null) return { stroke: EXCALIDRAW_TREE.success, fill: EXCALIDRAW_TREE.success + "25", strokeWidth: 2.5 };
+              if (isVisiting) return { stroke: EXCALIDRAW_TREE.current, fill: EXCALIDRAW_TREE.current + "22", strokeWidth: 2.5, ring: EXCALIDRAW_TREE.current };
+              if (isP && isQ) return { stroke: EXCALIDRAW_TREE.blue, fill: EXCALIDRAW_TREE.blue + "22", strokeWidth: 2 };
+              if (isP) return { stroke: EXCALIDRAW_TREE.blue, fill: EXCALIDRAW_TREE.blue + "18", strokeWidth: 2 };
+              if (isQ) return { stroke: EXCALIDRAW_TREE.purple, fill: EXCALIDRAW_TREE.purple + "18", strokeWidth: 2 };
+              return null;
+            }}
+          />
+          {nullMarkers.map((m, i) => (
+            <text key={`nm${i}`} x={m.x} y={m.y + 0.5} textAnchor="middle" dominantBaseline="central"
+              style={{ fontSize: "0.5em", fill: t.inkMuted + "77", fontFamily: "sans-serif" }}>×</text>
+          ))}
           {nodes.map(n => {
             const isVisiting = n.index === visiting;
             const isP = n.index === pIdx;
             const isQ = n.index === qIdx;
             const isLCA = lca != null && n.val === lca;
-
-            let border = t.border + "66";
-            let bg = t.surface;
             let label = "";
-
-            if (isLCA && done) {
-              border = t.green;
-              bg = t.green + "30";
-              label = "LCA";
-            } else if (isVisiting && lca != null) {
-              border = t.green;
-              bg = t.green + "25";
-              label = "LCA";
-            } else if (isVisiting) {
-              border = t.yellow;
-              bg = t.yellow + "30";
-              label = "visit";
-            } else if (isP && isQ) {
-              border = t.blue + "cc";
-              bg = t.blue + "22";
-              label = "p,q";
-            } else if (isP) {
-              border = t.blue + "cc";
-              bg = t.blue + "18";
-              label = "p";
-            } else if (isQ) {
-              border = t.purple + "cc";
-              bg = t.purple + "18";
-              label = "q";
-            }
-
-            const sw = (isVisiting || isLCA) ? 2.5 : 2;
-
+            if (isLCA && done) label = "LCA";
+            else if (isVisiting && lca != null) label = "LCA";
+            else if (isVisiting) label = "visit";
+            else if (isP && isQ) label = "p,q";
+            else if (isP) label = "p";
+            else if (isQ) label = "q";
             return (
               <g key={n.index}>
-                {(isVisiting || (isLCA && done)) && (
-                  <circle cx={n.x} cy={n.y} r={NODE_R + 6}
-                    fill="none" stroke={isLCA ? t.green : t.yellow} strokeWidth={1.5} opacity={0.3} />
-                )}
-                <circle cx={n.x} cy={n.y} r={NODE_R} fill={bg} stroke={border} strokeWidth={sw} />
                 <text x={n.x} y={n.y} textAnchor="middle" dominantBaseline="central"
-                  style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1.1em", fontWeight: 700, fill: t.ink }}>
-                  {n.val}
-                </text>
+                  style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1.1em", fontWeight: 700, fill: t.ink }}>{n.val}</text>
                 {label && (
                   <text x={n.x} y={n.y + NODE_R + 10} textAnchor="middle"
-                    style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7em", fontWeight: 700, fill: isLCA ? t.green : (isP ? t.blue : isQ ? t.purple : t.yellow) }}>
-                    {label}
-                  </text>
+                    style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7em", fontWeight: 700, fill: isLCA ? t.green : (isP ? t.blue : isQ ? t.purple : t.yellow) }}>{label}</text>
                 )}
               </g>
             );

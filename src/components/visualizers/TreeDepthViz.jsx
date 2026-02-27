@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import TreeRoughView from "./TreeRoughView";
+import { EXCALIDRAW_TREE } from "./treeExcalidrawTheme";
 
 const NODE_R = 20;
 const NULL_R = 6;
@@ -75,65 +77,37 @@ export default function TreeDepthViz({ root = [], stepState = {}, t }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
       <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ maxWidth: width, overflow: "visible" }}>
         <g transform="translate(0, 4)">
-          {edges.map((e, i) => {
-            const dx = e.to.x - e.from.x, dy = e.to.y - e.from.y;
-            const d = Math.hypot(dx, dy) || 1;
-            return (
-              <line key={`e${i}`}
-                x1={e.from.x + (dx / d) * NODE_R} y1={e.from.y + (dy / d) * NODE_R}
-                x2={e.to.x - (dx / d) * NODE_R} y2={e.to.y - (dy / d) * NODE_R}
-                stroke={t.border + "44"} strokeWidth={1.5} strokeLinecap="round"
-              />
-            );
-          })}
-
-          {nullMarkers.map((m, i) => {
-            if (!m.parentNode) return null;
-            const dx = m.x - m.parentNode.x, dy = m.y - m.parentNode.y;
-            const d = Math.hypot(dx, dy) || 1;
-            return (
-              <g key={`nm${i}`}>
-                <line
-                  x1={m.parentNode.x + (dx / d) * NODE_R} y1={m.parentNode.y + (dy / d) * NODE_R}
-                  x2={m.x} y2={m.y}
-                  stroke={t.border + "28"} strokeWidth={1} strokeDasharray="4,3"
-                />
-                <circle cx={m.x} cy={m.y} r={NULL_R}
-                  fill="none" stroke={t.border + "40"} strokeWidth={1.5} strokeDasharray="3,2" />
-                <text x={m.x} y={m.y + 0.5} textAnchor="middle" dominantBaseline="central"
-                  style={{ fontSize: "0.5em", fill: t.inkMuted + "77", fontFamily: "sans-serif" }}>
-                  ×
+          <TreeRoughView
+            nodes={nodes}
+            edges={edges}
+            nullMarkers={nullMarkers}
+            width={width}
+            height={height}
+            t={t}
+            getNodeStyle={(n) => {
+              const isCur = n.index === visiting;
+              const hasDepth = depthMap[n.index] !== undefined;
+              if (isCur) return { stroke: EXCALIDRAW_TREE.current, fill: EXCALIDRAW_TREE.current + "22", strokeWidth: 2.5, ring: EXCALIDRAW_TREE.current };
+              if (hasDepth) return { stroke: EXCALIDRAW_TREE.success, fill: EXCALIDRAW_TREE.success + "18", strokeWidth: 2.5 };
+              return null;
+            }}
+          />
+          {nullMarkers.map((m, i) => (
+            <text key={`nm${i}`} x={m.x} y={m.y + 0.5} textAnchor="middle" dominantBaseline="central"
+              style={{ fontSize: "0.5em", fill: t.inkMuted + "77", fontFamily: "sans-serif" }}>×</text>
+          ))}
+          {nodes.map((n) => (
+            <g key={n.index}>
+              <text x={n.x} y={n.y} textAnchor="middle" dominantBaseline="central"
+                style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15em", fontWeight: 700, fill: t.ink }}>{n.val}</text>
+              {depthMap[n.index] !== undefined && (
+                <text x={n.x} y={n.y + NODE_R + 13} textAnchor="middle"
+                  style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6em", fontWeight: 600, fill: t.green }}>
+                  d={depthMap[n.index]}
                 </text>
-              </g>
-            );
-          })}
-
-          {nodes.map(n => {
-            const isCur = n.index === visiting;
-            const hasDepth = depthMap[n.index] !== undefined;
-            const border = isCur ? t.yellow : hasDepth ? t.green + "88" : t.border + "66";
-            const bg = isCur ? t.yellow + "30" : hasDepth ? t.green + "18" : t.surface;
-            const sw = isCur ? 2.5 : 2;
-            return (
-              <g key={n.index}>
-                {isCur && (
-                  <circle cx={n.x} cy={n.y} r={NODE_R + 5}
-                    fill="none" stroke={t.yellow} strokeWidth={1} opacity={0.25} />
-                )}
-                <circle cx={n.x} cy={n.y} r={NODE_R} fill={bg} stroke={border} strokeWidth={sw} />
-                <text x={n.x} y={n.y} textAnchor="middle" dominantBaseline="central"
-                  style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15em", fontWeight: 700, fill: t.ink }}>
-                  {n.val}
-                </text>
-                {hasDepth && (
-                  <text x={n.x} y={n.y + NODE_R + 13} textAnchor="middle"
-                    style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6em", fontWeight: 600, fill: t.green }}>
-                    d={depthMap[n.index]}
-                  </text>
-                )}
-              </g>
-            );
-          })}
+              )}
+            </g>
+          ))}
         </g>
       </svg>
 
