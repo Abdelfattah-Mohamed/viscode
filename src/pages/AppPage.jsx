@@ -12,7 +12,7 @@ import {
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
   PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
   MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
-  ThreeSumViz, ContainerViz, MergeListsViz, MergeKViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz, TrappingRainWaterViz,
+  ThreeSumViz, ContainerViz, MergeListsViz, MergeKViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz, TrappingRainWaterViz, PalindromicSubstringsViz, CharReplacementViz, EncodeDecodeViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -99,10 +99,37 @@ export default function AppPage({
       ?? langDef.lineMap["compare"]
       ?? langDef.lineMap["visit"]
       ?? langDef.lineMap["build_edges"]
+      ?? langDef.lineMap["add_edge"]
+      ?? langDef.lineMap["init_queue"]
       ?? langDef.lineMap["update_leftMax"]
       ?? langDef.lineMap["add_water_left"]
       ?? langDef.lineMap["update_rightMax"]
       ?? langDef.lineMap["add_water_right"]
+      ?? langDef.lineMap["transpose"]
+      ?? langDef.lineMap["reverse"]
+      ?? langDef.lineMap["scan"]
+      ?? langDef.lineMap["mark_zero"]
+      ?? langDef.lineMap["sweep"]
+      ?? langDef.lineMap["zero_col0"]
+      ?? langDef.lineMap["zero_row0"]
+      ?? langDef.lineMap["try_start"]
+      ?? langDef.lineMap["dfs_base"]
+      ?? langDef.lineMap["dfs_fail"]
+      ?? langDef.lineMap["dfs_mark"]
+      ?? langDef.lineMap["dfs_recurse"]
+      ?? langDef.lineMap["dfs_backtrack"]
+      ?? langDef.lineMap["found"]
+      ?? langDef.lineMap["go_right"]
+      ?? langDef.lineMap["go_down"]
+      ?? langDef.lineMap["go_left"]
+      ?? langDef.lineMap["go_up"]
+      ?? langDef.lineMap["try_odd"]
+      ?? langDef.lineMap["try_even"]
+      ?? langDef.lineMap["add_right"]
+      ?? langDef.lineMap["shrink"]
+      ?? langDef.lineMap["update_best"]
+      ?? langDef.lineMap["read_len"]
+      ?? langDef.lineMap["push_result"]
       ?? langDef.lineMap["init"]
       ?? 1;
     if (raw < 1) return -1;
@@ -266,7 +293,10 @@ export default function AppPage({
               {problem.visualizer === "robberii" && <HouseRobberIIViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "uniquepaths" && <UniquePathsViz stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "jumpgame" && <JumpGameViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
-              {problem.visualizer === "slidingwindow" && <SlidingWindowViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "palindromicsubstrings" && <PalindromicSubstringsViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "charreplacement" && <CharReplacementViz s={input.s ?? ""} k={input.k ?? 0} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "encodedecode" && <EncodeDecodeViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "slidingwindow" && <SlidingWindowViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "subsets" && <SubsetsViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "permutations" && <PermutationsViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "longestpalindrome" && <LongestPalindromeViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
@@ -495,6 +525,9 @@ export default function AppPage({
             {problem.visualizer === "robberii" && <HouseRobberIIViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "uniquepaths" && <UniquePathsViz stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "jumpgame" && <JumpGameViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "palindromicsubstrings" && <PalindromicSubstringsViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "charreplacement" && <CharReplacementViz s={input.s ?? ""} k={input.k ?? 0} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "encodedecode" && <EncodeDecodeViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "slidingwindow" && <SlidingWindowViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "subsets" && <SubsetsViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "permutations" && <PermutationsViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}

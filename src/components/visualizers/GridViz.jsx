@@ -1,5 +1,5 @@
 export default function GridViz({ stepState = {}, input, problemId, t }) {
-  const { grid = [], visited = [], current = null, islandCount, maxArea, currentArea, done, pacific = [], atlantic = [], result = [], phase } = stepState;
+  const { grid = [], visited = [], current = null, highlighted = [], islandCount, maxArea, currentArea, done, pacific = [], atlantic = [], result = [], phase, word = "", matched = "", res = [] } = stepState;
   const isPacificAtlantic = problemId === "pacific-atlantic" && (pacific.length > 0 || atlantic.length > 0);
   const isDark = t._resolved === "dark";
   const water = isDark ? "#1e3a5f" : "#bae6fd";
@@ -23,6 +23,7 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
   const R = grid.length;
   const C = grid[0].length;
   const isResultCell = (r, c) => result.some(([a, b]) => a === r && b === c);
+  const isHighlighted = (r, c) => highlighted.some(([a, b]) => a === r && b === c);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -33,11 +34,33 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 14, height: 14, borderRadius: 3, background: bothColor }} /> Both ({result?.length ?? 0})</span>
         </div>
       )}
-      {(islandCount != null || maxArea != null) && !isPacificAtlantic && (
+      {(islandCount != null || maxArea != null) && !isPacificAtlantic && problemId !== "rotate-image" && problemId !== "set-matrix-zeroes" && problemId !== "spiral-matrix" && (
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontFamily: "'Caveat',cursive", fontSize: "1.05em", color: t.inkMuted }}>
           {islandCount != null && <span><strong>Islands:</strong> {islandCount}</span>}
           {maxArea != null && <span><strong>Max area:</strong> {maxArea}</span>}
           {currentArea != null && currentArea > 0 && <span><strong>Current area:</strong> {currentArea}</span>}
+        </div>
+      )}
+      {problemId === "rotate-image" && phase && phase !== "init" && (
+        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", color: t.inkMuted }}>
+          Phase: <strong>{phase === "transpose" ? "Transpose" : phase === "reverse" ? "Reverse rows" : ""}</strong>
+        </div>
+      )}
+      {problemId === "set-matrix-zeroes" && phase && phase !== "init" && (
+        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", color: t.inkMuted }}>
+          Phase: <strong>{phase === "mark" ? "Mark zeros" : phase === "scan" ? "Scan" : phase === "sweep" ? "Sweep" : phase === "zero_col0" ? "Zero col 0" : phase === "zero_row0" ? "Zero row 0" : ""}</strong>
+        </div>
+      )}
+      {problemId === "word-search" && word && (
+        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", color: t.inkMuted }}>
+          Word: <strong>{word}</strong>
+          {matched && <span style={{ marginLeft: 8, color: t.green }}>Matched: {matched}</span>}
+        </div>
+      )}
+      {problemId === "spiral-matrix" && (phase || res?.length > 0) && (
+        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", color: t.inkMuted }}>
+          {phase && phase !== "init" && <span style={{ marginRight: 12 }}>Phase: <strong>{phase === "go_right" ? "Right" : phase === "go_down" ? "Down" : phase === "go_left" ? "Left" : phase === "go_up" ? "Up" : ""}</strong></span>}
+          {res?.length > 0 && <span>res: <strong>[{res.join(",")}]</strong></span>}
         </div>
       )}
       <div
@@ -52,8 +75,9 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
       >
         {grid.map((row, r) =>
           row.map((val, c) => {
-            const isVisited = !isPacificAtlantic && visited[r] && visited[r][c];
+            const isVisited = !isPacificAtlantic && problemId !== "rotate-image" && problemId !== "set-matrix-zeroes" && visited[r] && visited[r][c];
             const isCurrent = current && current[0] === r && current[1] === c;
+            const isRotateHighlight = problemId === "rotate-image" && isHighlighted(r, c);
             const toBoth = isPacificAtlantic && isResultCell(r, c);
             const toPac = isPacificAtlantic && pacific[r] && pacific[r][c];
             const toAtl = isPacificAtlantic && atlantic[r] && atlantic[r][c];
@@ -72,7 +96,7 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
                   width: cellSize,
                   height: cellSize,
                   background: bg,
-                  border: `2px solid ${isCurrent ? currentBorder : "transparent"}`,
+                  border: `2px solid ${(isCurrent || isRotateHighlight) ? currentBorder : "transparent"}`,
                   borderRadius: 4,
                   display: "flex",
                   alignItems: "center",
@@ -82,7 +106,7 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
                   color: val === 0 && !isPacificAtlantic ? (isDark ? "#93c5fd" : "#0369a1") : (isDark ? "#d1d5db" : "#1f2937"),
                 }}
               >
-                {problemId === "word-search" && typeof val === "number" && val >= 65 && val <= 122 ? String.fromCharCode(val) : val}
+                {problemId === "word-search" ? (val === 35 ? "#" : (typeof val === "number" && val >= 65 && val <= 122 ? String.fromCharCode(val) : (typeof val === "number" && val >= 97 && val <= 122 ? String.fromCharCode(val) : val))) : val}
               </div>
             );
           })

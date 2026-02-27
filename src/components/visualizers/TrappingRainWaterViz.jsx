@@ -29,7 +29,7 @@ export default function TrappingRainWaterViz({ nums = [], stepState = {}, t = {}
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
         <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.95em", fontWeight: 600, color: t.inkMuted, marginBottom: 10 }}>
-          height — <span style={{ color: groundColor, fontWeight: 700 }}>■</span> ground &nbsp; <span style={{ color: waterColor, fontWeight: 700 }}>■</span> water
+          <span style={{ color: groundColor, fontWeight: 700 }}>■</span> ground &nbsp; <span style={{ color: waterColor, fontWeight: 700 }}>■</span> water
         </div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 4, paddingLeft: 28 }}>
           {/* Y-axis */}

@@ -45,3 +45,6 @@ export { default as PermutationsViz } from "./PermutationsViz";
 export { default as LongestPalindromeViz } from "./LongestPalindromeViz";
 export { default as GroupAnagramsViz } from "./GroupAnagramsViz";
 export { default as TrappingRainWaterViz } from "./TrappingRainWaterViz";
+export { default as PalindromicSubstringsViz } from "./PalindromicSubstringsViz";
+export { default as CharReplacementViz } from "./CharReplacementViz";
+export { default as EncodeDecodeViz } from "./EncodeDecodeViz";

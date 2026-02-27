@@ -1203,6 +1203,322 @@ function stubIntervalSteps(input) {
   steps.push({ stepType: "done", description: "Done", state: { intervals: pairs, merged: pairs, current: -1, done: true } });
   return steps;
 }
+export function generateRotateImageSteps(input) {
+  if (!input || input.grid == null || input.rows == null) {
+    return [
+      { stepType: "init", description: "Enter grid and rows", state: { grid: [], highlighted: [], phase: null } },
+      { stepType: "done", description: "Done", state: { grid: [], highlighted: [], phase: null, done: true } },
+    ];
+  }
+  const grid = buildGrid2D(input.grid, input.rows);
+  if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], highlighted: [], phase: null, done: true } }];
+  const n = grid.length;
+  if (grid[0].length !== n) return [{ stepType: "done", description: "Matrix must be square", state: { grid, highlighted: [], phase: null, done: true } }];
+
+  const steps = [];
+  const m = grid.map(row => [...row]);
+
+  steps.push({ stepType: "init", description: `n = ${n}; transpose then reverse each row`, state: { grid: m.map(r => [...r]), highlighted: [], phase: "init" } });
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      [m[i][j], m[j][i]] = [m[j][i], m[i][j]];
+      steps.push({
+        stepType: "transpose",
+        description: `Swap m[${i}][${j}] ↔ m[${j}][${i}]`,
+        state: { grid: m.map(r => [...r]), highlighted: [[i, j], [j, i]], phase: "transpose" },
+      });
+    }
+  }
+
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < Math.floor(n / 2); j++) {
+      const k = n - 1 - j;
+      [m[i][j], m[i][k]] = [m[i][k], m[i][j]];
+      steps.push({
+        stepType: "reverse",
+        description: `Reverse row ${i}: swap m[${i}][${j}] ↔ m[${i}][${k}]`,
+        state: { grid: m.map(r => [...r]), highlighted: [[i, j], [i, k]], phase: "reverse" },
+      });
+    }
+  }
+
+  steps.push({ stepType: "done", description: "✓ Matrix rotated 90° clockwise", state: { grid: m.map(r => [...r]), highlighted: [], phase: null, done: true } });
+  return steps;
+}
+
+export function generateSetMatrixZeroesSteps(input) {
+  if (!input || input.grid == null || input.rows == null) {
+    return [
+      { stepType: "init", description: "Enter grid and rows", state: { grid: [], current: null, phase: null } },
+      { stepType: "done", description: "Done", state: { grid: [], current: null, phase: null, done: true } },
+    ];
+  }
+  const grid = buildGrid2D(input.grid, input.rows);
+  if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], current: null, phase: null, done: true } }];
+  const R = grid.length;
+  const C = grid[0].length;
+  const steps = [];
+  const m = grid.map(row => row.map(v => Number(v)));
+  let row0 = false;
+
+  steps.push({ stepType: "init", description: `R=${R}, C=${C}; use first row/col as markers`, state: { grid: m.map(r => [...r]), current: null, phase: "init" } });
+
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) {
+      if (m[r][c] === 0) {
+        m[0][c] = 0;
+        m[r][0] = 0;
+        if (r === 0) row0 = true;
+        if (c === 0) m[0][0] = 0;
+        steps.push({
+          stepType: "mark_zero",
+          description: `m[${r}][${c}]=0 → set m[0][${c}]=0, m[${r}][0]=0`,
+          state: { grid: m.map(row => row.map(v => v)), current: [r, c], phase: "mark" },
+        });
+      } else {
+        steps.push({
+          stepType: "scan",
+          description: `Scan (${r},${c})=${m[r][c]} — no change`,
+          state: { grid: m.map(row => row.map(v => v)), current: [r, c], phase: "scan" },
+        });
+      }
+    }
+  }
+
+  for (let r = 1; r < R; r++) {
+    for (let c = 1; c < C; c++) {
+      if (m[r][0] === 0 || m[0][c] === 0) {
+        m[r][c] = 0;
+        steps.push({
+          stepType: "sweep",
+          description: `m[${r}][0]=0 or m[0][${c}]=0 → set m[${r}][${c}]=0`,
+          state: { grid: m.map(row => row.map(v => v)), current: [r, c], phase: "sweep" },
+        });
+      } else {
+        steps.push({
+          stepType: "sweep",
+          description: `Check (${r},${c}) — keep ${m[r][c]}`,
+          state: { grid: m.map(row => row.map(v => v)), current: [r, c], phase: "sweep" },
+        });
+      }
+    }
+  }
+
+  if (m[0][0] === 0) {
+    for (let r = 0; r < R; r++) {
+      m[r][0] = 0;
+      steps.push({
+        stepType: "zero_col0",
+        description: `m[0][0]=0 → zero col 0: m[${r}][0]=0`,
+        state: { grid: m.map(row => row.map(v => v)), current: [r, 0], phase: "zero_col0" },
+      });
+    }
+  }
+
+  if (row0) {
+    for (let c = 0; c < C; c++) {
+      m[0][c] = 0;
+      steps.push({
+        stepType: "zero_row0",
+        description: `row0=true → zero row 0: m[0][${c}]=0`,
+        state: { grid: m.map(row => row.map(v => v)), current: [0, c], phase: "zero_row0" },
+      });
+    }
+  }
+
+  steps.push({ stepType: "done", description: "✓ Matrix zeroes set", state: { grid: m.map(row => row.map(v => v)), current: null, phase: null, done: true } });
+  return steps;
+}
+
+function parseWordSearchBoard(input) {
+  const boardStr = input?.board;
+  const gridArr = input?.grid;
+  const rows = input?.rows;
+  if (rows == null || rows < 1) return null;
+  let flat;
+  if (typeof boardStr === "string" && boardStr.trim()) {
+    flat = boardStr.split(",").map(t => {
+      const s = t.trim();
+      if (s.length === 1) return s.charCodeAt(0);
+      const n = Number(s);
+      return !isNaN(n) ? n : s.charCodeAt(0);
+    }).filter(v => !isNaN(v));
+  } else if (Array.isArray(gridArr) && gridArr.length > 0) {
+    flat = gridArr.map(v => (typeof v === "string" && v.length === 1 ? v.charCodeAt(0) : Number(v))).filter(v => !isNaN(v));
+  } else {
+    return null;
+  }
+  if (!flat.length) return null;
+  return buildGrid2D(flat, rows);
+}
+
+export function generateWordSearchSteps(input) {
+  if (!input || (input.board == null && input.grid == null) || input.rows == null) {
+    return [
+      { stepType: "init", description: "Enter board (e.g. A,B,C,D), rows, and word", state: { grid: [], visited: [], current: null, word: "", matched: "" } },
+      { stepType: "done", description: "Done", state: { grid: [], visited: [], current: null, word: "", matched: "", done: true } },
+    ];
+  }
+  const grid = parseWordSearchBoard(input);
+  if (!grid || !grid.length) return [{ stepType: "done", description: "Empty board", state: { grid: [], visited: [], current: null, word: "", matched: "", done: true } }];
+  const word = String(input.word ?? "AB").toUpperCase();
+  const R = grid.length;
+  const C = grid[0].length;
+  const steps = [];
+  const VISITED = 35;
+
+  function toChar(v) {
+    if (v === VISITED) return "#";
+    return typeof v === "number" && v >= 65 && v <= 90 ? String.fromCharCode(v) : (typeof v === "number" && v >= 97 && v <= 122 ? String.fromCharCode(v) : String(v));
+  }
+
+  function pushState(stepType, desc, r, c, visited, matched, extra = {}) {
+    const gridCopy = grid.map(row => row.map(v => v));
+    steps.push({
+      stepType,
+      description: desc,
+      state: { grid: gridCopy, visited: visited.map(row => [...row]), current: r != null && c != null ? [r, c] : null, word, matched, ...extra },
+    });
+  }
+
+  steps.push({ stepType: "init", description: `word="${word}"; try dfs from each cell`, state: { grid: grid.map(r => [...r]), visited: grid.map(() => Array(C).fill(false)), current: null, word, matched: "" } });
+
+  function dfs(r, c, i, visited) {
+    if (i === word.length) {
+      pushState("found", `✓ Found "${word}"`, r, c, visited, word, { found: true });
+      return true;
+    }
+    if (r < 0 || r >= R || c < 0 || c >= C) {
+      pushState("dfs_fail", `Out of bounds (${r},${c})`, null, null, visited, word.slice(0, i));
+      return false;
+    }
+    const ch = grid[r][c];
+    const letter = toChar(ch);
+    if (letter === "#") {
+      pushState("dfs_fail", `Already visited (${r},${c})`, r, c, visited, word.slice(0, i));
+      return false;
+    }
+    if (letter !== word[i]) {
+      pushState("dfs_fail", `(${r},${c})='${letter}' ≠ '${word[i]}'`, r, c, visited, word.slice(0, i));
+      return false;
+    }
+
+    grid[r][c] = VISITED;
+    visited[r][c] = true;
+    pushState("dfs_mark", `Match '${letter}' at (${r},${c}) → mark`, r, c, visited.map(row => [...row]), word.slice(0, i + 1));
+
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (const [dr, dc] of dirs) {
+      pushState("dfs_recurse", `Try (${r + dr},${c + dc})`, r, c, visited.map(row => [...row]), word.slice(0, i + 1));
+      if (dfs(r + dr, c + dc, i + 1, visited)) return true;
+    }
+
+    grid[r][c] = word.charCodeAt(i);
+    visited[r][c] = false;
+    pushState("dfs_backtrack", `Backtrack (${r},${c})`, r, c, visited.map(row => [...row]), word.slice(0, i));
+    return false;
+  }
+
+  let found = false;
+  outer: for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) {
+      const visited = grid.map(() => Array(C).fill(false));
+      pushState("try_start", `Try dfs from (${r},${c})`, r, c, visited, "");
+      if (dfs(r, c, 0, visited)) {
+        found = true;
+        break outer;
+      }
+    }
+  }
+
+  if (!found) {
+    pushState("done", `Word "${word}" not found`, null, null, grid.map(() => Array(C).fill(false)), "", { done: true });
+  }
+  return steps;
+}
+
+export function generateSpiralMatrixSteps(input) {
+  if (!input || input.grid == null || input.rows == null) {
+    return [
+      { stepType: "init", description: "Enter grid and rows", state: { grid: [], visited: [], current: null, res: [] } },
+      { stepType: "done", description: "Done", state: { grid: [], visited: [], current: null, res: [], done: true } },
+    ];
+  }
+  const grid = buildGrid2D(input.grid, input.rows);
+  if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], visited: [], current: null, res: [], done: true } }];
+  const R = grid.length;
+  const C = grid[0].length;
+  const steps = [];
+  const visited = grid.map(() => Array(C).fill(false));
+  const res = [];
+
+  steps.push({
+    stepType: "init",
+    description: `t=0, b=${R - 1}, l=0, r=${C - 1}; traverse right→down→left→up`,
+    state: { grid: grid.map(r => [...r]), visited: visited.map(r => [...r]), current: null, res: [...res], phase: "init" },
+  });
+
+  let t = 0, b = R - 1, l = 0, r = C - 1;
+
+  while (t <= b && l <= r) {
+    for (let c = l; c <= r; c++) {
+      res.push(grid[t][c]);
+      visited[t][c] = true;
+      steps.push({
+        stepType: "go_right",
+        description: `Right: push m[${t}][${c}]=${grid[t][c]} → res=[${res.join(",")}]`,
+        state: { grid: grid.map(row => [...row]), visited: visited.map(row => [...row]), current: [t, c], res: [...res], phase: "go_right" },
+      });
+    }
+    t++;
+
+    for (let row = t; row <= b; row++) {
+      res.push(grid[row][r]);
+      visited[row][r] = true;
+      steps.push({
+        stepType: "go_down",
+        description: `Down: push m[${row}][${r}]=${grid[row][r]} → res=[${res.join(",")}]`,
+        state: { grid: grid.map(row => [...row]), visited: visited.map(row => [...row]), current: [row, r], res: [...res], phase: "go_down" },
+      });
+    }
+    r--;
+
+    if (t <= b) {
+      for (let c = r; c >= l; c--) {
+        res.push(grid[b][c]);
+        visited[b][c] = true;
+        steps.push({
+          stepType: "go_left",
+          description: `Left: push m[${b}][${c}]=${grid[b][c]} → res=[${res.join(",")}]`,
+          state: { grid: grid.map(row => [...row]), visited: visited.map(row => [...row]), current: [b, c], res: [...res], phase: "go_left" },
+        });
+      }
+      b--;
+    }
+
+    if (l <= r) {
+      for (let row = b; row >= t; row--) {
+        res.push(grid[row][l]);
+        visited[row][l] = true;
+        steps.push({
+          stepType: "go_up",
+          description: `Up: push m[${row}][${l}]=${grid[row][l]} → res=[${res.join(",")}]`,
+          state: { grid: grid.map(row => [...row]), visited: visited.map(row => [...row]), current: [row, l], res: [...res], phase: "go_up" },
+        });
+      }
+      l++;
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `✓ Spiral order: [${res.join(",")}]`,
+    state: { grid: grid.map(row => [...row]), visited: visited.map(row => [...row]), current: null, res: [...res], phase: null, done: true },
+  });
+  return steps;
+}
+
 function stubGridSteps(input) {
   if (!input || input.grid == null || input.rows == null) {
     return [
@@ -1439,6 +1755,62 @@ export function generateLongestPalindromicSubstringSteps(input) {
     stepType: "done",
     description: `✅ Longest palindromic substring: "${best}"`,
     state: { s, i: n - 1, l: -1, r: -1, best, bestStart, bestLen, palindrome: "", type: null, action: null, done: true },
+  });
+  return steps;
+}
+
+export function generatePalindromicSubstringsSteps(input) {
+  const s = input?.s != null ? String(input.s).trim() : "";
+  const n = s.length;
+  const steps = [];
+  let count = 0;
+
+  function expand(l, r) {
+    let c = 0;
+    while (l >= 0 && r < n && s[l] === s[r]) {
+      c++;
+      l--;
+      r++;
+    }
+    return { l, r, added: c };
+  }
+
+  steps.push({
+    stepType: "init",
+    description: "countSubstrings(s): count = 0, for each center i try odd and even expansion",
+    state: { s, i: -1, l: -1, r: -1, count: 0, palindrome: "", type: null, action: "Initialize", done: false },
+  });
+
+  for (let i = 0; i < n; i++) {
+    steps.push({
+      stepType: "loop",
+      description: `Center i = ${i}`,
+      state: { s, i, l: -1, r: -1, count, palindrome: "", type: null, action: `Try center ${i}`, done: false },
+    });
+
+    const odd = expand(i, i);
+    count += odd.added;
+    steps.push({
+      stepType: "try_odd",
+      description: odd.added > 0 ? `Odd expand(i,i): found ${odd.added} palindrome(s) → count = ${count}` : `Odd expand(i,i): no palindromes`,
+      state: { s, i, l: odd.l, r: odd.r, count, palindrome: odd.added > 0 ? s.slice(odd.l + 1, odd.r) : "", type: "odd", action: "Odd-length expand", done: false },
+    });
+
+    if (i + 1 < n) {
+      const even = expand(i, i + 1);
+      count += even.added;
+      steps.push({
+        stepType: "try_even",
+        description: even.added > 0 ? `Even expand(i,i+1): found ${even.added} palindrome(s) → count = ${count}` : `Even expand(i,i+1): no palindromes`,
+        state: { s, i, l: even.l, r: even.r, count, palindrome: even.added > 0 ? s.slice(even.l + 1, even.r) : "", type: "even", action: "Even-length expand", done: false },
+      });
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `✅ Total palindromic substrings: ${count}`,
+    state: { s, i: n - 1, l: -1, r: -1, count, palindrome: "", type: null, action: null, done: true },
   });
   return steps;
 }
@@ -2386,7 +2758,7 @@ export function generateAlienDictionarySteps(input) {
   const words = raw ? raw.split(",").map(w => w.trim()).filter(Boolean) : [];
   if (words.length < 2) {
     return [
-      { stepType: "init", description: "Enter words (comma-separated)", state: { n: 0, edges: [], labels: [], highlighted: [], result: "", done: true } },
+      { stepType: "init", description: "Enter words (comma-separated)", state: { n: 0, edges: [], labels: [], highlighted: [], result: "", directed: true, done: true } },
     ];
   }
   const chars = [...new Set(words.join(""))];
@@ -2398,6 +2770,14 @@ export function generateAlienDictionarySteps(input) {
   const inDeg = {};
   chars.forEach(c => { graph[c] = new Set(); inDeg[c] = 0; });
 
+  const steps = [];
+  steps.push({
+    stepType: "init",
+    description: `Init in-degrees for ${labels.join(", ")}`,
+    state: { n, edges: [], labels: [...labels], highlighted: [], result: "", directed: true },
+  });
+
+  const edges = [];
   for (let i = 0; i < words.length - 1; i++) {
     const a = words[i], b = words[i + 1];
     for (let j = 0; j < Math.min(a.length, b.length); j++) {
@@ -2405,30 +2785,33 @@ export function generateAlienDictionarySteps(input) {
         if (!graph[a[j]].has(b[j])) {
           graph[a[j]].add(b[j]);
           inDeg[b[j]]++;
+          const u = charToIdx[a[j]], v = charToIdx[b[j]];
+          edges.push([u, v]);
+          steps.push({
+            stepType: "add_edge",
+            description: `Compare "${a}" vs "${b}" → ${a[j]} < ${b[j]}, add edge`,
+            state: { n, edges: edges.map(e => [...e]), labels: [...labels], highlighted: [u, v], result: "", directed: true },
+          });
         }
         break;
       }
     }
   }
-  const edges = [];
-  chars.forEach(u => {
-    graph[u].forEach(v => edges.push([charToIdx[u], charToIdx[v]]));
-  });
 
-  const steps = [];
-  steps.push({
-    stepType: "init",
-    description: `Build graph from ${words.length} words: ${labels.join(", ")}`,
-    state: { n, edges: [...edges], labels: [...labels], highlighted: [], result: "", directed: true },
-  });
   steps.push({
     stepType: "build_edges",
-    description: `Edges from comparing adjacent words: ${edges.length} edges`,
-    state: { n, edges: [...edges], labels: [...labels], highlighted: [], result: "", directed: true },
+    description: `Built ${edges.length} edges from adjacent words`,
+    state: { n, edges: edges.map(e => [...e]), labels: [...labels], highlighted: [], result: "", directed: true },
   });
 
   const inCopy = { ...inDeg };
   const q = chars.filter(c => inCopy[c] === 0);
+  steps.push({
+    stepType: "init_queue",
+    description: `Queue nodes with in-degree 0: [${q.join(", ")}]`,
+    state: { n, edges: edges.map(e => [...e]), labels: [...labels], highlighted: q.map(c => charToIdx[c]), result: "", directed: true },
+  });
+
   let result = "";
   while (q.length) {
     const c = q.shift();
@@ -2436,8 +2819,8 @@ export function generateAlienDictionarySteps(input) {
     result += c;
     steps.push({
       stepType: "visit",
-      description: `Pop '${c}' (in-degree 0) → result: "${result}"`,
-      state: { n, edges: [...edges], labels: [...labels], highlighted: [idx], result, directed: true },
+      description: `Pop '${c}' → result: "${result}"`,
+      state: { n, edges: edges.map(e => [...e]), labels: [...labels], highlighted: [idx], result, directed: true },
     });
     graph[c].forEach(nxt => {
       inCopy[nxt]--;
@@ -2449,7 +2832,7 @@ export function generateAlienDictionarySteps(input) {
   steps.push({
     stepType: "done",
     description: valid ? `✓ Order: "${result}"` : `Invalid (cycle?)`,
-    state: { n, edges: [...edges], labels: [...labels], highlighted: [], result, done: true, directed: true },
+    state: { n, edges: edges.map(e => [...e]), labels: [...labels], highlighted: [], result, done: true, directed: true },
   });
   return steps;
 }
@@ -2494,6 +2877,103 @@ export function generateTrappingRainWaterSteps(input) {
     }
   }
   steps.push({ stepType: "done", description: `✓ Return water = ${water}`, state: { l, r, leftMax, rightMax, water, waterAt: [...waterAt], done: true } });
+  return steps;
+}
+
+export function generateCharacterReplacementSteps(input) {
+  const s = input?.s != null ? String(input.s) : "";
+  const k = Math.max(0, Number(input?.k) ?? 0);
+  const n = s.length;
+  const steps = [];
+  const count = {};
+  let maxFreq = 0;
+  let best = 0;
+  let l = 0;
+
+  steps.push({
+    stepType: "init",
+    description: `characterReplacement(s, k=${k}): maxFreq=0, best=0, count={}`,
+    state: { s, k, l: 0, r: -1, count: {}, maxFreq: 0, best: 0, done: false },
+  });
+
+  for (let r = 0; r < n; r++) {
+    count[s[r]] = (count[s[r]] || 0) + 1;
+    maxFreq = Math.max(maxFreq, count[s[r]]);
+    steps.push({
+      stepType: "add_right",
+      description: `r=${r}, s[r]='${s[r]}' → count['${s[r]}']=${count[s[r]]}, maxFreq=${maxFreq}`,
+      state: { s, k, l, r, count: { ...count }, maxFreq, best, done: false },
+    });
+
+    while (r - l + 1 - maxFreq > k) {
+      count[s[l]]--;
+      if (count[s[l]] === 0) delete count[s[l]];
+      l++;
+      maxFreq = Object.keys(count).length ? Math.max(...Object.values(count)) : 0;
+      steps.push({
+        stepType: "shrink",
+        description: `Window invalid (len-maxFreq>k) → count[s[l]]--, l=${l}`,
+        state: { s, k, l, r, count: { ...count }, maxFreq, best, done: false },
+      });
+    }
+
+    best = Math.max(best, r - l + 1);
+    steps.push({
+      stepType: "update_best",
+      description: `best = max(best, ${r - l + 1}) = ${best}`,
+      state: { s, k, l, r, count: { ...count }, maxFreq, best, done: false },
+    });
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `✓ Return best = ${best}`,
+    state: { s, k, l, r: n - 1, count: { ...count }, maxFreq, best, done: true },
+  });
+  return steps;
+}
+
+export function generateEncodeDecodeSteps(input) {
+  const s = input?.s != null ? String(input.s) : "";
+  const steps = [];
+  const res = [];
+  let i = 0;
+
+  steps.push({
+    stepType: "init",
+    description: "decode(s): res = [], i = 0",
+    state: { s, i: 0, res: [], len: null, token: "", done: false },
+  });
+
+  while (i < s.length) {
+    const hashIdx = s.indexOf("#", i);
+    if (hashIdx < 0) break;
+    const lenStr = s.slice(i, hashIdx);
+    const len = parseInt(lenStr, 10) || 0;
+    const tokenStart = hashIdx + 1;
+    const token = s.slice(tokenStart, tokenStart + len);
+
+    steps.push({
+      stepType: "read_len",
+      description: `i=${i}, read length before #: "${lenStr}" → len=${len}`,
+      state: { s, i, res: [...res], len, token: "", done: false },
+    });
+
+    steps.push({
+      stepType: "push_result",
+      description: `res.push("${token}"), i += ${len} → i=${tokenStart + len}`,
+      state: { s, i: tokenStart + len, res: [...res, token], len, token, done: false },
+    });
+
+    res.push(token);
+    i = tokenStart + len;
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `✓ Decoded: [${res.map((r) => `"${r}"`).join(", ")}]`,
+    state: { s, i, res: [...res], len: null, token: "", done: true },
+  });
   return steps;
 }
 
@@ -2654,12 +3134,12 @@ export const STEP_GENERATORS = {
   "eval-rpn":               generateEvalRpnSteps,
   "generate-parentheses":    generateParenthesesSteps,
   "trapping-rain-water":     generateTrappingRainWaterSteps,
-  "palindromic-substrings":  (i) => stubStringSteps(i),
-  "longest-repeating-char-replacement": (i) => stubStringSteps(i),
-  "encode-decode-strings":   (i) => stubStringSteps(i),
-  "rotate-image":            (i) => stubGridSteps(i),
-  "set-matrix-zeroes":       (i) => stubGridSteps(i),
-  "word-search":             (i) => stubGridSteps(i),
-  "spiral-matrix":           (i) => stubGridSteps(i),
+  "palindromic-substrings":  generatePalindromicSubstringsSteps,
+  "longest-repeating-char-replacement": generateCharacterReplacementSteps,
+  "encode-decode-strings":   generateEncodeDecodeSteps,
+  "rotate-image":            generateRotateImageSteps,
+  "set-matrix-zeroes":       generateSetMatrixZeroesSteps,
+  "word-search":             generateWordSearchSteps,
+  "spiral-matrix":           generateSpiralMatrixSteps,
   "alien-dictionary":        generateAlienDictionarySteps,
 };
