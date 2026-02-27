@@ -1232,6 +1232,48 @@ export function generateLongestSubstringNoRepeatSteps(input) {
   return steps;
 }
 
+export function generateGroupAnagramsSteps(input) {
+  const raw = input?.s != null ? String(input.s).trim() : "";
+  const strs = raw ? raw.split(",").map((x) => x.trim()).filter(Boolean) : [];
+  const steps = [];
+  const map = {};
+
+  steps.push({
+    stepType: "init",
+    description: "Create map (key → list of strings)",
+    state: { strs: [...strs], i: -1, s: "", key: "", map: {}, action: "Initialize map" },
+  });
+
+  for (let i = 0; i < strs.length; i++) {
+    const s = strs[i];
+    const key = [...s].sort().join("");
+    steps.push({
+      stepType: "loop",
+      description: `For s = "${s}"`,
+      state: { strs: [...strs], i, s, key: "", map: JSON.parse(JSON.stringify(map)), action: `Process strs[${i}]` },
+    });
+    steps.push({
+      stepType: "key",
+      description: `key = sorted("${s}") = "${key}"`,
+      state: { strs: [...strs], i, s, key, map: JSON.parse(JSON.stringify(map)), action: "Compute key" },
+    });
+    if (!map[key]) map[key] = [];
+    map[key].push(s);
+    steps.push({
+      stepType: "push",
+      description: `map["${key}"].push("${s}")`,
+      state: { strs: [...strs], i, s, key, map: JSON.parse(JSON.stringify(map)), action: "Add to group" },
+    });
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `Return map.values() → ${Object.keys(map).length} group(s)`,
+    state: { strs: [...strs], i: strs.length - 1, s: "", key: "", map: JSON.parse(JSON.stringify(map)), action: null, done: true },
+  });
+  return steps;
+}
+
 export function generateLongestPalindromicSubstringSteps(input) {
   const s = input?.s != null ? String(input.s).trim() : "";
   const n = s.length;
@@ -2155,7 +2197,7 @@ export const STEP_GENERATORS = {
   "pacific-atlantic":        generatePacificAtlanticSteps,
   "num-connected-components": generateNumConnectedComponentsSteps,
   "graph-valid-tree":        (i) => stubGraphSteps(i),
-  "group-anagrams":          (i) => stubWithS(i),
+  "group-anagrams":          generateGroupAnagramsSteps,
   "longest-substring-no-repeat": generateLongestSubstringNoRepeatSteps,
   "longest-palindromic-substring": generateLongestPalindromicSubstringSteps,
   "top-k-frequent":          generateTopKFrequentSteps,
