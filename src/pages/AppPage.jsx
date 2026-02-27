@@ -12,7 +12,7 @@ import {
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
   PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
   MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
-  ThreeSumViz, ContainerViz, MergeListsViz, MergeKViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz, TrappingRainWaterViz, PalindromicSubstringsViz, CharReplacementViz, EncodeDecodeViz,
+  ThreeSumViz, ContainerViz, MergeListsViz, MergeKViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, MedianFinderViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz,   TrappingRainWaterViz, PalindromicSubstringsViz, CharReplacementViz, EncodeDecodeViz, LCAOfBSTViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -113,6 +113,7 @@ export default function AppPage({
       ?? langDef.lineMap["zero_col0"]
       ?? langDef.lineMap["zero_row0"]
       ?? langDef.lineMap["try_start"]
+      ?? langDef.lineMap["base"]
       ?? langDef.lineMap["dfs_base"]
       ?? langDef.lineMap["dfs_fail"]
       ?? langDef.lineMap["dfs_mark"]
@@ -130,6 +131,17 @@ export default function AppPage({
       ?? langDef.lineMap["update_best"]
       ?? langDef.lineMap["read_len"]
       ?? langDef.lineMap["push_result"]
+      ?? langDef.lineMap["add_push"]
+      ?? langDef.lineMap["add_balance"]
+      ?? langDef.lineMap["add_rebalance"]
+      ?? langDef.lineMap["median"]
+      ?? langDef.lineMap["ser_base"]
+      ?? langDef.lineMap["ser_recurse"]
+      ?? langDef.lineMap["ser_done"]
+      ?? langDef.lineMap["des_base"]
+      ?? langDef.lineMap["des_build"]
+      ?? langDef.lineMap["des_recurse"]
+      ?? langDef.lineMap["done"]
       ?? langDef.lineMap["init"]
       ?? 1;
     if (raw < 1) return -1;
@@ -267,6 +279,7 @@ export default function AppPage({
               {problem.visualizer === "robber"      && <RobberViz        nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "missing"     && <MissingViz       nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "treedepth"   && <TreeDepthViz     root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "lca"          && <LCAOfBSTViz     root={(input.root && input.root.length) ? input.root : (problem.defaultInput?.root || [])}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "invertree"   && <InvertTreeViz    root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "sametree"    && <SameTreeViz      p={input.p || []}         q={input.q || []} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "linkedlist"  && <LinkedListViz    head={currentStep?.state?.head ?? input.head ?? []}   stepState={currentStep?.state ?? {}} problemId={selectedProblem} input={input} t={t} />}
@@ -283,6 +296,7 @@ export default function AppPage({
               {problem.visualizer === "genparentheses" && <GenerateParenthesesViz stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "topk"          && <TopKFrequentViz       nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "minstack"      && <MinStackViz           stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "medianfinder"  && <MedianFinderViz       stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "sumtwo"       && <SumTwoIntegersViz     stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "onebits"     && <NumberOf1BitsViz     stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "reversebits" && <ReverseBitsViz       stepState={currentStep?.state ?? {}} t={t} />}
@@ -499,6 +513,7 @@ export default function AppPage({
             {problem.visualizer === "robber"      && <RobberViz        nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "missing"     && <MissingViz       nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "treedepth"   && <TreeDepthViz     root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "lca"          && <LCAOfBSTViz     root={(input.root && input.root.length) ? input.root : (problem.defaultInput?.root || [])}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "invertree"   && <InvertTreeViz    root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "sametree"    && <SameTreeViz      p={input.p || []}         q={input.q || []} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "linkedlist"  && <LinkedListViz    head={currentStep?.state?.head ?? input.head ?? []}   stepState={currentStep?.state ?? {}} problemId={selectedProblem} input={input} t={t} />}
@@ -515,6 +530,7 @@ export default function AppPage({
             {problem.visualizer === "genparentheses" && <GenerateParenthesesViz stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "topk"          && <TopKFrequentViz       nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "minstack"      && <MinStackViz           stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "medianfinder"  && <MedianFinderViz       stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "sumtwo"       && <SumTwoIntegersViz     stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "onebits"     && <NumberOf1BitsViz     stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "reversebits" && <ReverseBitsViz       stepState={currentStep?.state ?? {}} t={t} />}

@@ -2837,6 +2837,114 @@ export function generateAlienDictionarySteps(input) {
   return steps;
 }
 
+export function generateLCAOfBSTSteps(input) {
+  const arr = Array.isArray(input?.root) ? input.root : [];
+  const pVal = input?.p;
+  const qVal = input?.q;
+  const p = (Array.isArray(pVal) ? pVal[0] : pVal) ?? 2;
+  const q = (Array.isArray(qVal) ? qVal[0] : qVal) ?? 8;
+  const steps = [];
+  if (!arr.length || arr[0] === null) {
+    steps.push({ stepType: "base", description: "Tree is empty → return null", state: { visiting: -1, depthMap: {}, maxDepth: 0, p, q, lca: null, done: true } });
+    return steps;
+  }
+  function dfs(idx) {
+    if (idx >= arr.length || arr[idx] === null || arr[idx] === undefined) {
+      steps.push({ stepType: "base", description: `Node ${idx} is null`, state: { visiting: idx, p, q, lca: null, done: false } });
+      return null;
+    }
+    const val = arr[idx];
+    steps.push({ stepType: "visit", description: `Visit node ${idx} (value=${val})`, state: { visiting: idx, depthMap: {}, maxDepth: 0, p, q, lca: null, done: false } });
+    if (p < val && q < val) {
+      steps.push({ stepType: "go_left", description: `Both ${p} and ${q} < ${val} → go left`, state: { visiting: idx, p, q, lca: null, done: false } });
+      return dfs(2 * idx + 1);
+    }
+    if (p > val && q > val) {
+      steps.push({ stepType: "go_right", description: `Both ${p} and ${q} > ${val} → go right`, state: { visiting: idx, p, q, lca: null, done: false } });
+      return dfs(2 * idx + 2);
+    }
+    steps.push({ stepType: "found", description: `LCA found: ${val} (p and q on different sides)`, state: { visiting: idx, p, q, lca: val, done: false } });
+    return val;
+  }
+  const lca = dfs(0);
+  steps.push({ stepType: "done", description: `✓ LCA = ${lca}`, state: { visiting: -1, p, q, lca, done: true } });
+  return steps;
+}
+
+export function generateSerializeDeserializeSteps(input) {
+  const arr = Array.isArray(input?.root) ? input.root : [];
+  const steps = [];
+  const parts = [];
+  function serialize(idx) {
+    if (idx >= arr.length || arr[idx] === null || arr[idx] === undefined) {
+      parts.push("N");
+      steps.push({ stepType: "ser_base", description: `Node ${idx} is null → append "N"`, state: { visiting: idx, swapped: [], inverted: [...arr], serialized: parts.join(","), rebuilt: [], tokenIdx: -1, done: false } });
+      return;
+    }
+    parts.push(String(arr[idx]));
+    steps.push({ stepType: "ser_recurse", description: `Serialize node ${idx}=${arr[idx]}`, state: { visiting: idx, swapped: [], inverted: [...arr], serialized: parts.join(","), rebuilt: [], tokenIdx: -1, done: false } });
+    serialize(2 * idx + 1);
+    serialize(2 * idx + 2);
+  }
+  if (!arr.length) {
+    steps.push({ stepType: "done", description: "Empty tree", state: { visiting: -1, inverted: [], serialized: "N", rebuilt: [], done: true } });
+    return steps;
+  }
+  serialize(0);
+  const serializedStr = parts.join(",");
+  steps.push({ stepType: "ser_done", description: `✓ Serialized: "${serializedStr}" → Now deserialize`, state: { visiting: -1, inverted: [...arr], serialized: serializedStr, rebuilt: [...arr].map(() => null), tokenIdx: -1, done: false } });
+
+  const tokens = serializedStr.split(",");
+  const rebuilt = [...arr].map(() => null);
+  while (rebuilt.length < 2 * arr.length + 2) rebuilt.push(null);
+  function deserialize(tokenIdx, outIdx) {
+    if (tokenIdx >= tokens.length) return tokenIdx;
+    const tok = tokens[tokenIdx];
+    if (tok === "N" || tok === "null") {
+      steps.push({ stepType: "des_base", description: `Token [${tokenIdx}] = "N" → return null`, state: { visiting: -1, inverted: [...rebuilt], serialized: serializedStr, rebuilt: [...rebuilt], tokenIdx, done: false } });
+      return tokenIdx + 1;
+    }
+    const val = Number(tok);
+    if (outIdx >= rebuilt.length) while (rebuilt.length <= outIdx) rebuilt.push(null);
+    rebuilt[outIdx] = val;
+    steps.push({ stepType: "des_build", description: `Token [${tokenIdx}] = "${tok}" → create node at index ${outIdx} (val=${val})`, state: { visiting: outIdx, inverted: [...rebuilt], serialized: serializedStr, rebuilt: [...rebuilt], tokenIdx, done: false } });
+    const afterLeft = deserialize(tokenIdx + 1, 2 * outIdx + 1);
+    const afterRight = deserialize(afterLeft, 2 * outIdx + 2);
+    steps.push({ stepType: "des_recurse", description: `Built node ${outIdx}=${val}, left & right subtrees done`, state: { visiting: outIdx, inverted: [...rebuilt], serialized: serializedStr, rebuilt: [...rebuilt], tokenIdx: afterRight - 1, done: false } });
+    return afterRight;
+  }
+  deserialize(0, 0);
+  const trimmed = [...rebuilt];
+  while (trimmed.length > 0 && (trimmed[trimmed.length - 1] === null || trimmed[trimmed.length - 1] === undefined)) trimmed.pop();
+  steps.push({ stepType: "done", description: `✓ Deserialized: tree restored to [${trimmed.map(x => x ?? "null").join(",")}]`, state: { visiting: -1, inverted: [...rebuilt], serialized: serializedStr, rebuilt: [...rebuilt], tokenIdx: -1, done: true } });
+  return steps;
+}
+
+export function generateFindMedianSteps(input) {
+  const nums = input?.nums || [];
+  const steps = [];
+  const lo = [];
+  const hi = [];
+  steps.push({ stepType: "init", description: "Init: max-heap (lo) for lower half, min-heap (hi) for upper", state: { nums: [...nums], lo: [], hi: [], i: -1, median: null, highlight: [] } });
+  for (let i = 0; i < nums.length; i++) {
+    const x = nums[i];
+    lo.push(x);
+    lo.sort((a, b) => b - a);
+    steps.push({ stepType: "add_push", description: `addNum(${x}) → push to lo`, state: { nums: [...nums], lo: [...lo], hi: [...hi], i, median: null, highlight: [i] } });
+    hi.push(lo.shift());
+    hi.sort((a, b) => a - b);
+    steps.push({ stepType: "add_balance", description: `Balance: pop from lo, push to hi`, state: { nums: [...nums], lo: [...lo], hi: [...hi], i, median: null, highlight: [i] } });
+    if (lo.length < hi.length) {
+      lo.push(hi.shift());
+      lo.sort((a, b) => b - a);
+      steps.push({ stepType: "add_rebalance", description: `Rebalance: |lo| < |hi| → move from hi to lo`, state: { nums: [...nums], lo: [...lo], hi: [...hi], i, median: null, highlight: [i] } });
+    }
+  }
+  const median = lo.length > hi.length ? lo[0] : (lo[0] + hi[0]) / 2;
+  steps.push({ stepType: "median", description: `findMedian() → ${median}`, state: { nums: [...nums], lo: [...lo], hi: [...hi], i: nums.length - 1, median, highlight: [], done: true } });
+  return steps;
+}
+
 export function generateTrappingRainWaterSteps(input) {
   const height = input?.nums || [];
   const n = height.length;
@@ -3142,4 +3250,7 @@ export const STEP_GENERATORS = {
   "word-search":             generateWordSearchSteps,
   "spiral-matrix":           generateSpiralMatrixSteps,
   "alien-dictionary":        generateAlienDictionarySteps,
+  "lca-of-bst":             generateLCAOfBSTSteps,
+  "serialize-deserialize-btree": generateSerializeDeserializeSteps,
+  "find-median-from-data-stream": generateFindMedianSteps,
 };
