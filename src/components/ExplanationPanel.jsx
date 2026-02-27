@@ -13,12 +13,23 @@ export default function ExplanationPanel({ explanation, t }) {
             <span style={{ fontSize: "1.2rem" }}>{block.emoji}</span>
             <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05rem", fontWeight: 700, color: t.ink }}>{block.title}</span>
           </div>
-          <p style={{
-            fontFamily: "'DM Sans',sans-serif", fontSize: "0.84rem",
-            lineHeight: 1.7, color: t.inkMuted, margin: 0, whiteSpace: "pre-line",
-          }}>
-            {block.body}
-          </p>
+          {block.title === "Step by Step" && typeof block.body === "string" ? (
+            <ol style={{
+              fontFamily: "'DM Sans',sans-serif", fontSize: "0.84rem",
+              lineHeight: 1.7, color: t.inkMuted, margin: 0, paddingLeft: 20,
+            }}>
+              {block.body.split(/\n+/).filter(Boolean).map((line, i) => (
+                <li key={i} style={{ marginBottom: 4 }}>{line.replace(/^\d+\.\s*/, "")}</li>
+              ))}
+            </ol>
+          ) : (
+            <p style={{
+              fontFamily: "'DM Sans',sans-serif", fontSize: "0.84rem",
+              lineHeight: 1.7, color: t.inkMuted, margin: 0, whiteSpace: "pre-line",
+            }}>
+              {block.body}
+            </p>
+          )}
         </div>
       ))}
     </div>

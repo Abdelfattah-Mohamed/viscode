@@ -1175,6 +1175,62 @@ function stubWithS(input) {
   steps.push({ stepType: "done", description: "Done", state: { s, done: true } });
   return steps;
 }
+
+export function generateLongestSubstringNoRepeatSteps(input) {
+  const s = input?.s != null ? String(input.s).trim() : "";
+  const steps = [];
+  const last = {};
+  let start = -1;
+  let best = 0;
+
+  steps.push({
+    stepType: "init",
+    description: "Initialize last (char → index), start = -1, best = 0",
+    state: { s, start: -1, i: -1, last: {}, best: 0 },
+  });
+
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    steps.push({
+      stepType: "loop",
+      description: `Loop: i = ${i}, s[${i}] = "${c}"`,
+      state: { s, start, i, last: { ...last }, best },
+    });
+
+    if (last[c] !== undefined) {
+      const newStart = Math.max(start, last[c]);
+      steps.push({
+        stepType: "update_start",
+        description: `"${c}" seen at index ${last[c]} → start = max(${start}, ${last[c]}) = ${newStart}`,
+        state: { s, start: newStart, i, last: { ...last }, best },
+      });
+      start = newStart;
+    }
+
+    last[c] = i;
+    steps.push({
+      stepType: "update_last",
+      description: `last["${c}"] = ${i}`,
+      state: { s, start, i, last: { ...last }, best },
+    });
+
+    const len = i - start;
+    const newBest = Math.max(best, len);
+    steps.push({
+      stepType: "update_best",
+      description: `best = max(${best}, ${i} − ${start}) = ${newBest}`,
+      state: { s, start, i, last: { ...last }, best: newBest },
+    });
+    best = newBest;
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `✅ Longest substring without repeating = ${best}`,
+    state: { s, start, i: s.length - 1, last: { ...last }, best, done: true },
+  });
+  return steps;
+}
 function stubLinkedListSteps(input) {
   const head = input?.head || [];
   const steps = [
@@ -1890,7 +1946,7 @@ export const STEP_GENERATORS = {
   "num-connected-components": generateNumConnectedComponentsSteps,
   "graph-valid-tree":        (i) => stubGraphSteps(i),
   "group-anagrams":          (i) => stubWithS(i),
-  "longest-substring-no-repeat": (i) => stubWithS(i),
+  "longest-substring-no-repeat": generateLongestSubstringNoRepeatSteps,
   "longest-palindromic-substring": (i) => stubWithS(i),
   "top-k-frequent":          generateTopKFrequentSteps,
   "subsets":                 (i) => stubArraySteps(i),

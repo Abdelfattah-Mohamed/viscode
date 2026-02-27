@@ -38,3 +38,4 @@ export { default as CombinationSumViz } from "./CombinationSumViz";
 export { default as HouseRobberIIViz } from "./HouseRobberIIViz";
 export { default as UniquePathsViz } from "./UniquePathsViz";
 export { default as JumpGameViz } from "./JumpGameViz";
+export { default as SlidingWindowViz } from "./SlidingWindowViz";
