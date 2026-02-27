@@ -5,15 +5,18 @@ const NODE_R = 24;
 const NODE_SPACING = 72;
 const ARROW_LEN = 28;
 
-export default function LinkedListViz({ head = [], stepState = {}, t }) {
-  const { prevIdx, currIdx, nextIdx, reversed = [], done } = stepState;
-  const nodes = Array.isArray(head) ? head : [];
+export default function LinkedListViz({ head = [], stepState = {}, problemId, input = {}, t }) {
+  const { prevIdx, currIdx, nextIdx, reversed = [], done, slowIdx, fastIdx, toRemoveIdx } = stepState;
+  const rawNodes = Array.isArray(head) ? head : [];
+  const nodes = rawNodes.filter(v => v != null && v !== "");
   const roughRef = useRef(null);
   const isDark = t._resolved === "dark";
+  const isRemoveNth = problemId === "remove-nth-node";
 
   const splitPoint = reversed.length;
+  const showSlowFast = isRemoveNth && (slowIdx !== undefined || fastIdx !== undefined);
 
-  const width = nodes.length > 0 ? nodes.length * NODE_SPACING + ARROW_LEN * (nodes.length - 1) + 80 : 200;
+  const width = nodes.length > 0 ? nodes.length * NODE_SPACING + ARROW_LEN * (nodes.length - 1) + 120 : 200;
   const height = 120;
 
   useEffect(() => {
@@ -24,7 +27,10 @@ export default function LinkedListViz({ head = [], stepState = {}, t }) {
 
     // Draw directed arrows first (Excalidraw sketchy style) so nodes appear on top
     for (let idx = 0; idx < nodes.length - 1; idx++) {
-      const isReversed = idx + 1 <= splitPoint;
+      const isReversed = !isRemoveNth && idx + 1 <= splitPoint;
+      const isBreakingLink = toRemoveIdx >= 0 && idx === slowIdx && idx + 1 === toRemoveIdx;
+      const isArrowFromRemoved = toRemoveIdx >= 0 && idx === toRemoveIdx;
+      if (isBreakingLink || isArrowFromRemoved) continue;
       const cx0 = 40 + idx * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
       const cx1 = 40 + (idx + 1) * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
       const y = height / 2;
@@ -67,22 +73,26 @@ export default function LinkedListViz({ head = [], stepState = {}, t }) {
     }
 
     nodes.forEach((val, idx) => {
-      const isPrev = idx === prevIdx;
-      const isCurr = idx === currIdx;
-      const isNext = idx === nextIdx;
-      const isReversed = idx < splitPoint;
+      const isPrev = !showSlowFast && idx === prevIdx;
+      const isCurr = !showSlowFast && idx === currIdx;
+      const isNext = !showSlowFast && idx === nextIdx;
+      const isSlow = showSlowFast && idx === slowIdx;
+      const isFast = showSlowFast && idx === fastIdx;
+      const isToRemove = idx === toRemoveIdx;
+      const isReversed = !isRemoveNth && idx < splitPoint;
 
-      const stroke = isCurr ? t.yellow : isPrev ? t.blue : isNext ? t.purple : isReversed ? t.green : t.border;
-      const fill = isCurr ? t.yellow + "30" : isPrev ? t.blue + "20" : isNext ? t.purple + "20" : isReversed ? t.green + "14" : t.surface;
+      const stroke = isToRemove ? t.red : isCurr ? t.yellow : isPrev || isSlow ? t.blue : isNext || isFast ? t.purple : isReversed ? t.green : t.border;
+      const fill = isToRemove ? t.red + "25" : isCurr ? t.yellow + "30" : isPrev || isSlow ? t.blue + "20" : isNext || isFast ? t.purple + "20" : isReversed ? t.green + "14" : t.surface;
 
       const cx = 40 + idx * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
       const cy = height / 2;
 
-      if (isCurr) {
+      if ((isCurr || isFast || isSlow) && !isToRemove) {
+        const ringColor = isFast ? t.purple : isSlow ? t.blue : t.yellow;
         const ring = rc.circle(cx, cy, (NODE_R + 6) * 2, {
           fill: "none",
-          stroke: t.yellow,
-          strokeWidth: 1.5,
+          stroke: ringColor,
+          strokeWidth: isSlow ? 3 : 2,
           roughness: 1.5,
         });
         g.appendChild(ring);
@@ -92,12 +102,12 @@ export default function LinkedListViz({ head = [], stepState = {}, t }) {
         fill,
         fillStyle: "solid",
         stroke,
-        strokeWidth: 2,
+        strokeWidth: isSlow ? 2.5 : 2,
         roughness: 1,
       });
       g.appendChild(node);
     });
-  }, [nodes, prevIdx, currIdx, nextIdx, splitPoint, t, isDark]);
+  }, [nodes, prevIdx, currIdx, nextIdx, slowIdx, fastIdx, toRemoveIdx, splitPoint, isRemoveNth, showSlowFast, t, isDark]);
 
   if (nodes.length === 0) {
     return (
@@ -137,6 +147,9 @@ export default function LinkedListViz({ head = [], stepState = {}, t }) {
           color: t.ink,
         }}>
           linked list · {nodes.length} node{nodes.length !== 1 ? "s" : ""}
+          {isRemoveNth && input.n != null && (
+            <span style={{ marginLeft: 8, color: t.inkMuted, fontWeight: 600 }}>· n = {input.n}</span>
+          )}
         </span>
       </div>
 
@@ -162,11 +175,14 @@ export default function LinkedListViz({ head = [], stepState = {}, t }) {
             {nodes.map((val, idx) => {
               const cx = 40 + idx * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
               const cy = height / 2;
-              const isCurr = idx === currIdx;
-              const isPrev = idx === prevIdx;
-              const isNext = idx === nextIdx;
-              const isReversed = idx < splitPoint;
-              const textFill = (isCurr || isPrev || isNext || isReversed) ? "#1e1e1e" : t.ink;
+              const isCurr = !showSlowFast && idx === currIdx;
+              const isPrev = !showSlowFast && idx === prevIdx;
+              const isNext = !showSlowFast && idx === nextIdx;
+              const isSlow = showSlowFast && idx === slowIdx;
+              const isFast = showSlowFast && idx === fastIdx;
+              const isToRemove = idx === toRemoveIdx;
+              const isReversed = !isRemoveNth && idx < splitPoint;
+              const textFill = (isCurr || isPrev || isNext || isSlow || isFast || isToRemove || isReversed) ? "#1e1e1e" : t.ink;
               return (
                 <text
                   key={idx}
@@ -202,52 +218,53 @@ export default function LinkedListViz({ head = [], stepState = {}, t }) {
           gap: 24,
           flexWrap: "wrap",
         }}>
-          {prevIdx != null && prevIdx >= 0 && prevIdx < nodes.length && (
-            <span style={{
-              fontFamily: "'Caveat',cursive",
-              fontSize: "0.8em",
-              fontWeight: 700,
-              color: t.blue,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.blue }} />
-              prev
-            </span>
-          )}
-          {currIdx != null && currIdx >= 0 && currIdx < nodes.length && (
-            <span style={{
-              fontFamily: "'Caveat',cursive",
-              fontSize: "0.8em",
-              fontWeight: 700,
-              color: t.yellow,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.yellow }} />
-              curr
-            </span>
-          )}
-          {nextIdx != null && nextIdx >= 0 && nextIdx < nodes.length && (
-            <span style={{
-              fontFamily: "'Caveat',cursive",
-              fontSize: "0.8em",
-              fontWeight: 700,
-              color: t.purple,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.purple }} />
-              next
-            </span>
+          {showSlowFast ? (
+            <>
+              {slowIdx != null && slowIdx >= 0 && slowIdx < nodes.length && (
+                <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8em", fontWeight: 700, color: t.blue, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.blue }} />
+                  slow
+                </span>
+              )}
+              {fastIdx != null && fastIdx >= 0 && fastIdx < nodes.length && (
+                <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8em", fontWeight: 700, color: t.purple, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.purple }} />
+                  fast
+                </span>
+              )}
+              {toRemoveIdx != null && toRemoveIdx >= 0 && toRemoveIdx < nodes.length && (
+                <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8em", fontWeight: 700, color: t.red, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.red }} />
+                  remove
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              {prevIdx != null && prevIdx >= 0 && prevIdx < nodes.length && (
+                <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8em", fontWeight: 700, color: t.blue, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.blue }} />
+                  prev
+                </span>
+              )}
+              {currIdx != null && currIdx >= 0 && currIdx < nodes.length && (
+                <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8em", fontWeight: 700, color: t.yellow, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.yellow }} />
+                  curr
+                </span>
+              )}
+              {nextIdx != null && nextIdx >= 0 && nextIdx < nodes.length && (
+                <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8em", fontWeight: 700, color: t.purple, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.purple }} />
+                  next
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {(prevIdx != null || currIdx != null || nextIdx != null) && (
+      {(showSlowFast ? (slowIdx != null || fastIdx != null || toRemoveIdx != null) : (prevIdx != null || currIdx != null || nextIdx != null)) && (
         <div style={{
           display: "flex",
           gap: 16,
@@ -261,23 +278,48 @@ export default function LinkedListViz({ head = [], stepState = {}, t }) {
           fontSize: "0.9rem",
           color: t.inkMuted,
         }}>
-          {prevIdx != null && prevIdx >= 0 && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: t.blue + "40", border: `2px solid ${t.blue}` }} />
-              prev
-            </span>
-          )}
-          {currIdx != null && currIdx >= 0 && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: t.yellow + "40", border: `2px solid ${t.yellow}` }} />
-              curr
-            </span>
-          )}
-          {nextIdx != null && nextIdx >= 0 && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: t.purple + "40", border: `2px solid ${t.purple}` }} />
-              next
-            </span>
+          {showSlowFast ? (
+            <>
+              {slowIdx != null && slowIdx >= 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: t.blue + "40", border: `2px solid ${t.blue}` }} />
+                  slow
+                </span>
+              )}
+              {fastIdx != null && fastIdx >= 0 && fastIdx < nodes.length && (
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: t.purple + "40", border: `2px solid ${t.purple}` }} />
+                  fast
+                </span>
+              )}
+              {toRemoveIdx != null && toRemoveIdx >= 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: t.red + "40", border: `2px solid ${t.red}` }} />
+                  remove
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              {prevIdx != null && prevIdx >= 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: t.blue + "40", border: `2px solid ${t.blue}` }} />
+                  prev
+                </span>
+              )}
+              {currIdx != null && currIdx >= 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: t.yellow + "40", border: `2px solid ${t.yellow}` }} />
+                  curr
+                </span>
+              )}
+              {nextIdx != null && nextIdx >= 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: t.purple + "40", border: `2px solid ${t.purple}` }} />
+                  next
+                </span>
+              )}
+            </>
           )}
         </div>
       )}
@@ -294,7 +336,7 @@ export default function LinkedListViz({ head = [], stepState = {}, t }) {
           fontWeight: 700,
           color: t.green,
         }}>
-          ✅ List reversed!
+          {isRemoveNth ? "✅ Node removed!" : "✅ List reversed!"}
         </div>
       )}
     </div>

@@ -1486,12 +1486,83 @@ export function generatePermutationsSteps(input) {
 function stubLinkedListSteps(input) {
   const head = input?.head || [];
   const steps = [
-    { stepType: "init", description: "Start", state: { head: [...head], slow: -1, fast: -1 } },
+    { stepType: "init", description: "Start", state: { head: [...head], slowIdx: -1, fastIdx: -1 } },
   ];
   for (let i = 0; i < Math.min(head.length, 3); i++) {
-    steps.push({ stepType: "loop", description: `Step ${i + 1}`, state: { head: [...head], slow: i, fast: Math.min(i * 2, head.length - 1) } });
+    steps.push({ stepType: "loop", description: `Step ${i + 1}`, state: { head: [...head], slowIdx: i, fastIdx: Math.min(i * 2, head.length - 1) } });
   }
   steps.push({ stepType: "done", description: "Done", state: { head: [...head], done: true } });
+  return steps;
+}
+
+export function generateRemoveNthNodeSteps(input) {
+  const head = Array.isArray(input?.head) ? [...input.head] : [];
+  const n = Math.max(0, Number(input?.n) || 0);
+  const len = head.length;
+
+  if (len === 0) {
+    return [
+      { stepType: "init", description: "Empty list", state: { head: [], slowIdx: -1, fastIdx: -1 } },
+      { stepType: "done", description: "Return empty", state: { head: [], done: true } },
+    ];
+  }
+
+  const steps = [];
+  let slowIdx = -1;
+  let fastIdx = -1;
+
+  steps.push({
+    stepType: "init",
+    description: "Create dummy node before head",
+    state: { head: [...head], slowIdx: -1, fastIdx: -1 },
+  });
+  steps.push({
+    stepType: "init_dummy",
+    description: "dummy.next = head",
+    state: { head: [...head], slowIdx: -1, fastIdx: -1 },
+  });
+  steps.push({
+    stepType: "init_ptrs",
+    description: "slow = fast = dummy",
+    state: { head: [...head], slowIdx: -1, fastIdx: -1 },
+  });
+
+  for (let i = 1; i <= n + 1 && i <= len + 1; i++) {
+    fastIdx = Math.min(i - 1, len);
+    const isPastEnd = i > len;
+    steps.push({
+      stepType: "move_fast",
+      description: `Move fast ${i}/${n + 1} steps → fast at ${isPastEnd ? "null" : `index ${fastIdx}`}`,
+      state: { head: [...head], slowIdx: -1, fastIdx: isPastEnd ? len : fastIdx },
+    });
+  }
+
+  while (fastIdx < len) {
+    slowIdx = slowIdx < 0 ? 0 : slowIdx + 1;
+    fastIdx++;
+    steps.push({
+      stepType: "loop",
+      description: `Move both: slow=${slowIdx >= 0 ? head[slowIdx] : "dummy"}, fast=${fastIdx < len ? head[fastIdx] : "null"}`,
+      state: { head: [...head], slowIdx, fastIdx: fastIdx < len ? fastIdx : len },
+    });
+  }
+
+  const toRemoveIdx = slowIdx >= 0 ? slowIdx + 1 : 0;
+  const removedVal = toRemoveIdx < len ? head[toRemoveIdx] : null;
+  const resultHead = toRemoveIdx < len ? head.filter((_, i) => i !== toRemoveIdx) : head;
+
+  steps.push({
+    stepType: "remove",
+    description: `Remove node at index ${toRemoveIdx} (val=${removedVal}) → slow.next = slow.next.next`,
+    state: { head: [...head], slowIdx, toRemoveIdx, done: false },
+  });
+
+  steps.push({
+    stepType: "done",
+    description: `✅ Removed → [${resultHead.join("→")}]`,
+    state: { head: resultHead, done: true },
+  });
+
   return steps;
 }
 // Build edges from flat nums: [a1,b1, a2,b2, ...] -> [[a1,b1],[a2,b2],...]
@@ -2354,7 +2425,7 @@ export const STEP_GENERATORS = {
   "meeting-rooms":          (i) => stubIntervalSteps(i),
   "meeting-rooms-ii":        (i) => stubIntervalSteps(i),
   "merge-k-sorted-lists":    (i) => stubArraySteps(i),
-  "remove-nth-node":        (i) => stubLinkedListSteps(i),
+  "remove-nth-node":        generateRemoveNthNodeSteps,
   "reorder-list":            generateReorderListSteps,
   "copy-list-random-pointer": (i) => stubLinkedListSteps(i),
   "clone-graph":            (i) => stubGraphSteps(i),

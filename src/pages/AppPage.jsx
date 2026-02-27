@@ -236,7 +236,7 @@ export default function AppPage({
               {problem.visualizer === "treedepth"   && <TreeDepthViz     root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "invertree"   && <InvertTreeViz    root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "sametree"    && <SameTreeViz      p={input.p || []}         q={input.q || []} stepState={currentStep?.state ?? {}} t={t} />}
-              {problem.visualizer === "linkedlist"  && <LinkedListViz    head={currentStep?.state?.head ?? input.head ?? []}   stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "linkedlist"  && <LinkedListViz    head={currentStep?.state?.head ?? input.head ?? []}   stepState={currentStep?.state ?? {}} problemId={selectedProblem} input={input} t={t} />}
               {problem.visualizer === "threesum"    && <ThreeSumViz      nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "container"  && <ContainerViz     heights={input.heights || []} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "mergelists" && <MergeListsViz    list1={input.list1 || []} list2={input.list2 || []} stepState={currentStep?.state ?? {}} t={t} />}
@@ -463,7 +463,7 @@ export default function AppPage({
             {problem.visualizer === "treedepth"   && <TreeDepthViz     root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "invertree"   && <InvertTreeViz    root={input.root || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "sametree"    && <SameTreeViz      p={input.p || []}         q={input.q || []} stepState={currentStep?.state ?? {}} t={t} />}
-            {problem.visualizer === "linkedlist"  && <LinkedListViz    head={currentStep?.state?.head ?? input.head ?? []}   stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "linkedlist"  && <LinkedListViz    head={currentStep?.state?.head ?? input.head ?? []}   stepState={currentStep?.state ?? {}} problemId={selectedProblem} input={input} t={t} />}
             {problem.visualizer === "threesum"    && <ThreeSumViz      nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "container"  && <ContainerViz     heights={input.heights || []} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "mergelists" && <MergeListsViz    list1={input.list1 || []} list2={input.list2 || []} stepState={currentStep?.state ?? {}} t={t} />}
