@@ -1,7 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
+
+function problemsUrlParams(view, cat, q) {
+  const params = new URLSearchParams();
+  if (view && view !== "all") params.set("view", view);
+  if (cat && cat !== "All") params.set("cat", cat);
+  if (q && q.trim()) params.set("q", q.trim());
+  const s = params.toString();
+  return s ? `/problems?${s}` : "/problems";
+}
+
+function parseProblemsUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const v = params.get("view") || "all";
+  const view = ["all", "favorites", "flagged"].includes(v) ? v : "all";
+  const cat = params.get("cat") || "All";
+  const q = params.get("q") || "";
+  return { view, cat, q };
+}
 
 const StarIcon = ({ filled, size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#f59e0b" : "none"} stroke={filled ? "#f59e0b" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -17,10 +35,22 @@ const FlagIcon = ({ filled, size = 18 }) => (
 );
 
 export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem, onLogout, username, fav, mobile, recent }) {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
-  const [flagFilter, setFlagFilter] = useState("all");
+  const parsed = parseProblemsUrl();
+  const [search, setSearch] = useState(parsed.q);
+  const [filter, setFilter] = useState(parsed.cat);
+  const [flagFilter, setFlagFilter] = useState(parsed.view);
   const [userMenuOpen, setMenuOpen] = useState(false);
+
+  const updateUrl = useCallback(() => {
+    const url = problemsUrlParams(flagFilter, filter, search);
+    if (window.location.pathname + (window.location.search || "") !== url) {
+      window.history.replaceState(null, "", url);
+    }
+  }, [flagFilter, filter, search]);
+
+  useEffect(() => {
+    updateUrl();
+  }, [updateUrl]);
 
   const cats = ["All", ...Array.from(new Set(PROB_LIST.map(p => p.category)))];
   const list = PROB_LIST.filter(p => {
