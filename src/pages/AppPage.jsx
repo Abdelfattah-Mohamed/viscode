@@ -12,7 +12,7 @@ import {
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
   PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
   MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
-  ThreeSumViz, ContainerViz, MergeListsViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz,
+  ThreeSumViz, ContainerViz, MergeListsViz, MergeKViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -240,6 +240,7 @@ export default function AppPage({
               {problem.visualizer === "threesum"    && <ThreeSumViz      nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "container"  && <ContainerViz     heights={input.heights || []} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "mergelists" && <MergeListsViz    list1={input.list1 || []} list2={input.list2 || []} stepState={currentStep?.state ?? {}} t={t} />}
+              {problem.visualizer === "mergek"     && <MergeKViz       lists={[]} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "intervals"  && <IntervalsViz     stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "cycle"      && <CycleViz         head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "grid"       && <GridViz         stepState={currentStep?.state ?? {}} input={input} problemId={selectedProblem} t={t} />}
@@ -467,6 +468,7 @@ export default function AppPage({
             {problem.visualizer === "threesum"    && <ThreeSumViz      nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "container"  && <ContainerViz     heights={input.heights || []} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "mergelists" && <MergeListsViz    list1={input.list1 || []} list2={input.list2 || []} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "mergek"     && <MergeKViz       lists={[]} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "intervals"  && <IntervalsViz     stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "cycle"      && <CycleViz         head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "grid"       && <GridViz         stepState={currentStep?.state ?? {}} input={input} problemId={selectedProblem} t={t} />}

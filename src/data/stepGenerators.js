@@ -662,6 +662,84 @@ export function generateContainerSteps({ heights }) {
   return steps;
 }
 
+// ── Merge K Sorted Lists ───────────────────────────────────────────────────
+function parseMergeKListsInput(input) {
+  const raw = input?.s != null ? String(input.s).trim() : "";
+  if (!raw) return [];
+  return raw.split("|").map(part =>
+    part.split(",").map(v => Number(v.trim())).filter(n => !isNaN(n))
+  ).filter(list => list.length > 0);
+}
+
+export function generateMergeKSortedListsSteps(input) {
+  const lists = parseMergeKListsInput(input);
+  if (lists.length === 0) {
+    return [
+      { stepType: "init", description: "No lists", state: { lists: [], heap: [], merged: [], done: true } },
+    ];
+  }
+
+  const steps = [];
+  const merged = [];
+  const heap = [];
+  const listPtrs = lists.map(() => 0);
+
+  for (let i = 0; i < lists.length; i++) {
+    if (lists[i].length > 0) {
+      heap.push({ val: lists[i][0], listIdx: i });
+    }
+  }
+  heap.sort((a, b) => a.val - b.val);
+
+  const getRemainingLists = () => lists.map((l, i) => l.slice(listPtrs[i]));
+
+  steps.push({
+    stepType: "init_heap",
+    description: "Create min-heap, push head of each non-empty list",
+    state: { lists: getRemainingLists(), heap: heap.map(h => ({ ...h })), merged: [], listPtrs: [...listPtrs] },
+  });
+
+  steps.push({
+    stepType: "push_heads",
+    description: `Heap = [${heap.map(h => h.val).join(", ")}] (min-heap of k heads)`,
+    state: { lists: getRemainingLists(), heap: heap.map(h => ({ ...h })), merged: [], listPtrs: [...listPtrs] },
+  });
+
+  while (heap.length > 0) {
+    const top = heap[0];
+    const { val, listIdx } = top;
+
+    steps.push({
+      stepType: "pop",
+      description: `Pop min ${val} from list ${listIdx} → append to result`,
+      state: { lists: getRemainingLists(), heap: heap.map(h => ({ ...h })), merged: [...merged], listPtrs: [...listPtrs], poppedVal: val, listIdx, heapIdx: 0 },
+    });
+
+    heap.shift();
+    merged.push(val);
+    listPtrs[listIdx]++;
+
+    if (listPtrs[listIdx] < lists[listIdx].length) {
+      const nextVal = lists[listIdx][listPtrs[listIdx]];
+      heap.push({ val: nextVal, listIdx });
+      heap.sort((a, b) => a.val - b.val);
+      steps.push({
+        stepType: "push_next",
+        description: `Push next from list ${listIdx}: ${nextVal} → heap = [${heap.map(h => h.val).join(", ")}]`,
+        state: { lists: getRemainingLists(), heap: heap.map(h => ({ ...h })), merged: [...merged], listPtrs: [...listPtrs] },
+      });
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `✅ Merged: [${merged.join(", ")}]`,
+    state: { lists: lists.map(l => [...l]), heap: [], merged: [...merged], done: true },
+  });
+
+  return steps;
+}
+
 // ── Merge Two Sorted Lists ────────────────────────────────────────────────
 export function generateMergeTwoListsSteps({ list1, list2 }) {
   const a = Array.isArray(list1) ? list1 : [];
@@ -2424,7 +2502,7 @@ export const STEP_GENERATORS = {
   "non-overlapping-intervals": (i) => stubIntervalSteps(i),
   "meeting-rooms":          (i) => stubIntervalSteps(i),
   "meeting-rooms-ii":        (i) => stubIntervalSteps(i),
-  "merge-k-sorted-lists":    (i) => stubArraySteps(i),
+  "merge-k-sorted-lists":    generateMergeKSortedListsSteps,
   "remove-nth-node":        generateRemoveNthNodeSteps,
   "reorder-list":            generateReorderListSteps,
   "copy-list-random-pointer": (i) => stubLinkedListSteps(i),

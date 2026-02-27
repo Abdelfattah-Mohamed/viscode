@@ -19,6 +19,7 @@ export { default as LinkedListViz }         from "./LinkedListViz";
 export { default as ThreeSumViz }           from "./ThreeSumViz";
 export { default as ContainerViz }         from "./ContainerViz";
 export { default as MergeListsViz }         from "./MergeListsViz";
+export { default as MergeKViz }             from "./MergeKViz";
 export { default as IntervalsViz }          from "./IntervalsViz";
 export { default as CycleViz }              from "./CycleViz";
 export { default as GridViz }               from "./GridViz";
