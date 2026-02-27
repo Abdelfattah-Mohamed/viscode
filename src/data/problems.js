@@ -986,8 +986,24 @@ export const PROBLEMS = {
   "find-median-from-data-stream": { title: "Find Median from Data Stream", difficulty: "Hard", category: "Heap", timeComplexity: "O(log n) add, O(1) median", spaceComplexity: "O(n)", visualizer: "medianfinder", description: "Design a data structure that supports addNum(num) and findMedian(). Use two heaps: max-heap for lower half, min-heap for upper half.", example: { input: "addNum(1), addNum(2), findMedian() → 1.5, addNum(3), findMedian() → 2", note: "Balance heaps so median is top of max-heap or avg of both tops." }, defaultInput: { nums: [1, 2, 3] }, inputFields: ["nums"], explanation: [{ emoji: "🤔", title: "Brute Force", body: "Store all numbers, sort on findMedian — O(n log n) per add. Or maintain sorted array with binary search — O(n) insert." }, { emoji: "💡", title: "Two Heaps", body: "Max-heap (lo) for lower half, min-heap (hi) for upper. Keep |lo| ≥ |hi|. addNum: push to lo, pop max to hi; if |lo| < |hi|, pop min from hi to lo. Median: lo.top() if odd, else (lo.top()+hi.top())/2." }, { emoji: "👣", title: "Step by Step", body: "1. Init: maxHeap (lo), minHeap (hi).\n2. addNum(x): push -x to lo; pop from lo, push -val to hi. If len(lo)<len(hi): pop from hi, push -val to lo.\n3. findMedian: if len(lo)>len(hi) return -lo.top(); else return (-lo.top()+hi.top())/2." }, { emoji: "⚡", title: "Why O(log n) add, O(1) median", body: "Heap push/pop O(log n). Median is top element(s) — O(1)." } ], languages: { cpp: { code: ["class MedianFinder {","    priority_queue<int> lo;","    priority_queue<int,vector<int>,greater<int>> hi;","public:","    void addNum(int num) {","        lo.push(num);","        hi.push(lo.top()); lo.pop();","        if (lo.size() < hi.size()) { lo.push(hi.top()); hi.pop(); }","    }","    double findMedian() {","        return lo.size() > hi.size() ? lo.top() : (lo.top()+hi.top())/2.0;","    }","};"], lineMap: { init: 2, add_push: 5, add_balance: 6, add_rebalance: 7, median: 10 } }, java: { code: ["class MedianFinder {","    PriorityQueue<Integer> lo = new PriorityQueue<>(Comparator.reverseOrder());","    PriorityQueue<Integer> hi = new PriorityQueue<>();","    public void addNum(int num) {","        lo.offer(num);","        hi.offer(lo.poll());","        if (lo.size() < hi.size()) lo.offer(hi.poll());","    }","    public double findMedian() {","        return lo.size() > hi.size() ? lo.peek() : (lo.peek()+hi.peek())/2.0;","    }","}"], lineMap: { init: 2, add_push: 5, add_balance: 6, add_rebalance: 7, median: 10 } }, javascript: { code: ["class MedianFinder {","  constructor() { this.lo = []; this.hi = []; }","  addNum(num) {","    this.lo.push(num); this.lo.sort((a,b)=>b-a);","    this.hi.push(this.lo.shift()); this.hi.sort((a,b)=>a-b);","    if (this.lo.length < this.hi.length) this.lo.push(this.hi.shift()); this.lo.sort((a,b)=>b-a);","  }","  findMedian() {","    return this.lo.length > this.hi.length ? this.lo[0] : (this.lo[0]+this.hi[0])/2;","  }","}"], lineMap: { init: 2, add_push: 4, add_balance: 5, add_rebalance: 6, median: 9 } }, python: { code: ["class MedianFinder:","    def __init__(self):","        self.lo, self.hi = [], []","    def addNum(self, num):","        heapq.heappush(self.lo, -num)","        heapq.heappush(self.hi, -heapq.heappop(self.lo))","        if len(self.lo) < len(self.hi): heapq.heappush(self.lo, -heapq.heappop(self.hi))","    def findMedian(self):","        return -self.lo[0] if len(self.lo)>len(self.hi) else (-self.lo[0]+self.hi[0])/2"], lineMap: { init: 3, add_push: 5, add_balance: 6, add_rebalance: 7, median: 9 } } } },
 };
 
-// ── Problem list for browse/search ───────────────────────────────────────
-export const PROB_LIST = [
+// ── Blind 75 order (LeetCode) from https://dev.to/jaiminbariya/leetcode-blind-75-49mp ──
+const BLIND_75_ORDER = [
+  "two-sum", "best-time-stock", "contains-duplicate", "product-except-self", "max-subarray", "max-product-subarray",
+  "min-rotated-sorted", "search-rotated-sorted", "three-sum", "container-most-water",
+  "sum-two-integers", "number-of-1-bits", "counting-bits", "missing-number", "reverse-bits",
+  "climbing-stairs", "coin-change", "longest-increasing-subsequence", "longest-common-subsequence", "word-break",
+  "combination-sum", "house-robber", "house-robber-ii", "decode-ways", "unique-paths", "jump-game",
+  "clone-graph", "course-schedule", "pacific-atlantic", "number-of-islands", "longest-consecutive", "alien-dictionary",
+  "insert-interval", "merge-intervals", "non-overlapping-intervals", "meeting-rooms", "meeting-rooms-ii",
+  "reverse-linked-list", "linked-list-cycle", "merge-two-sorted-lists", "merge-k-sorted-lists", "remove-nth-node", "reorder-list",
+  "set-matrix-zeroes", "spiral-matrix", "rotate-image", "word-search",
+  "longest-substring-no-repeat", "longest-repeating-char-replacement", "valid-anagram", "group-anagrams", "valid-parentheses",
+  "valid-palindrome", "longest-palindromic-substring", "palindromic-substrings", "encode-decode-strings",
+  "max-depth-tree", "same-tree", "invert-tree", "serialize-deserialize-btree", "subtree-of-another-tree", "lca-of-bst",
+];
+
+// ── Problem list for browse/search (Blind 75 order first, then the rest) ───────────────────────────────────────
+const PROB_LIST_RAW = [
   { id: "two-sum",             title: "Two Sum",                       difficulty: "Easy",   category: "Arrays",              desc: "Find two indices that sum to a target using a hash map.",       tags: ["hash-map", "arrays", "two-pointers"] },
   { id: "longest-consecutive", title: "Longest Consecutive Sequence",  difficulty: "Medium", category: "Arrays",              desc: "Find the longest run of consecutive integers in O(n).",         tags: ["hash-set", "arrays", "sequences"] },
   { id: "contains-duplicate",  title: "Contains Duplicate",            difficulty: "Easy",   category: "Arrays",              desc: "Detect if any value appears more than once.",                   tags: ["hash-set", "arrays"] },
@@ -1063,6 +1079,12 @@ export const PROB_LIST = [
   { id: "lca-of-bst",         title: "Lowest Common Ancestor of a BST",  difficulty: "Easy",   category: "Trees",               desc: "Find LCA of two nodes in a BST using BST property.", tags: ["trees", "bst", "recursion"] },
   { id: "serialize-deserialize-btree", title: "Serialize and Deserialize Binary Tree", difficulty: "Hard", category: "Trees", desc: "Encode tree to string and decode back (preorder + null).", tags: ["trees", "design", "recursion"] },
   { id: "find-median-from-data-stream", title: "Find Median from Data Stream", difficulty: "Hard", category: "Heap", desc: "Two heaps: addNum O(log n), findMedian O(1).", tags: ["heap", "design"] },
+];
+
+const byId = new Map(PROB_LIST_RAW.map(p => [p.id, p]));
+export const PROB_LIST = [
+  ...BLIND_75_ORDER.filter(id => byId.has(id)).map(id => byId.get(id)),
+  ...PROB_LIST_RAW.filter(p => !BLIND_75_ORDER.includes(p.id)),
 ];
 
 export function getSimilar(currentId, max = 3) {
