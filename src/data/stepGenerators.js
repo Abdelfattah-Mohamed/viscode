@@ -1231,6 +1231,69 @@ export function generateLongestSubstringNoRepeatSteps(input) {
   });
   return steps;
 }
+
+export function generateSubsetsSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : [];
+  const steps = [];
+  const res = [];
+  const path = [];
+
+  steps.push({
+    stepType: "init",
+    description: "subsets(nums): res = [], path = [], call backtrack(nums, 0, path, res)",
+    state: { nums: [...nums], i: 0, j: -1, path: [], res: [], action: "Call backtrack(0)" },
+  });
+
+  function backtrack(i) {
+    steps.push({
+      stepType: "enter",
+      description: `backtrack(i=${i})`,
+      state: { nums: [...nums], i, j: -1, path: [...path], res: res.map(r => [...r]), action: `Enter backtrack(${i})` },
+    });
+    steps.push({
+      stepType: "push_result",
+      description: `res.push([${path.join(", ")}]) — record current subset`,
+      state: { nums: [...nums], i, j: -1, path: [...path], res: res.map(r => [...r]), action: "Push copy of path to res" },
+    });
+    res.push([...path]);
+
+    for (let j = i; j < nums.length; j++) {
+      steps.push({
+        stepType: "loop",
+        description: `for j = ${j}, nums[${j}] = ${nums[j]}`,
+        state: { nums: [...nums], i, j, path: [...path], res: res.map(r => [...r]), action: `Loop: j=${j}` },
+      });
+      steps.push({
+        stepType: "push_path",
+        description: `path.push(${nums[j]}) → path = [${path.join(", ")}, ${nums[j]}]`,
+        state: { nums: [...nums], i, j, path: [...path, nums[j]], res: res.map(r => [...r]), action: `Include ${nums[j]}` },
+      });
+      path.push(nums[j]);
+      steps.push({
+        stepType: "recurse",
+        description: `backtrack(${j + 1})`,
+        state: { nums: [...nums], i, j, path: [...path], res: res.map(r => [...r]), action: `Recurse backtrack(${j + 1})` },
+      });
+      backtrack(j + 1);
+      steps.push({
+        stepType: "pop_path",
+        description: `path.pop() — backtrack, try next choice`,
+        state: { nums: [...nums], i, j, path: [...path], res: res.map(r => [...r]), action: "Backtrack: remove from path" },
+      });
+      path.pop();
+    }
+  }
+
+  if (nums.length > 0) backtrack(0);
+
+  steps.push({
+    stepType: "done",
+    description: `✅ Done: ${res.length} subsets`,
+    state: { nums: [...nums], i: 0, j: -1, path: [], res: res.map(r => [...r]), action: null, done: true },
+  });
+  return steps;
+}
+
 function stubLinkedListSteps(input) {
   const head = input?.head || [];
   const steps = [
@@ -1949,7 +2012,7 @@ export const STEP_GENERATORS = {
   "longest-substring-no-repeat": generateLongestSubstringNoRepeatSteps,
   "longest-palindromic-substring": (i) => stubWithS(i),
   "top-k-frequent":          generateTopKFrequentSteps,
-  "subsets":                 (i) => stubArraySteps(i),
+  "subsets":                 generateSubsetsSteps,
   "permutations":            (i) => stubArraySteps(i),
   "min-stack":               generateMinStackSteps,
   "eval-rpn":               generateEvalRpnSteps,

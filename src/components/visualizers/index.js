@@ -39,3 +39,4 @@ export { default as HouseRobberIIViz } from "./HouseRobberIIViz";
 export { default as UniquePathsViz } from "./UniquePathsViz";
 export { default as JumpGameViz } from "./JumpGameViz";
 export { default as SlidingWindowViz } from "./SlidingWindowViz";
+export { default as SubsetsViz } from "./SubsetsViz";
