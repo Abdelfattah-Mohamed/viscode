@@ -1232,6 +1232,80 @@ export function generateLongestSubstringNoRepeatSteps(input) {
   return steps;
 }
 
+export function generateLongestPalindromicSubstringSteps(input) {
+  const s = input?.s != null ? String(input.s).trim() : "";
+  const n = s.length;
+  const steps = [];
+  let best = "";
+  let bestStart = 0;
+  let bestLen = 0;
+
+  function expand(l, r) {
+    while (l >= 0 && r < n && s[l] === s[r]) {
+      l--;
+      r++;
+    }
+    return { l: l + 1, r, substr: s.slice(l + 1, r) };
+  }
+
+  steps.push({
+    stepType: "init",
+    description: "longestPalindrome(s): best = \"\", for each center i try odd and even expansion",
+    state: { s, i: -1, l: -1, r: -1, best: "", bestStart: 0, bestLen: 0, palindrome: "", type: null, action: "Initialize" },
+  });
+
+  for (let i = 0; i < n; i++) {
+    steps.push({
+      stepType: "loop",
+      description: `Center i = ${i}`,
+      state: { s, i, l: -1, r: -1, best, bestStart, bestLen, palindrome: "", type: null, action: `Try center ${i}` },
+    });
+
+    const odd = expand(i, i);
+    steps.push({
+      stepType: "try_odd",
+      description: `expand(i, i) → l=${odd.l}, r=${odd.r}, "${odd.substr}"`,
+      state: { s, i, l: odd.l - 1, r: odd.r, best, bestStart, bestLen, palindrome: odd.substr, type: "odd", action: "Odd-length expand" },
+    });
+    if (odd.substr.length > bestLen) {
+      bestLen = odd.substr.length;
+      bestStart = odd.l;
+      best = odd.substr;
+      steps.push({
+        stepType: "update_best",
+        description: `New best: "${best}" (length ${bestLen})`,
+        state: { s, i, l: odd.l - 1, r: odd.r, best, bestStart, bestLen, palindrome: odd.substr, type: "odd", action: "Update best" },
+      });
+    }
+
+    if (i + 1 < n) {
+      const even = expand(i, i + 1);
+      steps.push({
+        stepType: "try_even",
+        description: `expand(i, i+1) → l=${even.l}, r=${even.r}, "${even.substr}"`,
+        state: { s, i, l: even.l - 1, r: even.r, best, bestStart, bestLen, palindrome: even.substr, type: "even", action: "Even-length expand" },
+      });
+      if (even.substr.length > bestLen) {
+        bestLen = even.substr.length;
+        bestStart = even.l;
+        best = even.substr;
+        steps.push({
+          stepType: "update_best",
+          description: `New best: "${best}" (length ${bestLen})`,
+          state: { s, i, l: even.l - 1, r: even.r, best, bestStart, bestLen, palindrome: even.substr, type: "even", action: "Update best" },
+        });
+      }
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `✅ Longest palindromic substring: "${best}"`,
+    state: { s, i: n - 1, l: -1, r: -1, best, bestStart, bestLen, palindrome: "", type: null, action: null, done: true },
+  });
+  return steps;
+}
+
 export function generateSubsetsSteps(input) {
   const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : [];
   const steps = [];
@@ -2083,7 +2157,7 @@ export const STEP_GENERATORS = {
   "graph-valid-tree":        (i) => stubGraphSteps(i),
   "group-anagrams":          (i) => stubWithS(i),
   "longest-substring-no-repeat": generateLongestSubstringNoRepeatSteps,
-  "longest-palindromic-substring": (i) => stubWithS(i),
+  "longest-palindromic-substring": generateLongestPalindromicSubstringSteps,
   "top-k-frequent":          generateTopKFrequentSteps,
   "subsets":                 generateSubsetsSteps,
   "permutations":            generatePermutationsSteps,

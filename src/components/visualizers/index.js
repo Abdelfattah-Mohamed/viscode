@@ -41,3 +41,4 @@ export { default as JumpGameViz } from "./JumpGameViz";
 export { default as SlidingWindowViz } from "./SlidingWindowViz";
 export { default as SubsetsViz } from "./SubsetsViz";
 export { default as PermutationsViz } from "./PermutationsViz";
+export { default as LongestPalindromeViz } from "./LongestPalindromeViz";
