@@ -2129,6 +2129,79 @@ export function generateNumConnectedComponentsSteps(input) {
   return steps;
 }
 
+export function generateGraphValidTreeSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+
+  steps.push({
+    stepType: "check_edges",
+    description: `Check: edges.length (${edges.length}) == n-1 (${n - 1})?`,
+    state: { n, edges: [...edges], vis: [], highlighted: [], validTree: null },
+  });
+
+  if (edges.length !== n - 1) {
+    steps.push({
+      stepType: "check_edges_fail",
+      description: "No → return false (need exactly n-1 edges for a tree)",
+      state: { n, edges: [...edges], vis: [], highlighted: [], validTree: false, done: true },
+    });
+    return steps;
+  }
+
+  const graph = Array.from({ length: n }, () => []);
+  for (const [a, b] of edges) {
+    if (a >= 0 && a < n && b >= 0 && b < n) { graph[a].push(b); graph[b].push(a); }
+  }
+  const vis = Array(n).fill(false);
+
+  steps.push({
+    stepType: "build_graph",
+    description: `Build graph: ${n} nodes, ${edges.length} edges`,
+    state: { n, edges: [...edges], vis: [...vis], highlighted: [] },
+  });
+
+  steps.push({
+    stepType: "dfs_start",
+    description: "DFS(0)",
+    state: { n, edges: [...edges], vis: [...vis], highlighted: [0] },
+  });
+
+  function dfs(u, stepsRef) {
+    vis[u] = true;
+    stepsRef.push({
+      stepType: "dfs_visit",
+      description: `Visit node ${u} (mark vis[${u}]=true)`,
+      state: { n, edges: [...edges], vis: [...vis], highlighted: [u] },
+    });
+    for (const v of graph[u]) {
+      if (!vis[v]) {
+        stepsRef.push({
+          stepType: "dfs_recurse",
+          description: `DFS ${u} → ${v}`,
+          state: { n, edges: [...edges], vis: [...vis], highlighted: [u, v] },
+        });
+        dfs(v, stepsRef);
+      }
+    }
+  }
+
+  if (n > 0) dfs(0, steps);
+
+  const allVisited = n === 0 || vis.every(Boolean);
+  steps.push({
+    stepType: "check_all_vis",
+    description: `All ${n} nodes visited? ${allVisited}`,
+    state: { n, edges: [...edges], vis: [...vis], highlighted: [], validTree: allVisited },
+  });
+  steps.push({
+    stepType: "done",
+    description: allVisited ? "Valid tree: true" : "Valid tree: false",
+    state: { n, edges: [...edges], vis: [...vis], highlighted: [], validTree: allVisited, done: true },
+  });
+  return steps;
+}
+
 function stubGraphSteps(input) {
   const n = input?.n != null ? input.n : 0;
   const edges = buildEdgesFromNums(n, input?.nums || []);
@@ -2196,7 +2269,7 @@ export const STEP_GENERATORS = {
   "course-schedule":        (i) => stubGraphSteps(i),
   "pacific-atlantic":        generatePacificAtlanticSteps,
   "num-connected-components": generateNumConnectedComponentsSteps,
-  "graph-valid-tree":        (i) => stubGraphSteps(i),
+  "graph-valid-tree":        generateGraphValidTreeSteps,
   "group-anagrams":          generateGroupAnagramsSteps,
   "longest-substring-no-repeat": generateLongestSubstringNoRepeatSteps,
   "longest-palindromic-substring": generateLongestPalindromicSubstringSteps,
