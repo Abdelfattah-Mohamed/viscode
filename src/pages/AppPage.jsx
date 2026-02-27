@@ -12,7 +12,7 @@ import {
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
   PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
   MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
-  ThreeSumViz, ContainerViz, MergeListsViz, MergeKViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz,
+  ThreeSumViz, ContainerViz, MergeListsViz, MergeKViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz, TrappingRainWaterViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -98,6 +98,11 @@ export default function AppPage({
       ?? langDef.lineMap["loop"]
       ?? langDef.lineMap["compare"]
       ?? langDef.lineMap["visit"]
+      ?? langDef.lineMap["build_edges"]
+      ?? langDef.lineMap["update_leftMax"]
+      ?? langDef.lineMap["add_water_left"]
+      ?? langDef.lineMap["update_rightMax"]
+      ?? langDef.lineMap["add_water_right"]
       ?? langDef.lineMap["init"]
       ?? 1;
     if (raw < 1) return -1;
@@ -220,6 +225,7 @@ export default function AppPage({
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: "8px 20px 20px", fontSize: `${whiteboardFontScale}rem` }}>
               {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : undefined} />}
+              {problem.visualizer === "trapping"    && <TrappingRainWaterViz nums={input.nums?.length ? input.nums : (problem.defaultInput?.nums ?? [])} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "duplicate"   && <DuplicateViz          nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
               {problem.visualizer === "anagram"     && <AnagramViz            s={input.s || ""}         tStr={input.t || ""} stepState={currentStep?.state} t={t} />}
@@ -448,6 +454,7 @@ export default function AppPage({
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "4px 18px 18px", fontSize: `${whiteboardFontScale}rem` }}>
             {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : undefined} />}
+            {problem.visualizer === "trapping"    && <TrappingRainWaterViz nums={input.nums?.length ? input.nums : (problem.defaultInput?.nums ?? [])} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "duplicate"   && <DuplicateViz          nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
             {problem.visualizer === "anagram"     && <AnagramViz            s={input.s || ""}         tStr={input.t || ""} stepState={currentStep?.state} t={t} />}

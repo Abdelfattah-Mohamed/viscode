@@ -82,7 +82,7 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
                   color: val === 0 && !isPacificAtlantic ? (isDark ? "#93c5fd" : "#0369a1") : (isDark ? "#d1d5db" : "#1f2937"),
                 }}
               >
-                {val}
+                {problemId === "word-search" && typeof val === "number" && val >= 65 && val <= 122 ? String.fromCharCode(val) : val}
               </div>
             );
           })

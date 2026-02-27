@@ -11,11 +11,12 @@ const EDGE_COLOR = "#64748b";
 const EDGE_HIGHLIGHT = "#e03131";
 
 export default function GraphViz({ stepState = {}, problemId, t }) {
-  const { n = 0, edges = [], highlighted = [], vis = [], count, componentId = [], done, validTree, nodeState = [], canFinish, directed } = stepState;
+  const { n = 0, edges = [], highlighted = [], vis = [], count, componentId = [], done, validTree, nodeState = [], canFinish, directed, labels = [], result } = stepState;
   const isDark = t._resolved === "dark";
   const isComponents = problemId === "num-connected-components";
   const isValidTree = problemId === "graph-valid-tree";
   const isCourseSchedule = problemId === "course-schedule";
+  const isAlienDictionary = problemId === "alien-dictionary";
   const roughRef = useRef(null);
 
   const isIsolated = (i) => !connectedNodes.has(i);
@@ -122,6 +123,8 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
         <p style={{ margin: "8px 0 0", fontSize: "0.95rem" }}>
           {isCourseSchedule ? (
             <>Enter <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>n</code> (courses) and prerequisites as pairs <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>a,b</code> (course a depends on b), e.g. <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>1,0</code> for [[1,0]]</>
+          ) : isAlienDictionary ? (
+            <>Enter words as comma-separated, e.g. <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>wrt,wrf,er,ett,rftt</code></>
           ) : (
             <>Enter <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>n</code> (nodes) and edges as a flat list, e.g. <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>0,1,1,2,3,4</code></>
           )}
@@ -131,7 +134,7 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
   }
 
   const isolatedCount = n - connectedNodes.size;
-  const showLegend = (isComponents && (count != null || done)) || (isValidTree && vis.some(Boolean)) || (isCourseSchedule && (nodeState.some(s => s > 0) || highlighted.length > 0)) || isolatedCount > 0;
+  const showLegend = (isComponents && (count != null || done)) || (isValidTree && vis.some(Boolean)) || (isCourseSchedule && (nodeState.some(s => s > 0) || highlighted.length > 0)) || (isAlienDictionary && (highlighted.length > 0 || (result && result.length > 0))) || isolatedCount > 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -214,6 +217,21 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
             {canFinish ? "✓ Can finish" : "✗ Cycle detected"}
           </span>
         )}
+        {isAlienDictionary && result != null && result !== "" && (
+          <span style={{
+            fontFamily: "'JetBrains Mono',monospace",
+            fontSize: "1.05rem",
+            fontWeight: 800,
+            color: t.green,
+            padding: "6px 14px",
+            borderRadius: 20,
+            border: `2px solid ${t.green}`,
+            background: t.green + "22",
+            boxShadow: `0 2px 8px ${t.green}35`,
+          }}>
+            Order: &quot;{result}&quot;
+          </span>
+        )}
       </div>
 
       <div
@@ -294,7 +312,7 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
                   dominantBaseline="central"
                   style={{
                     fontFamily: "'JetBrains Mono','Caveat',monospace",
-                    fontSize: 17,
+                    fontSize: labels[i] != null ? 18 : 17,
                     fontWeight: 800,
                     fill: textFill,
                     pointerEvents: "none",
@@ -303,7 +321,7 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
                     strokeWidth: 1.5,
                   }}
                 >
-                  {String(i)}
+                  {labels[i] != null ? String(labels[i]) : String(i)}
                 </text>
               );
             })}

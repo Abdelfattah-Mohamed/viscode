@@ -1213,11 +1213,28 @@ function stubGridSteps(input) {
   const grid = buildGrid2D(input.grid, input.rows);
   if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], visited: [], current: null, done: true } }];
   const visited = grid.map(row => row.map(() => false));
-  return [
-    { stepType: "init", description: "Start", state: { grid, visited: visited.map(r => [...r]), current: null } },
-    { stepType: "done", description: "Done", state: { grid, visited: visited.map(r => [...r]), current: null, done: true } },
-  ];
+  const R = grid.length, C = grid[0].length;
+  const steps = [{ stepType: "init", description: "Initialize grid", state: { grid, visited: visited.map(r => [...r]), current: null } }];
+  const maxLoop = Math.min(R * C, 6);
+  for (let k = 0; k < maxLoop; k++) {
+    const r = Math.floor(k / C), c = k % C;
+    steps.push({ stepType: "loop", description: `Process cell (${r},${c})`, state: { grid, visited: visited.map(row => [...row]), current: [r, c] } });
+  }
+  steps.push({ stepType: "done", description: "Done", state: { grid, visited: visited.map(r => [...r]), current: null, done: true } });
+  return steps;
 }
+function stubStringSteps(input) {
+  const s = input?.s != null ? String(input.s) : "";
+  const steps = [
+    { stepType: "init", description: "Initialize", state: { s, start: -1, i: -1, best: 0, done: false } },
+  ];
+  for (let i = 0; i < Math.min(s.length, 8); i++) {
+    steps.push({ stepType: "loop", description: `Step ${i + 1}`, state: { s, start: -1, i: i, best: i + 1, done: false } });
+  }
+  steps.push({ stepType: "done", description: "Done", state: { s, start: -1, i: Math.max(0, s.length - 1), best: s.length, done: true } });
+  return steps;
+}
+
 function stubWithNumsTarget(input) {
   const nums = input?.nums || [];
   const target = input?.target != null ? input.target : 0;
@@ -2364,6 +2381,122 @@ function stubGraphSteps(input) {
   return steps;
 }
 
+export function generateAlienDictionarySteps(input) {
+  const raw = (input?.words ?? input?.s ?? "wrt,wrf,er,ett,rftt").toString().trim();
+  const words = raw ? raw.split(",").map(w => w.trim()).filter(Boolean) : [];
+  if (words.length < 2) {
+    return [
+      { stepType: "init", description: "Enter words (comma-separated)", state: { n: 0, edges: [], labels: [], highlighted: [], result: "", done: true } },
+    ];
+  }
+  const chars = [...new Set(words.join(""))];
+  const charToIdx = {};
+  chars.forEach((c, i) => { charToIdx[c] = i; });
+  const n = chars.length;
+  const labels = [...chars];
+  const graph = {};
+  const inDeg = {};
+  chars.forEach(c => { graph[c] = new Set(); inDeg[c] = 0; });
+
+  for (let i = 0; i < words.length - 1; i++) {
+    const a = words[i], b = words[i + 1];
+    for (let j = 0; j < Math.min(a.length, b.length); j++) {
+      if (a[j] !== b[j]) {
+        if (!graph[a[j]].has(b[j])) {
+          graph[a[j]].add(b[j]);
+          inDeg[b[j]]++;
+        }
+        break;
+      }
+    }
+  }
+  const edges = [];
+  chars.forEach(u => {
+    graph[u].forEach(v => edges.push([charToIdx[u], charToIdx[v]]));
+  });
+
+  const steps = [];
+  steps.push({
+    stepType: "init",
+    description: `Build graph from ${words.length} words: ${labels.join(", ")}`,
+    state: { n, edges: [...edges], labels: [...labels], highlighted: [], result: "", directed: true },
+  });
+  steps.push({
+    stepType: "build_edges",
+    description: `Edges from comparing adjacent words: ${edges.length} edges`,
+    state: { n, edges: [...edges], labels: [...labels], highlighted: [], result: "", directed: true },
+  });
+
+  const inCopy = { ...inDeg };
+  const q = chars.filter(c => inCopy[c] === 0);
+  let result = "";
+  while (q.length) {
+    const c = q.shift();
+    const idx = charToIdx[c];
+    result += c;
+    steps.push({
+      stepType: "visit",
+      description: `Pop '${c}' (in-degree 0) → result: "${result}"`,
+      state: { n, edges: [...edges], labels: [...labels], highlighted: [idx], result, directed: true },
+    });
+    graph[c].forEach(nxt => {
+      inCopy[nxt]--;
+      if (inCopy[nxt] === 0) q.push(nxt);
+    });
+  }
+
+  const valid = result.length === n;
+  steps.push({
+    stepType: "done",
+    description: valid ? `✓ Order: "${result}"` : `Invalid (cycle?)`,
+    state: { n, edges: [...edges], labels: [...labels], highlighted: [], result, done: true, directed: true },
+  });
+  return steps;
+}
+
+export function generateTrappingRainWaterSteps(input) {
+  const height = input?.nums || [];
+  const n = height.length;
+  const waterAt = Array(n).fill(0);
+  const steps = [
+    { stepType: "init", description: "Initialize l=0, r=n-1, leftMax=0, rightMax=0, water=0", state: { l: 0, r: Math.max(0, n - 1), leftMax: 0, rightMax: 0, water: 0, waterAt: [...waterAt] } },
+  ];
+  if (n < 2) {
+    steps.push({ stepType: "done", description: "n < 2 → return 0", state: { l: 0, r: Math.max(0, n - 1), water: 0, waterAt: [...waterAt], done: true } });
+    return steps;
+  }
+  let l = 0, r = n - 1, leftMax = 0, rightMax = 0, water = 0;
+  while (l < r) {
+    if (height[l] <= height[r]) {
+      if (height[l] >= leftMax) {
+        steps.push({ stepType: "update_leftMax", description: `height[${l}]=${height[l]} ≥ leftMax → leftMax=${height[l]}`, state: { l, r, leftMax: height[l], rightMax, water, waterAt: [...waterAt] } });
+        leftMax = height[l];
+      } else {
+        const add = leftMax - height[l];
+        water += add;
+        waterAt[l] = add;
+        steps.push({ stepType: "add_water_left", description: `height[${l}]=${height[l]} < leftMax → water += ${add} = ${water}`, state: { l, r, leftMax, rightMax, water, waterAt: [...waterAt] } });
+      }
+      l++;
+      if (l < r) steps.push({ stepType: "loop", description: `l++ → l=${l}`, state: { l, r, leftMax, rightMax, water, waterAt: [...waterAt] } });
+    } else {
+      if (height[r] >= rightMax) {
+        steps.push({ stepType: "update_rightMax", description: `height[${r}]=${height[r]} ≥ rightMax → rightMax=${height[r]}`, state: { l, r, leftMax, rightMax: height[r], water, waterAt: [...waterAt] } });
+        rightMax = height[r];
+      } else {
+        const add = rightMax - height[r];
+        water += add;
+        waterAt[r] = add;
+        steps.push({ stepType: "add_water_right", description: `height[${r}]=${height[r]} < rightMax → water += ${add} = ${water}`, state: { l, r, leftMax, rightMax, water, waterAt: [...waterAt] } });
+      }
+      r--;
+      if (l < r) steps.push({ stepType: "loop", description: `r-- → r=${r}`, state: { l, r, leftMax, rightMax, water, waterAt: [...waterAt] } });
+    }
+  }
+  steps.push({ stepType: "done", description: `✓ Return water = ${water}`, state: { l, r, leftMax, rightMax, water, waterAt: [...waterAt], done: true } });
+  return steps;
+}
+
 export function generateCourseScheduleSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const rawEdges = buildEdgesFromNums(n, input?.nums || []);
@@ -2520,5 +2653,13 @@ export const STEP_GENERATORS = {
   "min-stack":               generateMinStackSteps,
   "eval-rpn":               generateEvalRpnSteps,
   "generate-parentheses":    generateParenthesesSteps,
-  "trapping-rain-water":     (i) => stubArraySteps(i),
+  "trapping-rain-water":     generateTrappingRainWaterSteps,
+  "palindromic-substrings":  (i) => stubStringSteps(i),
+  "longest-repeating-char-replacement": (i) => stubStringSteps(i),
+  "encode-decode-strings":   (i) => stubStringSteps(i),
+  "rotate-image":            (i) => stubGridSteps(i),
+  "set-matrix-zeroes":       (i) => stubGridSteps(i),
+  "word-search":             (i) => stubGridSteps(i),
+  "spiral-matrix":           (i) => stubGridSteps(i),
+  "alien-dictionary":        generateAlienDictionarySteps,
 };
