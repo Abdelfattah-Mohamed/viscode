@@ -1294,6 +1294,79 @@ export function generateSubsetsSteps(input) {
   return steps;
 }
 
+export function generatePermutationsSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : [];
+  const steps = [];
+  const res = [];
+  const arr = [...nums];
+  const n = arr.length;
+
+  steps.push({
+    stepType: "init",
+    description: "permute(nums): res = [], call backtrack(nums, 0, res)",
+    state: { nums: [...arr], start: 0, i: -1, res: [], action: "Call backtrack(0)" },
+  });
+
+  function backtrack(start) {
+    steps.push({
+      stepType: "enter",
+      description: `backtrack(start=${start})`,
+      state: { nums: [...arr], start, i: -1, res: res.map(r => [...r]), action: `Enter backtrack(${start})` },
+    });
+
+    if (start === n) {
+      steps.push({
+        stepType: "base_case",
+        description: `start == n → res.push([${arr.join(", ")}])`,
+        state: { nums: [...arr], start, i: -1, res: res.map(r => [...r]), action: "Base case: record permutation" },
+      });
+      res.push([...arr]);
+      steps.push({
+        stepType: "base_case_done",
+        description: "return",
+        state: { nums: [...arr], start, i: -1, res: res.map(r => [...r]), action: "Return" },
+      });
+      return;
+    }
+
+    for (let i = start; i < n; i++) {
+      steps.push({
+        stepType: "loop",
+        description: `for i = ${i}, nums[${i}] = ${arr[i]}`,
+        state: { nums: [...arr], start, i, res: res.map(r => [...r]), action: `Loop: try i=${i}` },
+      });
+      const a = arr[start], b = arr[i];
+      [arr[start], arr[i]] = [arr[i], arr[start]];
+      steps.push({
+        stepType: "swap",
+        description: `swap(nums[${start}], nums[${i}]) → [${arr.join(", ")}]`,
+        state: { nums: [...arr], start, i, res: res.map(r => [...r]), action: `Swap ${a} and ${b}` },
+      });
+      steps.push({
+        stepType: "recurse",
+        description: `backtrack(${start + 1})`,
+        state: { nums: [...arr], start, i, res: res.map(r => [...r]), action: `Recurse backtrack(${start + 1})` },
+      });
+      backtrack(start + 1);
+      steps.push({
+        stepType: "swap_back",
+        description: `swap back nums[${start}] and nums[${i}]`,
+        state: { nums: [...arr], start, i, res: res.map(r => [...r]), action: "Swap back (backtrack)" },
+      });
+      [arr[start], arr[i]] = [arr[i], arr[start]];
+    }
+  }
+
+  if (n > 0) backtrack(0);
+
+  steps.push({
+    stepType: "done",
+    description: `✅ Done: ${res.length} permutations`,
+    state: { nums: [...nums], start: 0, i: -1, res: res.map(r => [...r]), action: null, done: true },
+  });
+  return steps;
+}
+
 function stubLinkedListSteps(input) {
   const head = input?.head || [];
   const steps = [
@@ -2013,7 +2086,7 @@ export const STEP_GENERATORS = {
   "longest-palindromic-substring": (i) => stubWithS(i),
   "top-k-frequent":          generateTopKFrequentSteps,
   "subsets":                 generateSubsetsSteps,
-  "permutations":            (i) => stubArraySteps(i),
+  "permutations":            generatePermutationsSteps,
   "min-stack":               generateMinStackSteps,
   "eval-rpn":               generateEvalRpnSteps,
   "generate-parentheses":    generateParenthesesSteps,

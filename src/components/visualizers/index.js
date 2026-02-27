@@ -40,3 +40,4 @@ export { default as UniquePathsViz } from "./UniquePathsViz";
 export { default as JumpGameViz } from "./JumpGameViz";
 export { default as SlidingWindowViz } from "./SlidingWindowViz";
 export { default as SubsetsViz } from "./SubsetsViz";
+export { default as PermutationsViz } from "./PermutationsViz";
