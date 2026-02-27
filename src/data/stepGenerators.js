@@ -2215,6 +2215,98 @@ function stubGraphSteps(input) {
   return steps;
 }
 
+export function generateCourseScheduleSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const rawEdges = buildEdgesFromNums(n, input?.nums || []);
+  // Course Schedule: [a,b] means course a depends on b → edge b→a (b is prerequisite)
+  const edges = rawEdges.map(([a, b]) => [b, a]);
+  const steps = [];
+  if (n <= 0) {
+    steps.push({ stepType: "init", description: "Enter numCourses and prerequisites", state: { n: 0, edges: [], nodeState: [], highlighted: [] } });
+    steps.push({ stepType: "done", description: "Done", state: { n: 0, edges: [], nodeState: [], highlighted: [], canFinish: true, done: true } });
+    return steps;
+  }
+  const graph = Array.from({ length: n }, () => []);
+  for (const [from, to] of edges) {
+    if (from >= 0 && from < n && to >= 0 && to < n) graph[from].push(to);
+  }
+  const nodeState = Array(n).fill(0);
+
+  steps.push({
+    stepType: "build_graph",
+    description: `Build graph: ${n} courses, ${edges.length} prerequisites (edge b→a means "a depends on b")`,
+    state: { n, edges: [...edges], nodeState: [...nodeState], highlighted: [], directed: true },
+  });
+
+  function dfs(u, stepsRef) {
+    stepsRef.push({
+      stepType: "check_visiting",
+      description: `DFS(${u}): state[${u}] == 1 (visiting)?`,
+      state: { n, edges: [...edges], nodeState: [...nodeState], highlighted: [u], directed: true },
+    });
+    if (nodeState[u] === 1) {
+      stepsRef.push({
+        stepType: "cycle",
+        description: `Cycle detected at node ${u}! Return false`,
+        state: { n, edges: [...edges], nodeState: [...nodeState], highlighted: [u], canFinish: false, done: true, directed: true },
+      });
+      return false;
+    }
+    stepsRef.push({
+      stepType: "check_done",
+      description: `state[${u}] == 2 (done)?`,
+      state: { n, edges: [...edges], nodeState: [...nodeState], highlighted: [u], directed: true },
+    });
+    if (nodeState[u] === 2) {
+      stepsRef.push({
+        stepType: "skip_done",
+        description: `Already done → return true`,
+        state: { n, edges: [...edges], nodeState: [...nodeState], highlighted: [u], directed: true },
+      });
+      return true;
+    }
+    nodeState[u] = 1;
+    stepsRef.push({
+      stepType: "set_visiting",
+      description: `state[${u}] = 1 (visiting)`,
+      state: { n, edges: [...edges], nodeState: [...nodeState], highlighted: [u], directed: true },
+    });
+    for (const v of graph[u]) {
+      stepsRef.push({
+        stepType: "dfs_recurse",
+        description: `DFS ${u} → ${v} (recurse)`,
+        state: { n, edges: [...edges], nodeState: [...nodeState], highlighted: [u, v], directed: true },
+      });
+      if (!dfs(v, stepsRef)) return false;
+    }
+    nodeState[u] = 2;
+    stepsRef.push({
+      stepType: "set_done",
+      description: `state[${u}] = 2 (done)`,
+      state: { n, edges: [...edges], nodeState: [...nodeState], highlighted: [u], directed: true },
+    });
+    return true;
+  }
+
+  for (let i = 0; i < n; i++) {
+    steps.push({
+      stepType: "main_loop",
+      description: `Try DFS from course ${i}`,
+      state: { n, edges: [...edges], nodeState: [...nodeState], highlighted: [i], directed: true },
+    });
+    if (!dfs(i, steps)) {
+      return steps;
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: "All courses finished without cycle → return true",
+    state: { n, edges: [...edges], nodeState: [...nodeState], highlighted: [], canFinish: true, done: true, directed: true },
+  });
+  return steps;
+}
+
 export const STEP_GENERATORS = {
   "two-sum":              generateTwoSumSteps,
   "longest-consecutive":  generateLongestConsecutiveSteps,
@@ -2266,7 +2358,7 @@ export const STEP_GENERATORS = {
   "reorder-list":            generateReorderListSteps,
   "copy-list-random-pointer": (i) => stubLinkedListSteps(i),
   "clone-graph":            (i) => stubGraphSteps(i),
-  "course-schedule":        (i) => stubGraphSteps(i),
+  "course-schedule":        generateCourseScheduleSteps,
   "pacific-atlantic":        generatePacificAtlanticSteps,
   "num-connected-components": generateNumConnectedComponentsSteps,
   "graph-valid-tree":        generateGraphValidTreeSteps,
