@@ -1203,6 +1203,66 @@ function stubIntervalSteps(input) {
   steps.push({ stepType: "done", description: "Done", state: { intervals: pairs, merged: pairs, current: -1, done: true } });
   return steps;
 }
+
+export function generateNonOverlappingIntervalsSteps(input) {
+  const nums = input?.nums || [];
+  const pairs = [];
+  for (let i = 0; i < nums.length; i += 2)
+    if (nums[i] != null && nums[i + 1] != null) pairs.push([Number(nums[i]), Number(nums[i + 1])]);
+  const steps = [];
+  if (pairs.length === 0) {
+    steps.push({ stepType: "init", description: "Enter intervals as pairs", state: { intervals: [], current: -1, lastEnd: null, count: 0, removedIndices: [] } });
+    steps.push({ stepType: "done", description: "Done", state: { intervals: [], current: -1, lastEnd: null, count: 0, removedIndices: [], done: true } });
+    return steps;
+  }
+  const intervals = pairs.slice().sort((a, b) => a[1] - b[1]);
+  let lastEnd = -Infinity;
+  let count = 0;
+  const removedIndices = [];
+
+  steps.push({
+    stepType: "sort",
+    description: "Sort intervals by end time",
+    state: { intervals: intervals.map(x => [...x]), current: -1, lastEnd: null, count: 0, removedIndices: [] },
+  });
+  steps.push({
+    stepType: "init",
+    description: "end = −∞, count = 0",
+    state: { intervals: intervals.map(x => [...x]), current: -1, lastEnd: lastEnd, count: 0, removedIndices: [] },
+  });
+
+  for (let i = 0; i < intervals.length; i++) {
+    const [s, e] = intervals[i];
+    steps.push({
+      stepType: "loop",
+      description: `for interval [${s}, ${e}]`,
+      state: { intervals: intervals.map(x => [...x]), current: i, lastEnd, count, removedIndices: [...removedIndices] },
+    });
+    if (s >= lastEnd) {
+      lastEnd = e;
+      steps.push({
+        stepType: "keep",
+        description: `s (${s}) ≥ end → keep, end = ${e}`,
+        state: { intervals: intervals.map(x => [...x]), current: i, lastEnd, count, removedIndices: [...removedIndices] },
+      });
+    } else {
+      count++;
+      removedIndices.push(i);
+      steps.push({
+        stepType: "remove",
+        description: `s (${s}) < end → remove, count = ${count}`,
+        state: { intervals: intervals.map(x => [...x]), current: i, lastEnd, count, removedIndices: [...removedIndices] },
+      });
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `return count = ${count}`,
+    state: { intervals: intervals.map(x => [...x]), current: -1, lastEnd, count, removedIndices: [...removedIndices], done: true },
+  });
+  return steps;
+}
 export function generateRotateImageSteps(input) {
   if (!input || input.grid == null || input.rows == null) {
     return [
@@ -1561,6 +1621,66 @@ function stubWithNumsTarget(input) {
     steps.push({ stepType: "loop", description: `Check index ${i}`, state: { nums: [...nums], target, i, highlight: [i] } });
   }
   steps.push({ stepType: "done", description: "Done", state: { nums: [...nums], target, done: true } });
+  return steps;
+}
+
+export function generateCoinChangeSteps(input) {
+  const coins = Array.isArray(input?.nums) ? input.nums.map(Number).filter(c => c > 0) : [1, 2, 5];
+  const amount = Math.max(0, Number(input?.amount) ?? 11);
+  const steps = [];
+  const inf = amount + 1;
+  const dp = Array(amount + 1).fill(inf);
+  dp[0] = 0;
+
+  steps.push({
+    stepType: "init",
+    description: "coins = [" + coins.join(", ") + "], amount = " + amount,
+    state: { dp: [...dp], coins, amount, i: 0, coinIdx: -1, highlight: [], inf },
+  });
+  steps.push({
+    stepType: "init_dp",
+    description: "dp[0..amount] = " + inf + " (impossible sentinel)",
+    state: { dp: [...dp], coins, amount, i: 0, coinIdx: -1, highlight: [], inf },
+  });
+  steps.push({
+    stepType: "init_zero",
+    description: "dp[0] = 0 (zero coins for amount 0)",
+    state: { dp: [...dp], coins, amount, i: 0, coinIdx: -1, highlight: [0], inf },
+  });
+
+  for (let i = 1; i <= amount; i++) {
+    steps.push({
+      stepType: "loop_i",
+      description: "for i = " + i + " (fewest coins for amount " + i + ")",
+      state: { dp: [...dp], coins, amount, i, coinIdx: -1, highlight: [i], inf },
+    });
+    for (let j = 0; j < coins.length; j++) {
+      const c = coins[j];
+      if (c > i) continue;
+      const prev = dp[i - c];
+      const candidate = prev >= inf ? inf : 1 + prev;
+      steps.push({
+        stepType: "try_coin",
+        description: "coin " + c + " → 1 + dp[" + (i - c) + "] = 1 + " + (prev >= inf ? "∞" : prev) + " = " + (candidate >= inf ? "∞" : candidate),
+        state: { dp: [...dp], coins, amount, i, coinIdx: j, prevIdx: i - c, highlight: [i, i - c], candidate, inf },
+      });
+      if (candidate < dp[i]) {
+        dp[i] = candidate;
+        steps.push({
+          stepType: "update",
+          description: "dp[" + i + "] = min(dp[" + i + "], " + candidate + ") = " + candidate,
+          state: { dp: [...dp], coins, amount, i, coinIdx: j, highlight: [i], inf },
+        });
+      }
+    }
+  }
+
+  const result = dp[amount] > amount ? -1 : dp[amount];
+  steps.push({
+    stepType: "done",
+    description: "return dp[" + amount + "] = " + (result === -1 ? "-1 (impossible)" : result),
+    state: { dp: [...dp], coins, amount, i: amount, highlight: [amount], done: true, result, inf },
+  });
   return steps;
 }
 function stubWithN(input) {
@@ -2753,6 +2873,81 @@ function stubGraphSteps(input) {
   return steps;
 }
 
+export function generateCloneGraphSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 4);
+  const edges = buildEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+  if (n <= 0) {
+    steps.push({ stepType: "init", description: "Enter n and edges", state: { n: 0, edges: [], highlighted: [] } });
+    steps.push({ stepType: "done", description: "Done", state: { n: 0, edges: [], highlighted: [], done: true } });
+    return steps;
+  }
+  const graph = Array.from({ length: n }, () => []);
+  for (const [a, b] of edges) {
+    if (a >= 0 && a < n && b >= 0 && b < n) { graph[a].push(b); graph[b].push(a); }
+  }
+  const start = 0;
+  const map = new Set();
+  const q = [start];
+  map.add(start);
+
+  steps.push({
+    stepType: "init",
+    description: `Graph: ${n} nodes, ${edges.length} edges. BFS clone from node ${start}.`,
+    state: { n, edges: [...edges], highlighted: [], cur: null, nb: null, queue: [] },
+  });
+  steps.push({
+    stepType: "init_map",
+    description: `map = {}, q = [${start}], clone node ${start} and add to map`,
+    state: { n, edges: [...edges], highlighted: [start], cur: null, nb: null, queue: [start] },
+  });
+
+  let idx = 0;
+  while (idx < q.length) {
+    const cur = q[idx];
+    const queueNow = q.slice(idx);
+    idx++;
+    steps.push({
+      stepType: "while_cond",
+      description: `while (q not empty)`,
+      state: { n, edges: [...edges], highlighted: [cur], cur, nb: null, queue: queueNow },
+    });
+    steps.push({
+      stepType: "pop",
+      description: `cur = q.front(); q.pop() → cur = ${cur}`,
+      state: { n, edges: [...edges], highlighted: [cur], cur, nb: null, queue: queueNow },
+    });
+    for (const nb of graph[cur]) {
+      steps.push({
+        stepType: "for_neighbor",
+        description: `for (nb : cur.neighbors) → nb = ${nb}`,
+        state: { n, edges: [...edges], highlighted: [cur, nb], cur, nb, queue: queueNow },
+      });
+      if (!map.has(nb)) {
+        map.add(nb);
+        q.push(nb);
+        steps.push({
+          stepType: "clone_new",
+          description: `nb not in map → clone node ${nb}, q.push(${nb})`,
+          state: { n, edges: [...edges], highlighted: [cur, nb], cur, nb, queue: q.slice(idx) },
+        });
+      }
+      steps.push({
+        stepType: "add_edge",
+        description: `map[cur].neighbors.push(map[nb]) — link clone ${cur} → clone ${nb}`,
+        state: { n, edges: [...edges], highlighted: [cur, nb], cur, nb, queue: q.slice(idx) },
+      });
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `return map[node] (clone of node ${start})`,
+    state: { n, edges: [...edges], highlighted: [], cur: null, nb: null, queue: [], done: true },
+  });
+  return steps;
+}
+
 export function generateAlienDictionarySteps(input) {
   const raw = (input?.words ?? input?.s ?? "wrt,wrf,er,ett,rftt").toString().trim();
   const words = raw ? raw.split(",").map(w => w.trim()).filter(Boolean) : [];
@@ -3210,7 +3405,7 @@ export const STEP_GENERATORS = {
   "number-of-1-bits":        generateHammingWeightSteps,
   "counting-bits":           generateCountingBitsSteps,
   "reverse-bits":            generateReverseBitsSteps,
-  "coin-change":             (i) => stubWithNumsTarget(i),
+  "coin-change":             generateCoinChangeSteps,
   "longest-increasing-subsequence": generateLongestIncreasingSubsequenceSteps,
   "longest-common-subsequence": generateLongestCommonSubsequenceSteps,
   "word-break":              generateWordBreakSteps,
@@ -3220,14 +3415,14 @@ export const STEP_GENERATORS = {
   "unique-paths":            generateUniquePathsSteps,
   "jump-game":               generateJumpGameSteps,
   "insert-interval":         generateInsertIntervalSteps,
-  "non-overlapping-intervals": (i) => stubIntervalSteps(i),
+  "non-overlapping-intervals": generateNonOverlappingIntervalsSteps,
   "meeting-rooms":          (i) => stubIntervalSteps(i),
   "meeting-rooms-ii":        (i) => stubIntervalSteps(i),
   "merge-k-sorted-lists":    generateMergeKSortedListsSteps,
   "remove-nth-node":        generateRemoveNthNodeSteps,
   "reorder-list":            generateReorderListSteps,
   "copy-list-random-pointer": (i) => stubLinkedListSteps(i),
-  "clone-graph":            (i) => stubGraphSteps(i),
+  "clone-graph":            generateCloneGraphSteps,
   "course-schedule":        generateCourseScheduleSteps,
   "pacific-atlantic":        generatePacificAtlanticSteps,
   "num-connected-components": generateNumConnectedComponentsSteps,

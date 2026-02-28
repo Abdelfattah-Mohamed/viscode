@@ -3,6 +3,7 @@ export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel })
   const isKadane = maxSum !== undefined;
   const label = arrayLabel ?? "nums";
   const showTarget = !arrayLabel && !isKadane;
+  const showHashMap = !isKadane && arrayLabel !== "dp" && arrayLabel !== "ans";
   const cellBg = idx => {
     if (isKadane) return highlight.includes(idx) ? t.yellow : t.surface;
     return found && highlight.includes(idx) ? t.green : highlight.includes(idx) ? t.yellow : t.surface;
@@ -42,7 +43,7 @@ export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel })
           </div>
           {done && <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", fontWeight: 700, color: t.green }}>✅ Done</span>}
         </div>
-      ) : (
+      ) : showHashMap ? (
         <div>
           <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.95em", fontWeight: 600, color: t.inkMuted, marginBottom: 8 }}>
             hash map <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7em" }}>{"{value → index}"}</span>
@@ -59,7 +60,7 @@ export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel })
               </div>
           }
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

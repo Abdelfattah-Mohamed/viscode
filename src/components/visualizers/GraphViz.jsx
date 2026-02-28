@@ -11,12 +11,13 @@ const EDGE_COLOR = "#64748b";
 const EDGE_HIGHLIGHT = "#e03131";
 
 export default function GraphViz({ stepState = {}, problemId, t }) {
-  const { n = 0, edges = [], highlighted = [], vis = [], count, componentId = [], done, validTree, nodeState = [], canFinish, directed, labels = [], result } = stepState;
+  const { n = 0, edges = [], highlighted = [], vis = [], count, componentId = [], done, validTree, nodeState = [], canFinish, directed, labels = [], result, queue } = stepState;
   const isDark = t._resolved === "dark";
   const isComponents = problemId === "num-connected-components";
   const isValidTree = problemId === "graph-valid-tree";
   const isCourseSchedule = problemId === "course-schedule";
   const isAlienDictionary = problemId === "alien-dictionary";
+  const isCloneGraph = problemId === "clone-graph";
   const roughRef = useRef(null);
 
   const isIsolated = (i) => !connectedNodes.has(i);
@@ -328,6 +329,33 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
           </g>
         </svg>
       </div>
+
+      {isCloneGraph && Array.isArray(queue) && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+            padding: "10px 14px",
+            borderRadius: 14,
+            background: isDark ? "rgba(31,41,55,0.5)" : "rgba(249,250,251,0.9)",
+            border: `1.5px solid ${t.border}`,
+          }}
+        >
+          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, color: t.inkMuted }}>
+            Queue
+          </span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1rem", fontWeight: 700, color: t.ink }}>
+            {queue.length === 0 ? "[]" : `[${queue.join(", ")}]`}
+          </span>
+          {queue.length > 0 && (
+            <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9em", color: t.inkMuted }}>
+              (front → back)
+            </span>
+          )}
+        </div>
+      )}
 
       {showLegend && (
         <div style={{
