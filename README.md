@@ -73,7 +73,7 @@ User profile with **Favorites** and **Flagged** problem lists. Manage account an
 - **Share a visualization** — copy a URL with problem ID and custom input in query params so others open the same test case
 - **Recently visited** — last 5 problems stored in `localStorage`; quick-access on Home and Problems (fits on screen without scrolling on medium+)
 - **Favorites & Flagged** — per-user lists persisted in Supabase; visible on profile and filterable on Problems
-- **Auth** — sign up, log in, or continue as guest; email verification (EmailJS); password reset; cross-device login via Supabase
+- **Auth** — sign up, log in, or continue as guest; **Sign in with Google** (optional); email verification (EmailJS); password reset; cross-device login via Supabase
 - **Themes** — Light / Dark / System (respects `prefers-color-scheme` on first visit)
 - **Keyboard shortcuts** — Space (play/pause), ←/→ or A/D (prev/next), Home/End, L (language), E (Solution/Explanation), ? (help); ? button in whiteboard header
 - **Mobile-friendly** — responsive layout; visualizer and code stack on small screens
@@ -116,6 +116,7 @@ User profile with **Favorites** and **Flagged** problem lists. Manage account an
 - **React 18** + **Vite 7**
 - **Supabase** — auth, profiles, user_problem_flags, verification_codes
 - **EmailJS** — optional email verification and password reset
+- **Google Identity Services** — optional Sign in with Google (`VITE_GOOGLE_CLIENT_ID`)
 - Inline styles (no UI library); `localStorage` + Supabase for persistence
 
 ---

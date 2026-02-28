@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import LogoMark from "./LogoMark";
 
 const MIN_PASSWORD_LENGTH = 6;
@@ -16,8 +16,16 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
   const [resetPw, setResetPw]             = useState("");
   const [resetPwConfirm, setResetPwConfirm] = useState("");
 
+  const googleButtonRef = useRef(null);
+  const [googleButtonMounted, setGoogleButtonMounted] = useState(false);
   const pending     = onAuth.pendingVerification;
   const pendingReset = onAuth.pendingReset;
+
+  useEffect(() => {
+    if (onAuth.googleClientId && googleButtonRef.current && !pending?.email && !pendingReset?.email && tab !== "forgot") {
+      onAuth.initGoogleButton(googleButtonRef.current);
+    }
+  }, [onAuth.googleClientId, onAuth.initGoogleButton, pending?.email, pendingReset?.email, tab, googleButtonMounted]);
 
   const handle = async e => {
     e.preventDefault();
@@ -355,6 +363,23 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
               }}>
               {busy ? "…" : tab === "login" ? "Sign In" : "Create Account"}
             </button>
+
+            {onAuth.googleClientId && (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ flex: 1, height: 1, background: t.border }} />
+                  <span style={{ color: t.inkMuted, fontSize: "0.8rem" }}>or sign in with</span>
+                  <div style={{ flex: 1, height: 1, background: t.border }} />
+                </div>
+                <div
+                  ref={el => {
+                    googleButtonRef.current = el;
+                    if (el) setGoogleButtonMounted(true);
+                  }}
+                  style={{ display: "flex", justifyContent: "center", minHeight: 44 }}
+                />
+              </>
+            )}
 
             <div style={{ textAlign: "center" }}>
               <span style={{ color: t.inkMuted, fontSize: "0.85rem" }}>or </span>

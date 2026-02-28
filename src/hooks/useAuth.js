@@ -1,8 +1,39 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getSupabase, PROFILES_TABLE } from "../utils/supabase";
 import { sendVerificationCode, verifyCodeWithApi, isDemoCode } from "../utils/verificationApi";
 
 const VERIFICATION_CODE_LENGTH = 6;
+const GOOGLE_SCRIPT_ID = "google-gsi-script";
+
+function decodeGoogleJwt(credential) {
+  try {
+    const payload = credential.split(".")[1];
+    if (!payload) return null;
+    const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    return {
+      sub: decoded.sub,
+      email: decoded.email?.trim().toLowerCase() || null,
+      name: (decoded.name || decoded.given_name || "").trim() || null,
+      picture: decoded.picture || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function loadGoogleScript() {
+  if (document.getElementById(GOOGLE_SCRIPT_ID)) return Promise.resolve();
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.id = GOOGLE_SCRIPT_ID;
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = resolve;
+    script.onerror = resolve;
+    document.head.appendChild(script);
+  });
+}
 
 function generateCode() {
   return Array.from({ length: VERIFICATION_CODE_LENGTH }, () => Math.floor(Math.random() * 10)).join("");
@@ -208,6 +239,58 @@ export function useAuth() {
     setUser({ username: "Guest", isGuest: true });
   };
 
+  const googleClientId = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const googleButtonInited = useRef(false);
+
+  const handleGoogleCredential = async (credential) => {
+    const payload = decodeGoogleJwt(credential);
+    if (!payload || !payload.email) {
+      return;
+    }
+    const username = payload.name || payload.email.split("@")[0] || "User";
+    const profile = {
+      username,
+      email: payload.email,
+      picture: payload.picture || undefined,
+      sub: payload.sub,
+      isGoogle: true,
+      createdAt: new Date().toISOString(),
+    };
+    const existing = await fetchProfileFromDb(profile);
+    if (existing) {
+      profile.username = existing.username;
+      profile.avatarId = existing.avatarId;
+      if (existing.picture) profile.picture = existing.picture;
+    }
+    localStorage.setItem("vc:session", JSON.stringify(profile));
+    setUser(profile);
+    upsertProfile(profile);
+  };
+
+  const initGoogleButton = (containerEl) => {
+    if (!googleClientId || !containerEl || googleButtonInited.current) return;
+    googleButtonInited.current = true;
+    loadGoogleScript().then(() => {
+      if (!window.google?.accounts?.id) return;
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: (res) => res.credential && handleGoogleCredential(res.credential),
+          auto_select: false,
+        });
+        window.google.accounts.id.renderButton(containerEl, {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "signin_with",
+          width: 320,
+        });
+      } catch (_) {
+        googleButtonInited.current = false;
+      }
+    });
+  };
+
   const updateProfile = (updates) => {
     if (!user) return;
     const next = { ...user, ...updates };
@@ -329,6 +412,8 @@ export function useAuth() {
     login,
     logout,
     loginAsGuest,
+    googleClientId,
+    initGoogleButton,
     updateProfile,
     deleteAccount,
     pendingReset,
