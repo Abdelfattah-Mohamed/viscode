@@ -23,7 +23,7 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
 
   useEffect(() => {
     if (onAuth.googleClientId && googleButtonRef.current && !pending?.email && !pendingReset?.email && tab !== "forgot") {
-      onAuth.initGoogleButton(googleButtonRef.current);
+      onAuth.initGoogleButton(googleButtonRef.current, tab === "signup");
     }
   }, [onAuth.googleClientId, onAuth.initGoogleButton, pending?.email, pendingReset?.email, tab, googleButtonMounted]);
 

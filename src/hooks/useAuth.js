@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { getSupabase, PROFILES_TABLE } from "../utils/supabase";
 import { sendVerificationCode, verifyCodeWithApi, isDemoCode } from "../utils/verificationApi";
 
@@ -240,7 +240,6 @@ export function useAuth() {
   };
 
   const googleClientId = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const googleButtonInited = useRef(false);
 
   const handleGoogleCredential = async (credential) => {
     const payload = decodeGoogleJwt(credential);
@@ -267,9 +266,8 @@ export function useAuth() {
     upsertProfile(profile);
   };
 
-  const initGoogleButton = (containerEl) => {
-    if (!googleClientId || !containerEl || googleButtonInited.current) return;
-    googleButtonInited.current = true;
+  const initGoogleButton = (containerEl, isSignUp = false) => {
+    if (!googleClientId || !containerEl) return;
     loadGoogleScript().then(() => {
       if (!window.google?.accounts?.id) return;
       try {
@@ -278,16 +276,15 @@ export function useAuth() {
           callback: (res) => res.credential && handleGoogleCredential(res.credential),
           auto_select: false,
         });
+        containerEl.innerHTML = "";
         window.google.accounts.id.renderButton(containerEl, {
           type: "standard",
           theme: "outline",
           size: "large",
-          text: "signin_with",
+          text: isSignUp ? "signup_with" : "signin_with",
           width: 320,
         });
-      } catch (_) {
-        googleButtonInited.current = false;
-      }
+      } catch (_) {}
     });
   };
 
