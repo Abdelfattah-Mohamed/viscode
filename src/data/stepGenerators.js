@@ -1,6 +1,8 @@
 // Step generators produce an array of animation steps for each problem.
 // Each step: { stepType, description, state }
 
+import { leetcodeToComplete } from "../utils/treeFormat";
+
 export function generateTwoSumSteps({ nums, target }) {
   const steps = [], map = {};
   steps.push({ stepType: "init", description: "Initialize an empty hash map", state: { i: -1, map: {}, highlight: [], found: false } });
@@ -1263,6 +1265,120 @@ export function generateNonOverlappingIntervalsSteps(input) {
   });
   return steps;
 }
+
+export function generateMeetingRoomsSteps(input) {
+  const nums = input?.nums || [];
+  const pairs = [];
+  for (let i = 0; i < nums.length; i += 2)
+    if (nums[i] != null && nums[i + 1] != null) pairs.push([Number(nums[i]), Number(nums[i + 1])]);
+  const steps = [];
+  if (pairs.length <= 1) {
+    steps.push({ stepType: "sort", description: "Sort intervals by start", state: { intervals: pairs.map(x => [...x]), current: -1, prev: null, overlap: null, canAttend: true } });
+    steps.push({ stepType: "done", description: "≤1 interval → return true", state: { intervals: pairs.map(x => [...x]), current: -1, prev: null, overlap: null, canAttend: true, done: true } });
+    return steps;
+  }
+  const intervals = pairs.slice().sort((a, b) => a[0] - b[0]);
+
+  steps.push({
+    stepType: "sort",
+    description: "Sort intervals by start time",
+    state: { intervals: intervals.map(x => [...x]), current: -1, prev: null, overlap: null, canAttend: null },
+  });
+
+  let canAttend = true;
+  for (let i = 1; i < intervals.length; i++) {
+    const prevInterval = intervals[i - 1];
+    const curInterval = intervals[i];
+    const overlap = curInterval[0] < prevInterval[1];
+    steps.push({
+      stepType: "loop",
+      description: `for i = ${i}: check [${prevInterval[0]},${prevInterval[1]}] vs [${curInterval[0]},${curInterval[1]}]`,
+      state: { intervals: intervals.map(x => [...x]), current: i, prev: i - 1, overlap: null, canAttend: null },
+    });
+    if (overlap) {
+      canAttend = false;
+      steps.push({
+        stepType: "overlap",
+        description: `intervals[${i}][0] (${curInterval[0]}) < intervals[${i - 1}][1] (${prevInterval[1]}) → overlap, return false`,
+        state: { intervals: intervals.map(x => [...x]), current: i, prev: i - 1, overlap: true, canAttend: false, done: true },
+      });
+      return steps;
+    }
+    steps.push({
+      stepType: "no_overlap",
+      description: `No overlap → continue`,
+      state: { intervals: intervals.map(x => [...x]), current: i, prev: i - 1, overlap: false, canAttend: null },
+    });
+  }
+
+  steps.push({
+    stepType: "done",
+    description: "No overlap found → return true",
+    state: { intervals: intervals.map(x => [...x]), current: -1, prev: null, overlap: false, canAttend: true, done: true },
+  });
+  return steps;
+}
+
+export function generateMeetingRoomsIISteps(input) {
+  const nums = input?.nums || [];
+  const pairs = [];
+  for (let i = 0; i < nums.length; i += 2)
+    if (nums[i] != null && nums[i + 1] != null) pairs.push([Number(nums[i]), Number(nums[i + 1])]);
+  const steps = [];
+  if (pairs.length === 0) {
+    steps.push({ stepType: "init", description: "No intervals", state: { intervals: [], rooms: 0, maxRooms: 0, i: 0, j: 0, highlightIdx: null, done: true } });
+    return steps;
+  }
+  const intervals = pairs.slice();
+  const startEvents = intervals.map((in_, idx) => ({ t: in_[0], idx })).sort((a, b) => a.t - b.t);
+  const endEvents = intervals.map((in_, idx) => ({ t: in_[1], idx })).sort((a, b) => a.t - b.t);
+  let i = 0;
+  let j = 0;
+  let rooms = 0;
+  let maxRooms = 0;
+
+  steps.push({
+    stepType: "build",
+    description: "Build start[] and end[] from intervals; sort both",
+    state: { intervals: intervals.map(x => [...x]), rooms: 0, maxRooms: 0, i: 0, j: 0, highlightIdx: null },
+  });
+  steps.push({
+    stepType: "init",
+    description: "i = j = 0, rooms = 0, maxRooms = 0",
+    state: { intervals: intervals.map(x => [...x]), rooms: 0, maxRooms: 0, i: 0, j: 0, highlightIdx: null },
+  });
+
+  while (i < startEvents.length) {
+    if (startEvents[i].t < endEvents[j].t) {
+      rooms++;
+      const startIdx = startEvents[i].idx;
+      steps.push({
+        stepType: "start_first",
+        description: `start[${i}] (${startEvents[i].t}) < end[${j}] (${endEvents[j].t}) → meeting starting, rooms = ${rooms}`,
+        state: { intervals: intervals.map(x => [...x]), rooms, maxRooms: Math.max(maxRooms, rooms), i: i + 1, j, highlightIdx: startIdx },
+      });
+      maxRooms = Math.max(maxRooms, rooms);
+      i++;
+    } else {
+      rooms--;
+      const endIdx = endEvents[j].idx;
+      steps.push({
+        stepType: "end_first",
+        description: `start[${i}] ≥ end[${j}] → meeting ended, rooms = ${rooms}`,
+        state: { intervals: intervals.map(x => [...x]), rooms, maxRooms, i, j: j + 1, highlightIdx: endIdx },
+      });
+      j++;
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `return maxRooms = ${maxRooms}`,
+    state: { intervals: intervals.map(x => [...x]), rooms, maxRooms, i, j, highlightIdx: null, done: true },
+  });
+  return steps;
+}
+
 export function generateRotateImageSteps(input) {
   if (!input || input.grid == null || input.rows == null) {
     return [
@@ -2079,6 +2195,81 @@ function stubLinkedListSteps(input) {
     steps.push({ stepType: "loop", description: `Step ${i + 1}`, state: { head: [...head], slowIdx: i, fastIdx: Math.min(i * 2, head.length - 1) } });
   }
   steps.push({ stepType: "done", description: "Done", state: { head: [...head], done: true } });
+  return steps;
+}
+
+export function generateCopyListRandomSteps(input) {
+  const head = Array.isArray(input?.head) ? input.head.filter(v => v != null && v !== "") : [];
+  const n = head.length;
+  const defaultRandom = n === 3 ? [2, 0, 1] : n === 2 ? [1, 0] : n > 0 ? Array.from({ length: n }, (_, i) => (i + 1) % n) : [];
+  let random = defaultRandom;
+  if (input?.random != null) {
+    const raw = Array.isArray(input.random)
+      ? input.random
+      : (typeof input.random === "string" ? input.random.split(",").map(s => s.trim()) : []);
+    if (raw.length === n) {
+      random = raw.map(r => Math.max(0, Math.min(n - 1, Number(r) || 0)));
+    }
+  }
+  const steps = [];
+  if (n === 0) {
+    steps.push({ stepType: "base", description: "Empty list → return null", state: { head: [], phase: 0, pIdx: -1, done: true } });
+    return steps;
+  }
+  const randomDesc = random.map((r, i) => `node ${head[i]}→${head[r]}`).join(", ");
+  steps.push({
+    stepType: "init",
+    description: `Original list: values [${head.join(", ")}]. Random pointers: ${randomDesc}. We'll interweave a copy after each node so we can set random in O(1).`,
+    state: { head: [...head], random: [...random], phase: 1, pIdx: -1, interweaved: [], done: false },
+  });
+
+  const interweaved = [];
+  for (let i = 0; i < n; i++) {
+    interweaved.push({ val: head[i], isCopy: false, origIdx: i });
+    interweaved.push({ val: head[i], isCopy: true, origIdx: i });
+  }
+  for (let i = 0; i < n; i++) {
+    steps.push({
+      stepType: "interweave_loop",
+      description: `Create copy of ${head[i]}, insert after original: original.next = copy, copy.next = old next. Now copy sits right after its original.`,
+      state: { head: [...head], random: [...random], phase: 1, pIdx: i, interweaved: interweaved.map(x => ({ ...x })), done: false },
+    });
+  }
+  steps.push({
+    stepType: "assign_random_start",
+    description: "Phase 2: For each original node p, set copy.random = p.random.next (the copy of the node p.random points to).",
+    state: { head: [...head], random: [...random], phase: 2, pIdx: -1, interweaved: interweaved.map(x => ({ ...x })), done: false },
+  });
+  for (let i = 0; i < n; i++) {
+    const targetOrig = random[i];
+    const hasRandom = targetOrig >= 0 && targetOrig < n;
+    steps.push({
+      stepType: "assign_random_loop",
+      description: hasRandom
+        ? `Original ${head[i]} has random → ${head[targetOrig]}. So copy of ${head[i]}.random = copy of ${head[targetOrig]} (which is at original.random.next).`
+        : `Original ${head[i]} has random = null → copy.random = null.`,
+      state: { head: [...head], random: [...random], phase: 2, pIdx: i, interweaved: interweaved.map(x => ({ ...x })), done: false },
+    });
+  }
+  const copyHead = head.map((_, i) => head[i]);
+  const copyRandom = random.map(r => r);
+  steps.push({
+    stepType: "unweave_start",
+    description: "Phase 3: Extract the copy list into the result and restore the original list's next pointers (tail.next = copy, then p.next = p.next.next).",
+    state: { head: [...head], random: [...random], phase: 3, pIdx: -1, interweaved: interweaved.map(x => ({ ...x })), copyHead: [...copyHead], copyRandom: [...copyRandom], done: false },
+  });
+  for (let i = 0; i < n; i++) {
+    steps.push({
+      stepType: "unweave_loop",
+      description: `Link copy (value ${head[i]}) to result list; restore original's next to skip over the copy. Advance to next original.`,
+      state: { head: [...head], random: [...random], phase: 3, pIdx: i, interweaved: interweaved.map(x => ({ ...x })), copyHead: [...copyHead], copyRandom: [...copyRandom], done: false },
+    });
+  }
+  steps.push({
+    stepType: "done",
+    description: `✓ Deep copy complete. Result: [${copyHead.join("→")}] with same next and random structure; original list is restored.`,
+    state: { head: [...head], random: [...random], phase: 3, pIdx: -1, copyHead: [...copyHead], copyRandom: [...copyRandom], done: true },
+  });
   return steps;
 }
 
@@ -3033,7 +3224,8 @@ export function generateAlienDictionarySteps(input) {
 }
 
 export function generateLCAOfBSTSteps(input) {
-  const arr = Array.isArray(input?.root) ? input.root : [];
+  const raw = Array.isArray(input?.root) ? input.root : [];
+  const arr = raw.length && raw[0] != null ? leetcodeToComplete(raw) : raw;
   const pVal = input?.p;
   const qVal = input?.q;
   const p = (Array.isArray(pVal) ? pVal[0] : pVal) ?? 2;
@@ -3045,11 +3237,11 @@ export function generateLCAOfBSTSteps(input) {
   }
   function dfs(idx) {
     if (idx >= arr.length || arr[idx] === null || arr[idx] === undefined) {
-      steps.push({ stepType: "base", description: `Node ${idx} is null`, state: { visiting: idx, p, q, lca: null, done: false } });
+      steps.push({ stepType: "base", description: `Node at index ${idx} is null`, state: { visiting: idx, p, q, lca: null, done: false } });
       return null;
     }
     const val = arr[idx];
-    steps.push({ stepType: "visit", description: `Visit node ${idx} (value=${val})`, state: { visiting: idx, depthMap: {}, maxDepth: 0, p, q, lca: null, done: false } });
+    steps.push({ stepType: "visit", description: `Visit node (value=${val})`, state: { visiting: idx, depthMap: {}, maxDepth: 0, p, q, lca: null, done: false } });
     if (p < val && q < val) {
       steps.push({ stepType: "go_left", description: `Both ${p} and ${q} < ${val} → go left`, state: { visiting: idx, p, q, lca: null, done: false } });
       return dfs(2 * idx + 1);
@@ -3416,12 +3608,12 @@ export const STEP_GENERATORS = {
   "jump-game":               generateJumpGameSteps,
   "insert-interval":         generateInsertIntervalSteps,
   "non-overlapping-intervals": generateNonOverlappingIntervalsSteps,
-  "meeting-rooms":          (i) => stubIntervalSteps(i),
-  "meeting-rooms-ii":        (i) => stubIntervalSteps(i),
+  "meeting-rooms":          generateMeetingRoomsSteps,
+  "meeting-rooms-ii":        generateMeetingRoomsIISteps,
   "merge-k-sorted-lists":    generateMergeKSortedListsSteps,
   "remove-nth-node":        generateRemoveNthNodeSteps,
   "reorder-list":            generateReorderListSteps,
-  "copy-list-random-pointer": (i) => stubLinkedListSteps(i),
+  "copy-list-random-pointer": generateCopyListRandomSteps,
   "clone-graph":            generateCloneGraphSteps,
   "course-schedule":        generateCourseScheduleSteps,
   "pacific-atlantic":        generatePacificAtlanticSteps,
