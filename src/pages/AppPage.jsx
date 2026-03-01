@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { Card, CardHeader } from "../components/ui/Card";
@@ -59,9 +59,59 @@ export default function AppPage({
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [shareMsg, setShareMsg]      = useState("");
   const [whiteboardMaximized, setWhiteboardMaximized] = useState(false);
+  const [leftPanelPercent, setLeftPanelPercent] = useState(() => {
+    try {
+      const saved = localStorage.getItem("viscode-left-panel-percent");
+      if (saved != null) {
+        const n = Number(saved);
+        if (n >= 25 && n <= 75) return n;
+      }
+    } catch (_) {}
+    return 45;
+  });
+  const [isDraggingGutter, setIsDraggingGutter] = useState(false);
+  const leftPanelPercentRef = useRef(leftPanelPercent);
+  leftPanelPercentRef.current = leftPanelPercent;
+
+  const mainScrollRef = useRef(null);
+
+  const handleGutterMouseDown = useCallback((e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    setIsDraggingGutter(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isDraggingGutter) return;
+    const onMove = (e) => {
+      const percent = Math.min(75, Math.max(25, (e.clientX / window.innerWidth) * 100));
+      setLeftPanelPercent(percent);
+    };
+    const onUp = () => {
+      setIsDraggingGutter(false);
+      try {
+        localStorage.setItem("viscode-left-panel-percent", String(leftPanelPercentRef.current));
+      } catch (_) {}
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isDraggingGutter]);
 
   const problem = PROBLEMS[selectedProblem];
   const notesData = useProblemNotes(user, selectedProblem);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    mainScrollRef.current?.scrollTo?.(0, 0);
+  }, [selectedProblem]);
 
   useMemo(() => {
     if (!sharedInput) setInput(PROBLEMS[selectedProblem].defaultInput);
@@ -373,18 +423,32 @@ export default function AppPage({
         }
       />
 
-      {/* Main grid */}
-      <div style={{
-        flex: 1, display: mobile ? "flex" : "grid",
-        ...(mobile
-          ? { flexDirection: "column", gap: 12, padding: 10, overflow: "auto" }
-          : { gridTemplateColumns: "1fr minmax(380px, 1.2fr)", gridTemplateRows: "1fr auto", gap: 16, padding: 16, overflow: "hidden", minWidth: 0 }
-        ),
-      }}>
-
+      {/* Main layout: resizable split on desktop, stacked on mobile */}
+      <div
+        ref={mainScrollRef}
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+          ...(mobile ? { gap: 12, padding: 10, overflow: "auto" } : { gap: 16, padding: 16, overflow: "hidden" }),
+        }}
+      >
+        <div style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: mobile ? "column" : "row",
+          minHeight: 0,
+          ...(mobile ? { gap: 12 } : { minWidth: 0 }),
+        }}>
         {/* LEFT — Problem statement + Code */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: 0, minWidth: 0, overflow: mobile ? "visible" : "auto" }}>
-
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            ...(mobile ? { gap: 10, minHeight: 0, minWidth: 0, overflow: "visible" } : { gap: 10, width: `${leftPanelPercent}%`, minWidth: 280, minHeight: 0, overflow: "hidden" }),
+          }}
+        >
           {/* Problem statement */}
           <Card t={t} style={{ flexShrink: 0 }}>
             <CardHeader icon="📋" title={problem.title} t={t}
@@ -435,7 +499,7 @@ export default function AppPage({
           </Card>
 
           {/* Code panel */}
-          <Card t={t} style={{ flexShrink: 0, height: mobile ? 320 : "clamp(340px, 45vh, 560px)", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+          <Card t={t} style={{ flexShrink: 0, height: mobile ? 320 : "clamp(340px, 45vh, 560px)", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", ...(!mobile && { flex: 1, height: "auto", minHeight: 200 }) }}>
             <div style={{ display: "flex", alignItems: "center", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt, flexShrink: 0, paddingLeft: 4, paddingRight: 10 }}>
               {["Solution", "Explanation"].map(tab => (
                 <button key={tab} onClick={() => setSolTab(tab)}
@@ -463,8 +527,36 @@ export default function AppPage({
           </Card>
         </div>
 
+        {/* Resizable gutter (desktop only) */}
+        {!mobile && (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            onMouseDown={handleGutterMouseDown}
+            style={{
+              width: 10,
+              flexShrink: 0,
+              cursor: "col-resize",
+              background: "transparent",
+              margin: "0 2px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            title="Drag to resize panels"
+          >
+            <div style={{
+              width: 2,
+              height: 24,
+              borderRadius: 1,
+              background: isDraggingGutter ? t.yellow + "99" : t.border,
+              transition: "background 0.15s",
+            }} />
+          </div>
+        )}
+
         {/* RIGHT — Visualizer */}
-        <Card t={t} style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: mobile ? 420 : 0 }}>
+        <Card t={t} style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: mobile ? 420 : 0, flex: mobile ? "none" : 1, minWidth: 0 }}>
           <CardHeader icon="🎨" title="Whiteboard" t={t}
             extra={
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -582,8 +674,10 @@ export default function AppPage({
           )}
         </Card>
 
+        </div>
+
         {/* BOTTOM — Similar problems */}
-        <div style={{ gridColumn: "1 / -1" }}>
+        <div style={{ flexShrink: 0 }}>
           <SimilarProblems currentId={selectedProblem} onSelect={handleSelectSimilar} t={t} />
         </div>
       </div>
