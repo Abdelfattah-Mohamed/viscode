@@ -15,3 +15,6 @@ export function getSupabase() {
 export const PROFILES_TABLE = "profiles";
 export const FLAGS_TABLE = "user_problem_flags";
 export const NOTES_TABLE = "user_problem_notes";
+export const BILLING_PLANS_TABLE = "billing_plans";
+export const USER_SUBSCRIPTIONS_TABLE = "user_subscriptions";
+export const BILLING_INVOICES_TABLE = "billing_invoices";

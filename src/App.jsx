@@ -10,6 +10,7 @@ import HomePage     from "./pages/HomePage";
 import ProblemsPage from "./pages/ProblemsPage";
 import AppPage      from "./pages/AppPage";
 import ProfilePage  from "./pages/ProfilePage";
+import BillingPage  from "./pages/BillingPage";
 
 const DEFAULT_PROBLEM = "two-sum";
 
@@ -31,6 +32,7 @@ function getRouteFromPath(pathname) {
   if (path === "/" || path === "/home") return { page: "home" };
   if (path === "/problems") return { page: "problems" };
   if (path === "/profile") return { page: "profile" };
+  if (path === "/billing") return { page: "billing" };
   const match = path.match(/^\/problem\/(.+)$/);
   if (match && PROBLEMS[match[1]]) return { page: "app", problemId: match[1] };
   return { page: "home" };
@@ -41,6 +43,7 @@ function pathFor(page, problemId) {
   if (page === "home") return "/";
   if (page === "problems") return "/problems";
   if (page === "profile") return "/profile";
+  if (page === "billing") return "/billing";
   return "/";
 }
 
@@ -157,6 +160,20 @@ export default function App() {
         onDeleteAccount={auth.deleteAccount}
         fav={fav}
         onSelectProblem={selectProblem}
+        mobile={mobile}
+      />
+    );
+  }
+
+  if (page === "billing") {
+    return (
+      <BillingPage
+        user={auth.user}
+        t={t}
+        themeMode={themeMode}
+        setThemeMode={setThemeMode}
+        onNavigate={navigate}
+        onLogout={auth.logout}
         mobile={mobile}
       />
     );

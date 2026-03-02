@@ -300,6 +300,23 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
 
         <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
           <button
+            onClick={() => onNavigate("billing")}
+            style={{
+              padding: "10px 20px",
+              fontFamily: "'Caveat',cursive",
+              fontSize: "1.05rem",
+              fontWeight: 700,
+              border: `2px solid ${t.border}`,
+              borderRadius: 8,
+              background: t.surface,
+              color: t.ink,
+              cursor: "pointer",
+              boxShadow: t.shadowSm,
+            }}
+          >
+            💳 Billing
+          </button>
+          <button
             onClick={() => onNavigate("home")}
             style={{
               padding: "10px 20px",

@@ -4,6 +4,7 @@ export default function NavBar({ page, onNavigate, t, themeMode, right, mobile }
   const links = [
     { id: "home",     label: "🏠 Home" },
     { id: "problems", label: "📋 Problems" },
+    { id: "billing",  label: "💳 Billing" },
   ];
 
   return (
