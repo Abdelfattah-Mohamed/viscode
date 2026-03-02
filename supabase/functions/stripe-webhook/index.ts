@@ -72,21 +72,23 @@ Deno.serve(async (req) => {
       case "checkout.session.completed": {
         const session = event.data?.object as {
           id?: string;
+          mode?: string;
           customer?: string;
           subscription?: string;
           client_reference_id?: string;
           metadata?: { profile_id?: string; plan_id?: string };
         };
         const profileId = session?.metadata?.profile_id || session?.client_reference_id;
-        if (!profileId || !session?.subscription) break;
+        if (!profileId) break;
         const planId = (session.metadata?.plan_id as string) || "pro";
+        const isLifetime = planId === "lifetime" || session?.mode === "payment";
         await supabase.from("user_subscriptions").upsert(
           {
             user_id: profileId,
             plan_id: planId,
             status: "active",
             stripe_customer_id: session.customer ?? null,
-            stripe_subscription_id: session.subscription ?? null,
+            stripe_subscription_id: isLifetime ? null : (session.subscription ?? null),
             updated_at: new Date().toISOString(),
           },
           { onConflict: "user_id" }

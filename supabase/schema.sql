@@ -132,12 +132,13 @@ create table if not exists public.billing_plans (
   created_at timestamptz not null default now()
 );
 
--- Seed default plans: free $0/mo, pro $4.99/mo, pro_yearly $39.99/yr
+-- Seed default plans: free $0/mo, pro $4.99/mo, pro_yearly $39.99/yr, lifetime $89.99 one-time
 insert into public.billing_plans (id, name, description, amount_cents, interval, features)
 values
   ('free', 'Free', 'Basic access', 0, 'month', '["Limited problems", "Basic visualizations"]'),
   ('pro', 'Pro', 'Full access', 499, 'month', '["All problems", "All visualizations", "Export", "Priority support"]'),
-  ('pro_yearly', 'Pro (Yearly)', 'Full access, billed yearly', 3999, 'year', '["All problems", "All visualizations", "Export", "Priority support", "Save 33%"]')
+  ('pro_yearly', 'Pro (Yearly)', 'Full access, billed yearly', 3999, 'year', '["All problems", "All visualizations", "Export", "Priority support", "Save 33%"]'),
+  ('lifetime', 'Lifetime', 'One-time payment, access forever', 8999, 'one_time', '["All problems", "All visualizations", "Export", "Priority support", "Never pay again"]')
 on conflict (id) do update set
   name = excluded.name,
   description = excluded.description,

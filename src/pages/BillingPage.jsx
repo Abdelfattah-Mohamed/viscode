@@ -10,6 +10,7 @@ function formatPrice(cents, interval) {
   const d = (cents / 100).toFixed(2);
   if (interval === "month") return `$${d}/month`;
   if (interval === "year") return `$${d}/year`;
+  if (interval === "one_time") return `$${d} once`;
   return `$${d}`;
 }
 
@@ -44,13 +45,19 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
   const handleUpgrade = async (planId) => {
     if (!user?.email || checkoutPlan) return;
     setCheckoutPlan(planId);
+    setMessage(null);
     const result = await createCheckoutSession(user.email, planId);
-    setCheckoutPlan(null);
     if (result.error) {
+      setCheckoutPlan(null);
       setMessage({ type: "error", text: result.error });
       return;
     }
-    if (result.url) window.location.href = result.url;
+    if (result.url) {
+      window.location.replace(result.url);
+      return;
+    }
+    setCheckoutPlan(null);
+    setMessage({ type: "error", text: "No checkout URL received. Please try again." });
   };
 
   const paidPlans = plans.filter((p) => p.id !== "free");

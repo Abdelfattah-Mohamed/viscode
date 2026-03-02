@@ -98,7 +98,7 @@ export function useSubscription(user) {
     refetch();
   }, [refetch]);
 
-  const isPro = plan?.id === "pro" || plan?.id === "pro_yearly";
+  const isPro = plan?.id === "pro" || plan?.id === "pro_yearly" || plan?.id === "lifetime";
   const planName = plan?.name || "Free";
   const nextBillingDate = subscription?.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString(undefined, {

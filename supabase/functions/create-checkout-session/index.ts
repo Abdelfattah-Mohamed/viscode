@@ -5,6 +5,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
 const STRIPE_PRICE_PRO_MONTHLY = Deno.env.get("STRIPE_PRICE_PRO_MONTHLY");
 const STRIPE_PRICE_PRO_YEARLY = Deno.env.get("STRIPE_PRICE_PRO_YEARLY");
+const STRIPE_PRICE_LIFETIME = Deno.env.get("STRIPE_PRICE_LIFETIME");
 const STRIPE_API_BASE = "https://api.stripe.com/v1";
 
 const corsHeaders = {
@@ -34,7 +35,7 @@ function stripePost(path: string, body: Record<string, string>) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
-  if (!STRIPE_SECRET_KEY || !STRIPE_PRICE_PRO_MONTHLY || !STRIPE_PRICE_PRO_YEARLY) {
+  if (!STRIPE_SECRET_KEY || !STRIPE_PRICE_PRO_MONTHLY || !STRIPE_PRICE_PRO_YEARLY || !STRIPE_PRICE_LIFETIME) {
     return jsonResponse(
       { error: "Stripe is not configured (STRIPE_SECRET_KEY or price IDs missing)" },
       503
@@ -49,8 +50,8 @@ Deno.serve(async (req) => {
     if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return jsonResponse({ error: "Valid email required" }, 400);
     }
-    if (planId !== "pro" && planId !== "pro_yearly") {
-      return jsonResponse({ error: "plan_id must be 'pro' or 'pro_yearly'" }, 400);
+    if (planId !== "pro" && planId !== "pro_yearly" && planId !== "lifetime") {
+      return jsonResponse({ error: "plan_id must be 'pro', 'pro_yearly', or 'lifetime'" }, 400);
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -65,13 +66,18 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Profile not found. Sign up first." }, 404);
     }
 
-    const priceId = planId === "pro_yearly" ? STRIPE_PRICE_PRO_YEARLY : STRIPE_PRICE_PRO_MONTHLY;
+    const isLifetime = planId === "lifetime";
+    const priceId = planId === "lifetime"
+      ? STRIPE_PRICE_LIFETIME
+      : planId === "pro_yearly"
+        ? STRIPE_PRICE_PRO_YEARLY
+        : STRIPE_PRICE_PRO_MONTHLY;
     const origin = req.headers.get("origin") || "http://localhost:5173";
     const successUrl = `${origin}/billing?success=true&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${origin}/billing?canceled=true`;
 
-    const sessionRes = await stripePost("/checkout/sessions", {
-      mode: "subscription",
+    const body = {
+      mode: isLifetime ? "payment" : "subscription",
       "customer_email": normalizedEmail,
       "client_reference_id": profile.id,
       "metadata[profile_id]": profile.id,
@@ -80,9 +86,13 @@ Deno.serve(async (req) => {
       "line_items[0][quantity]": "1",
       "success_url": successUrl,
       "cancel_url": cancelUrl,
-      "subscription_data[metadata][profile_id]": profile.id,
-      "subscription_data[metadata][plan_id]": planId,
-    });
+    };
+    if (!isLifetime) {
+      body["subscription_data[metadata][profile_id]"] = profile.id;
+      body["subscription_data[metadata][plan_id]"] = planId;
+    }
+
+    const sessionRes = await stripePost("/checkout/sessions", body);
 
     const sessionData = await sessionRes.json();
     if (sessionData.error) {
