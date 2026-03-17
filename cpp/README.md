@@ -84,6 +84,16 @@ Range queries (sum/min/max) and point updates. Full binary tree over array.
 
 ---
 
+## Union-Find / DSU
+**File:** `union_find_dsu.cpp`
+
+Disjoint Set Union. Tracks which elements belong to the same set. `find(x)` returns representative, `unite(a,b)` merges sets, `same(a,b)` checks if in same set. Uses path compression + rank.
+
+- **Use when:** Dynamic connectivity, Kruskal's MST, cycle detection
+- **Time:** O(α(n)) ≈ O(1) amortized per op
+
+---
+
 ## Knapsack (0/1)
 **File:** `knapsack.cpp`
 
