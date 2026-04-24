@@ -109,6 +109,10 @@ Deno.serve(async (req) => {
     if (!isLifetime) {
       body["subscription_data[metadata][profile_id]"] = profile.id;
       body["subscription_data[metadata][plan_id]"] = planId;
+    } else {
+      // Ensure Stripe creates a Customer for one-time payments so we can
+      // refund / link charges later.
+      body["customer_creation"] = "always";
     }
 
     const sessionRes = await stripePost("/checkout/sessions", body);

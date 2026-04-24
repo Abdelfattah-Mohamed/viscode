@@ -3,7 +3,12 @@ import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { Card } from "../components/ui/Card";
 import { useSubscription } from "../hooks/useSubscription";
-import { createCheckoutSession, changeSubscriptionPlan } from "../utils/billingApi";
+import {
+  createCheckoutSession,
+  createUpgradePortalSession,
+  cancelSubscription,
+  resumeSubscription,
+} from "../utils/billingApi";
 
 function formatPrice(cents, interval) {
   if (cents === 0) return "$0";
@@ -37,12 +42,18 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
   } = useSubscription(user);
 
   const [checkoutPlan, setCheckoutPlan] = useState(null);
+  const [canceling, setCanceling] = useState(false);
+  const [resuming, setResuming] = useState(false);
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
       setMessage({ type: "success", text: "Thank you! Your subscription is active." });
+      refetch();
+      window.history.replaceState({}, "", "/billing");
+    } else if (params.get("upgraded") === "true") {
+      setMessage({ type: "success", text: "Plan update completed." });
       refetch();
       window.history.replaceState({}, "", "/billing");
     } else if (params.get("canceled") === "true") {
@@ -55,20 +66,39 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
     if (!user?.email || checkoutPlan) return;
     setCheckoutPlan(planId);
     setMessage(null);
-    const canUseProrationUpgrade =
+    const canUseHostedUpgrade =
       !!subscription?.stripe_subscription_id &&
       plan?.id !== "lifetime" &&
       planId !== "lifetime";
 
-    if (canUseProrationUpgrade) {
-      const changeResult = await changeSubscriptionPlan(user.email, plan?.id, planId);
-      setCheckoutPlan(null);
-      if (changeResult.error) {
-        setMessage({ type: "error", text: changeResult.error });
+    if (canUseHostedUpgrade) {
+      const portalResult = await createUpgradePortalSession(user.email, plan?.id, planId);
+      if (portalResult.error) {
+        if (
+          portalResult.error.includes("No active recurring subscription found") ||
+          portalResult.error.includes("Current plan is not upgradable")
+        ) {
+          const checkoutFallback = await createCheckoutSession(user.email, planId);
+          if (checkoutFallback.error) {
+            setCheckoutPlan(null);
+            setMessage({ type: "error", text: checkoutFallback.error });
+            return;
+          }
+          if (checkoutFallback.url) {
+            window.location.replace(checkoutFallback.url);
+            return;
+          }
+        }
+        setCheckoutPlan(null);
+        setMessage({ type: "error", text: portalResult.error });
         return;
       }
-      setMessage({ type: "success", text: "Plan upgraded successfully. Proration credit applied automatically." });
-      refetch();
+      if (portalResult.url) {
+        window.location.replace(portalResult.url);
+        return;
+      }
+      setCheckoutPlan(null);
+      setMessage({ type: "error", text: "No Stripe upgrade URL received. Please try again." });
       return;
     }
 
@@ -84,6 +114,36 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
     }
     setCheckoutPlan(null);
     setMessage({ type: "error", text: "No checkout URL received. Please try again." });
+  };
+
+  const handleCancel = async () => {
+    if (!user?.email || canceling || resuming) return;
+    const ok = window.confirm("Cancel your subscription at period end?");
+    if (!ok) return;
+    setCanceling(true);
+    setMessage(null);
+    const result = await cancelSubscription(user.email);
+    setCanceling(false);
+    if (result.error) {
+      setMessage({ type: "error", text: result.error });
+      return;
+    }
+    setMessage({ type: "success", text: "Your subscription will cancel at the end of the current period." });
+    refetch();
+  };
+
+  const handleResume = async () => {
+    if (!user?.email || resuming || canceling) return;
+    setResuming(true);
+    setMessage(null);
+    const result = await resumeSubscription(user.email);
+    setResuming(false);
+    if (result.error) {
+      setMessage({ type: "error", text: result.error });
+      return;
+    }
+    setMessage({ type: "success", text: "Cancellation removed. Your subscription will renew normally." });
+    refetch();
   };
 
   const paidPlans = plans.filter((p) => p.id !== "free");
@@ -218,6 +278,51 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                       <li key={i}>{f}</li>
                     ))}
                   </ul>
+                )}
+                {!!subscription?.stripe_subscription_id && plan?.id !== "lifetime" && (
+                  <div style={{ marginTop: 14 }}>
+                    {subscription?.cancel_at_period_end ? (
+                      <button
+                        type="button"
+                        onClick={handleResume}
+                        disabled={resuming || canceling}
+                        style={{
+                          padding: "8px 14px",
+                          fontFamily: "'DM Sans',sans-serif",
+                          fontSize: "0.83rem",
+                          fontWeight: 700,
+                          borderRadius: 8,
+                          border: `1.5px solid ${t.blue}`,
+                          background: "transparent",
+                          color: t.blue,
+                          cursor: resuming || canceling ? "not-allowed" : "pointer",
+                          opacity: resuming || canceling ? 0.6 : 1,
+                        }}
+                      >
+                        {resuming ? "Resuming..." : "Undo cancellation"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        disabled={canceling || resuming}
+                        style={{
+                          padding: "8px 14px",
+                          fontFamily: "'DM Sans',sans-serif",
+                          fontSize: "0.83rem",
+                          fontWeight: 700,
+                          borderRadius: 8,
+                          border: `1.5px solid ${t.red}`,
+                          background: "transparent",
+                          color: t.red,
+                          cursor: canceling || resuming ? "not-allowed" : "pointer",
+                          opacity: canceling || resuming ? 0.6 : 1,
+                        }}
+                      >
+                        {canceling ? "Canceling..." : "Cancel subscription"}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </Card>

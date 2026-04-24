@@ -54,16 +54,6 @@ function stripePost(path: string, body: Record<string, string>) {
   });
 }
 
-function invoiceIdFromSubscriptionUpdate(updateData: Record<string, unknown>): string | null {
-  const latest = updateData?.latest_invoice;
-  if (!latest) return null;
-  if (typeof latest === "string") return latest;
-  if (typeof latest === "object" && latest !== null && typeof latest.id === "string") {
-    return latest.id;
-  }
-  return null;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
@@ -95,6 +85,9 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Target plan must be higher than current plan" }, 400);
     }
 
+    const targetPriceId = PRICE_BY_PLAN[targetPlanId];
+    if (!targetPriceId) return jsonResponse({ error: "Target price is not configured" }, 503);
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const { data: profile, error: profileError } = await supabase
@@ -102,32 +95,25 @@ Deno.serve(async (req) => {
       .select("id")
       .eq("email", normalizedEmail)
       .maybeSingle();
-
     if (profileError || !profile?.id) {
       return jsonResponse({ error: "Profile not found" }, 404);
     }
 
     const { data: subRow, error: subError } = await supabase
       .from("user_subscriptions")
-      .select("plan_id, stripe_subscription_id")
+      .select("plan_id, stripe_customer_id, stripe_subscription_id")
       .eq("user_id", profile.id)
       .maybeSingle();
-
     if (subError) return jsonResponse({ error: subError.message }, 500);
-    if (!subRow?.stripe_subscription_id) {
+    if (!subRow?.stripe_customer_id || !subRow?.stripe_subscription_id) {
       return jsonResponse({ error: "No active recurring subscription found. Start checkout first." }, 400);
     }
 
     const dbCurrentPlanId = subRow.plan_id || currentPlanId;
-    if (!(dbCurrentPlanId in PLAN_RANK)) {
-      return jsonResponse({ error: "Current plan is not upgradable" }, 400);
-    }
+    if (!(dbCurrentPlanId in PLAN_RANK)) return jsonResponse({ error: "Current plan is not upgradable" }, 400);
     if (PLAN_RANK[targetPlanId] <= PLAN_RANK[dbCurrentPlanId]) {
       return jsonResponse({ error: "Target plan must be higher than current plan" }, 400);
     }
-
-    const targetPriceId = PRICE_BY_PLAN[targetPlanId];
-    if (!targetPriceId) return jsonResponse({ error: "Target price is not configured" }, 503);
 
     const stripeSubRes = await stripeGet(`/subscriptions/${subRow.stripe_subscription_id}`);
     const stripeSubData = await stripeSubRes.json();
@@ -135,71 +121,33 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: stripeSubData.error?.message || "Failed to load Stripe subscription" }, 502);
     }
 
-    const itemId = stripeSubData?.items?.data?.[0]?.id as string | undefined;
-    if (!itemId) return jsonResponse({ error: "Subscription item not found in Stripe" }, 502);
+    const subscriptionItemId = stripeSubData?.items?.data?.[0]?.id as string | undefined;
+    if (!subscriptionItemId) return jsonResponse({ error: "Subscription item not found in Stripe" }, 502);
 
-    const currentInterval = stripeSubData?.items?.data?.[0]?.price?.recurring?.interval as string | undefined;
+    const origin = req.headers.get("origin") || "http://localhost:5173";
+    const returnUrl = `${origin}/billing?upgraded=true`;
 
-    const targetInterval =
-      targetPlanId === "pro_weekly"
-        ? "week"
-        : targetPlanId === "pro"
-          ? "month"
-          : "year";
+    const portalRes = await stripePost("/billing_portal/sessions", {
+      customer: subRow.stripe_customer_id,
+      return_url: returnUrl,
+      "flow_data[type]": "subscription_update_confirm",
+      "flow_data[after_completion][type]": "redirect",
+      "flow_data[after_completion][redirect][return_url]": returnUrl,
+      "flow_data[subscription_update_confirm][subscription]": subRow.stripe_subscription_id,
+      "flow_data[subscription_update_confirm][items][0][id]": subscriptionItemId,
+      "flow_data[subscription_update_confirm][items][0][price]": targetPriceId,
+    });
 
-    const updateBody: Record<string, string> = {
-      "items[0][id]": itemId,
-      "items[0][price]": targetPriceId,
-      proration_behavior: "create_prorations",
-    };
-
-    // Stripe rejects `billing_cycle_anchor=unchanged` when switching intervals.
-    // Keep anchor only for same-interval upgrades; otherwise start a new cycle now.
-    updateBody.billing_cycle_anchor =
-      currentInterval && currentInterval === targetInterval ? "unchanged" : "now";
-
-    const updateRes = await stripePost(`/subscriptions/${subRow.stripe_subscription_id}`, updateBody);
-    const updateData = await updateRes.json();
-    if (updateData?.error) {
-      return jsonResponse({ error: updateData.error?.message || "Failed to update subscription" }, 502);
+    const portalData = await portalRes.json();
+    if (portalData?.error) {
+      return jsonResponse({ error: portalData.error?.message || "Failed to create Stripe portal session" }, 502);
     }
 
-    let chargeInfo: {
-      amount_paid_cents: number;
-      amount_due_cents: number;
-      currency: string;
-      status: string;
-      invoice_id: string;
-    } | null = null;
-
-    const latestInvoiceId = invoiceIdFromSubscriptionUpdate(updateData);
-    if (latestInvoiceId) {
-      const invoiceRes = await stripeGet(`/invoices/${latestInvoiceId}`);
-      const invoiceData = await invoiceRes.json();
-      if (!invoiceData?.error) {
-        chargeInfo = {
-          amount_paid_cents: Number(invoiceData.amount_paid ?? 0),
-          amount_due_cents: Number(invoiceData.amount_due ?? 0),
-          currency: String(invoiceData.currency || "usd"),
-          status: String(invoiceData.status || "unknown"),
-          invoice_id: latestInvoiceId,
-        };
-      }
-    }
-
-    await supabase
-      .from("user_subscriptions")
-      .update({
-        plan_id: targetPlanId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", profile.id);
-
-    return jsonResponse({ ok: true, charge: chargeInfo }, 200);
+    return jsonResponse({ url: portalData.url }, 200);
   } catch (e) {
-    console.error("change-subscription-plan error:", e);
+    console.error("create-upgrade-portal-session error:", e);
     return jsonResponse(
-      { error: e instanceof Error ? e.message : "Failed to change subscription plan" },
+      { error: e instanceof Error ? e.message : "Failed to create upgrade portal session" },
       500
     );
   }
