@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
+import { getAvatarEmoji } from "../data/avatars";
 
 function problemsUrlParams(view, cat, q) {
   const params = new URLSearchParams();
@@ -34,12 +35,14 @@ const FlagIcon = ({ filled, size = 18 }) => (
   </svg>
 );
 
-export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem, onLogout, username, fav, mobile, recent, isPro }) {
+export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem, onLogout, username, user, fav, mobile, recent, isPro }) {
   const parsed = parseProblemsUrl();
   const [search, setSearch] = useState(parsed.q);
   const [filter, setFilter] = useState(parsed.cat);
   const [flagFilter, setFlagFilter] = useState(parsed.view);
   const [userMenuOpen, setMenuOpen] = useState(false);
+  const avatarId = user?.avatarId && user.avatarId >= 1 && user.avatarId <= 10 ? user.avatarId : 1;
+  const hasExternalPicture = !!user?.picture && !user?.picture?.startsWith?.("avatar:");
 
   const updateUrl = useCallback(() => {
     const url = problemsUrlParams(flagFilter, filter, search);
@@ -87,8 +90,12 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
             <div style={{ position: "relative" }}>
               <button onClick={() => setMenuOpen(o => !o)}
                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", border: `2px solid ${t.border}`, borderRadius: 8, background: "transparent", color: t.ink, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700, boxShadow: t.shadowSm }}>
-                <div style={{ width: 26, height: 26, borderRadius: "50%", background: t.blue, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "0.8rem" }}>
-                  {username?.[0]?.toUpperCase() || "G"}
+                <div style={{ width: 26, height: 26, borderRadius: "50%", background: hasExternalPicture ? "transparent" : t.blue, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "0.8rem", overflow: "hidden" }}>
+                  {hasExternalPicture ? (
+                    <img src={user.picture} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: "1rem", lineHeight: 1 }}>{getAvatarEmoji(avatarId)}</span>
+                  )}
                 </div>
                 {!mobile && (username ?? "User")} ▾
               </button>

@@ -166,7 +166,7 @@ export default function App() {
       <HomePage
         t={t} themeMode={themeMode} setThemeMode={setThemeMode}
         onNavigate={navigate} onLogout={auth.logout}
-        username={auth.user?.username} mobile={mobile}
+        username={auth.user?.username} user={auth.user} mobile={mobile}
         recent={recent} onSelectProblem={selectProblem} isPro={isPro}
       />
     );
@@ -179,6 +179,7 @@ export default function App() {
         onNavigate={navigate} onSelectProblem={selectProblem}
         onLogout={auth.logout}
         username={auth.user?.username}
+        user={auth.user}
         fav={fav} mobile={mobile}
         recent={recent}
         isPro={isPro}
