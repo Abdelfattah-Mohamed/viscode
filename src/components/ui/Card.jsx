@@ -4,17 +4,20 @@ const CARD_DENSITY = {
   spacious: { radius: 14, border: 1.75 },
 };
 
-export function Card({ children, style = {}, t, density = "default" }) {
+export function Card({ children, style = {}, t, density = "default", ...props }) {
   const d = CARD_DENSITY[density] || CARD_DENSITY.default;
   return (
-    <div style={{
-      background: t.surface,
-      border: `${d.border}px solid ${t.border}`,
-      borderRadius: d.radius,
-      boxShadow: t.shadow,
-      overflow: "hidden",
-      ...style,
-    }}>
+    <div
+      {...props}
+      style={{
+        background: t.surface,
+        border: `${d.border}px solid ${t.border}`,
+        borderRadius: d.radius,
+        boxShadow: t.shadow,
+        overflow: "hidden",
+        ...style,
+      }}
+    >
       {children}
     </div>
   );

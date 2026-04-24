@@ -1,6 +1,8 @@
 import { useState } from "react";
 import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
+import { Card } from "../components/ui/Card";
+import SectionHeader from "../components/ui/SectionHeader";
 
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 import { getAvatarEmoji } from "../data/avatars";
@@ -92,17 +94,15 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
       {/* Continue where you left off */}
       {recent?.length > 0 && (
         <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "32px 12px 0" : "48px 24px 0" }}>
-          <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "1.6rem", fontWeight: 700, color: t.ink, margin: "0 0 16px" }}>
-            Continue Where You Left Off
-          </h2>
+          <SectionHeader t={t} title="Continue Where You Left Off" compact style={{ marginBottom: 16 }} />
           <div style={{ display: "flex", gap: 12, overflowX: mobile ? "auto" : "hidden", WebkitOverflowScrolling: "touch", paddingBottom: 8 }}>
             {recent.slice(0, 5).map(id => {
               const p = PROB_LIST.find(x => x.id === id);
               if (!p) return null;
               const dc = DIFF_COLOR[p.difficulty] || {};
               return (
-              <div key={id} onClick={() => onSelectProblem(id)}
-                  style={{ flex: mobile ? "0 0 180px" : "1 1 0%", minWidth: 0, padding: "14px 16px", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
+              <Card key={id} t={t} density="compact" onClick={() => onSelectProblem(id)}
+                  style={{ flex: mobile ? "0 0 180px" : "1 1 0%", minWidth: 0, padding: "14px 16px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
                   onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
                   onMouseLeave={e => e.currentTarget.style.transform = ""}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -120,7 +120,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
                   <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", color: isLocked(p) ? t.red : t.blue, marginTop: 6, fontWeight: 700 }}>
                     {isLocked(p) ? "Upgrade to open →" : "Resume →"}
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
@@ -129,23 +129,24 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
 
       {/* Famous Algorithms */}
       <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "40px 12px 0" : "56px 24px 0" }}>
-        <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "1.6rem", fontWeight: 700, color: t.ink, margin: "0 0 16px" }}>
-          ⭐ Famous Algorithms
-        </h2>
-        <p style={{ fontSize: "0.9rem", color: t.inkMuted, marginBottom: 20 }}>
-          Bellman–Ford, Floyd–Warshall, Kosaraju, Tarjan, Kruskal's MST, A*, Dijkstra, Prim's, BFS, DFS, Union-Find, Fenwick Tree, Segment Tree, 0/1 Knapsack &amp; more.
-        </p>
+        <SectionHeader
+          t={t}
+          title="⭐ Famous Algorithms"
+          subtitle="Bellman-Ford, Floyd-Warshall, Kosaraju, Tarjan, Kruskal's MST, A*, Dijkstra, Prim's, BFS, DFS, Union-Find, Fenwick Tree, Segment Tree, 0/1 Knapsack and more."
+          compact
+          style={{ marginBottom: 20 }}
+        />
         <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8, flexWrap: mobile ? "nowrap" : "wrap", WebkitOverflowScrolling: "touch" }}>
           {PROB_LIST.filter(p => p.category === "Famous Algorithms").slice(0, mobile ? 6 : 14).map(p => {
             const dc = DIFF_COLOR[p.difficulty] || {};
             return (
-              <div key={p.id} onClick={() => onSelectProblem(p.id)}
-                style={{ flex: mobile ? "0 0 140px" : "1 1 120px", minWidth: 0, padding: "12px 14px", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
+              <Card key={p.id} t={t} density="compact" onClick={() => onSelectProblem(p.id)}
+                style={{ flex: mobile ? "0 0 140px" : "1 1 120px", minWidth: 0, padding: "12px 14px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = ""}>
                 <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7rem", fontWeight: 700, padding: "1px 6px", border: `1.5px solid ${t.border}`, borderRadius: 6, ...dc }}>{p.difficulty}</span>
                 <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700, color: t.ink, marginTop: 6, lineHeight: 1.25 }}>{p.title}</div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -157,7 +158,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
 
       {/* How it works */}
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "60px 24px" }}>
-        <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "2rem", fontWeight: 700, color: t.ink, textAlign: "center", marginBottom: 40 }}>How It Works</h2>
+        <SectionHeader t={t} title="How It Works" compact style={{ marginBottom: 24, justifyContent: "center", textAlign: "center" }} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
           {[
             { n: "01", icon: "📋", title: "Pick a Problem",  desc: "Browse 7 Blind 75 problems across Arrays, Sliding Window, Binary Search, and DP." },
@@ -165,14 +166,14 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
             { n: "03", icon: "💡", title: "Understand Why",  desc: "Plain-English explanations for every decision the algorithm makes." },
             { n: "04", icon: "🔁", title: "Practice",        desc: "Edit the input, switch languages, adjust speed — replay until it clicks." },
           ].map((item, i) => (
-            <div key={i} style={{ padding: 20, border: `1.5px solid ${t.border}`, borderRadius: 12, background: t.surface, boxShadow: t.shadowSm }}>
+            <Card key={i} t={t} density="compact" style={{ padding: 20, boxShadow: t.shadowSm }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                 <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68rem", fontWeight: 700, color: t.blue, background: t.blue + "22", padding: "2px 8px", borderRadius: 5 }}>{item.n}</span>
                 <span style={{ fontSize: "1.2rem" }}>{item.icon}</span>
               </div>
               <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.1rem", fontWeight: 700, color: t.ink, marginBottom: 6 }}>{item.title}</div>
               <div style={{ fontSize: "0.83rem", color: t.inkMuted, lineHeight: 1.6 }}>{item.desc}</div>
-            </div>
+            </Card>
           ))}
         </div>
       </div>
