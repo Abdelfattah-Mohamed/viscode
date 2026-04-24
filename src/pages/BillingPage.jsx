@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { Card } from "../components/ui/Card";
+import Button from "../components/ui/Button";
 import { useSubscription } from "../hooks/useSubscription";
 import {
   createCheckoutSession,
@@ -165,23 +166,23 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
           <div style={{ display: "flex", alignItems: "center", gap: mobile ? 8 : 12 }}>
             {!mobile && <ThemeToggle mode={themeMode} setMode={setThemeMode} t={t} />}
             {!mobile && <div style={{ width: 1, height: 28, background: t.border, opacity: 0.3 }} />}
-            <button
-              type="button"
+            <Button
+              t={t}
+              variant="ghost"
               onClick={onLogout}
               style={{
-                padding: "6px 14px",
                 fontFamily: "'DM Sans',sans-serif",
                 fontSize: "0.9rem",
                 fontWeight: 600,
-                border: `2px solid ${t.red}`,
+                padding: "6px 14px",
+                borderWidth: 2,
+                borderColor: t.red,
                 borderRadius: 8,
-                background: "transparent",
                 color: t.red,
-                cursor: "pointer",
               }}
             >
               Sign out
-            </button>
+            </Button>
           </div>
         }
       />
@@ -282,45 +283,43 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                 {!!subscription?.stripe_subscription_id && plan?.id !== "lifetime" && (
                   <div style={{ marginTop: 14 }}>
                     {subscription?.cancel_at_period_end ? (
-                      <button
-                        type="button"
+                      <Button
+                        t={t}
+                        variant="ghost"
                         onClick={handleResume}
                         disabled={resuming || canceling}
                         style={{
-                          padding: "8px 14px",
-                          fontFamily: "'DM Sans',sans-serif",
+                          fontFamily: "'Caveat',cursive",
                           fontSize: "0.83rem",
                           fontWeight: 700,
                           borderRadius: 8,
-                          border: `1.5px solid ${t.blue}`,
-                          background: "transparent",
+                          borderColor: t.blue,
                           color: t.blue,
                           cursor: resuming || canceling ? "not-allowed" : "pointer",
                           opacity: resuming || canceling ? 0.6 : 1,
                         }}
                       >
                         {resuming ? "Resuming..." : "Undo cancellation"}
-                      </button>
+                      </Button>
                     ) : (
-                      <button
-                        type="button"
+                      <Button
+                        t={t}
+                        variant="ghost"
                         onClick={handleCancel}
                         disabled={canceling || resuming}
                         style={{
-                          padding: "8px 14px",
-                          fontFamily: "'DM Sans',sans-serif",
+                          fontFamily: "'Caveat',cursive",
                           fontSize: "0.83rem",
                           fontWeight: 700,
                           borderRadius: 8,
-                          border: `1.5px solid ${t.red}`,
-                          background: "transparent",
+                          borderColor: t.red,
                           color: t.red,
                           cursor: canceling || resuming ? "not-allowed" : "pointer",
                           opacity: canceling || resuming ? 0.6 : 1,
                         }}
                       >
                         {canceling ? "Canceling..." : "Cancel subscription"}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
@@ -367,26 +366,25 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                           ))}
                         </ul>
                       )}
-                      <button
-                        type="button"
+                      <Button
+                        t={t}
+                        variant="secondary"
                         onClick={() => handleUpgrade(p.id)}
                         disabled={!!checkoutPlan}
                         style={{
-                          padding: "10px 18px",
-                          fontFamily: "'Caveat',cursive",
                           fontSize: "1rem",
                           fontWeight: 700,
-                          border: "none",
                           borderRadius: 8,
                           background: t.blue,
                           color: "#fff",
                           cursor: checkoutPlan ? "wait" : "pointer",
                           opacity: checkoutPlan ? 0.8 : 1,
                           alignSelf: "flex-start",
+                          boxShadow: t.shadowSm,
                         }}
                       >
                         {checkoutPlan === p.id ? "Redirecting…" : `Upgrade to ${p.name}`}
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -399,40 +397,32 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
             )}
 
         <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button
+          <Button
+            t={t}
+            variant="secondary"
             onClick={() => onNavigate("profile")}
             style={{
-              padding: "10px 20px",
-              fontFamily: "'Caveat',cursive",
               fontSize: "1.05rem",
               fontWeight: 700,
-              border: `2px solid ${t.border}`,
               borderRadius: 8,
-              background: t.surface,
-              color: t.ink,
-              cursor: "pointer",
               boxShadow: t.shadowSm,
             }}
           >
             ← Profile
-          </button>
-          <button
+          </Button>
+          <Button
+            t={t}
+            variant="secondary"
             onClick={() => onNavigate("home")}
             style={{
-              padding: "10px 20px",
-              fontFamily: "'Caveat',cursive",
               fontSize: "1.05rem",
               fontWeight: 700,
-              border: `2px solid ${t.border}`,
               borderRadius: 8,
-              background: t.surface,
-              color: t.ink,
-              cursor: "pointer",
               boxShadow: t.shadowSm,
             }}
           >
             Home
-          </button>
+          </Button>
         </div>
           </>
         )}
