@@ -187,7 +187,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
         }
       />
 
-      <div style={{ flex: 1, maxWidth: 560, margin: "0 auto", padding: "32px 24px 60px", width: "100%" }}>
+      <div style={{ flex: 1, maxWidth: 560, margin: "0 auto", padding: "32px 24px 56px", width: "100%" }}>
         <h1 style={{ fontFamily: "'Caveat',cursive", fontSize: "1.8rem", fontWeight: 700, color: t.ink, marginBottom: 8 }}>
           Billing & subscription
         </h1>
@@ -200,7 +200,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
             style={{
               padding: "12px 16px",
               borderRadius: 8,
-              marginBottom: 20,
+              marginBottom: 24,
               background:
                 message.type === "success"
                   ? t.green + "22"
@@ -239,7 +239,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                   Current plan
                 </span>
               </div>
-              <div style={{ padding: "20px" }}>
+              <div style={{ padding: "18px 20px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
                   <div>
                     <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.35rem", fontWeight: 700, color: t.ink }}>{planName}</div>
@@ -281,7 +281,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                   </ul>
                 )}
                 {!!subscription?.stripe_subscription_id && plan?.id !== "lifetime" && (
-                  <div style={{ marginTop: 14 }}>
+                  <div style={{ marginTop: 16 }}>
                     {subscription?.cancel_at_period_end ? (
                       <Button
                         t={t}
@@ -334,7 +334,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                     Upgrade
                   </span>
                 </div>
-                <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
                   {upgradePlans.map((p) => (
                     <div
                       key={p.id}
@@ -396,7 +396,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
               </p>
             )}
 
-        <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Button
             t={t}
             variant="secondary"

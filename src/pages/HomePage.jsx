@@ -41,7 +41,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
 
       {/* Hero */}
       <div style={{ textAlign: "center", padding: mobile ? "40px 16px 32px" : "72px 24px 56px", maxWidth: 760, margin: "0 auto" }}>
-        <div style={{ marginBottom: 28, animation: "float 3.5s ease-in-out infinite", display: "inline-block" }}>
+        <div style={{ marginBottom: 24, animation: "float 3.5s ease-in-out infinite", display: "inline-block" }}>
           <svg width={96} height={96} viewBox="0 0 40 40" fill="none" aria-hidden="true">
             <rect width="40" height="40" rx="9" fill="#1c1c2e" />
             <line x1="20" y1="7"  x2="20"    y2="33"   stroke="white" strokeWidth="4.5" strokeLinecap="round" />
@@ -49,10 +49,10 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
             <line x1="8.74"  y1="13.5" x2="31.26" y2="26.5" stroke="white" strokeWidth="4.5" strokeLinecap="round" />
           </svg>
         </div>
-        <h1 style={{ fontFamily: "'Caveat',cursive", fontSize: "clamp(2.2rem,5vw,3.6rem)", fontWeight: 700, color: t.ink, margin: "0 0 18px", lineHeight: 1.2 }}>
+        <h1 style={{ fontFamily: "'Caveat',cursive", fontSize: "clamp(2.2rem,5vw,3.6rem)", fontWeight: 700, color: t.ink, margin: "0 0 16px", lineHeight: 1.2 }}>
           Learn DSA by <span style={{ color: t.blue }}>Seeing It Work</span>
         </h1>
-        <p style={{ fontSize: "1.05rem", color: t.inkMuted, lineHeight: 1.75, margin: "0 0 36px", maxWidth: 520, marginLeft: "auto", marginRight: "auto" }}>
+        <p style={{ fontSize: "1.05rem", color: t.inkMuted, lineHeight: 1.75, margin: "0 0 32px", maxWidth: 520, marginLeft: "auto", marginRight: "auto" }}>
           VisCode runs algorithms step-by-step with live animations synced to real code in C++, Java, JavaScript, and Python.
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
@@ -120,7 +120,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
       )}
 
       {/* Famous Algorithms */}
-      <PageContainer mobile={mobile} paddingMobile="40px 12px 0" paddingDesktop="56px 24px 0">
+      <PageContainer mobile={mobile} paddingMobile="40px 12px 0" paddingDesktop="48px 24px 0">
         <SectionHeader
           t={t}
           title="⭐ Famous Algorithms"
@@ -155,7 +155,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
       </PageContainer>
 
       {/* How it works */}
-      <PageContainer mobile={mobile} paddingMobile="48px 12px" paddingDesktop="60px 24px">
+      <PageContainer mobile={mobile} paddingMobile="48px 12px" paddingDesktop="56px 24px">
         <SectionHeader t={t} title="How It Works" compact style={{ marginBottom: 24, justifyContent: "center", textAlign: "center" }} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
           {[
@@ -177,9 +177,9 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
       </PageContainer>
 
       {/* CTA footer */}
-      <div style={{ textAlign: "center", padding: "48px 24px 64px", borderTop: `1.5px solid ${t.border}`, background: t.surface }}>
-        <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "2rem", fontWeight: 700, color: t.ink, marginBottom: 14 }}>Ready to level up? 🎯</h2>
-        <p style={{ color: t.inkMuted, marginBottom: 28, fontSize: "0.95rem" }}>Ace your next technical interview, one visual at a time.</p>
+      <div style={{ textAlign: "center", padding: "48px 24px 56px", borderTop: `1.5px solid ${t.border}`, background: t.surface }}>
+        <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "2rem", fontWeight: 700, color: t.ink, marginBottom: 12 }}>Ready to level up? 🎯</h2>
+        <p style={{ color: t.inkMuted, marginBottom: 24, fontSize: "0.95rem" }}>Ace your next technical interview, one visual at a time.</p>
         <Button t={t} variant="primary" size="lg" onClick={() => onNavigate("problems")}
           style={{ padding: "14px 44px", borderWidth: 2 }}>
           Start for Free →

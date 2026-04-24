@@ -112,7 +112,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
 
         <div
           style={{
-            marginBottom: 18,
+            marginBottom: 20,
             border: `1.5px solid ${t.border}`,
             borderRadius: 10,
             background: t.surface,
@@ -167,7 +167,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
         </div>
 
         {/* Search + filter */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 28, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
           <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
             <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: t.inkMuted, pointerEvents: "none" }}>🔍</span>
             <input value={search} onChange={e => setSearch(e.target.value)}
@@ -198,7 +198,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
 
         {/* Recently Visited */}
         {recent?.length > 0 && (
-          <div style={{ marginBottom: 28 }}>
+          <div style={{ marginBottom: 24 }}>
             <SectionHeader t={t} title="Recently Visited" compact style={{ marginBottom: 12 }} />
             <div style={{ display: "flex", gap: 10, overflowX: mobile ? "auto" : "hidden", WebkitOverflowScrolling: "touch", paddingBottom: 6 }}>
               {recent.slice(0, 5).map(id => {
@@ -238,7 +238,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
 
         {/* Grid */}
         {list.length === 0
-          ? <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "'Caveat',cursive", fontSize: "1.3rem", color: t.inkMuted }}>No problems match 🤔</div>
+          ? <div style={{ textAlign: "center", padding: "56px 0", fontFamily: "'Caveat',cursive", fontSize: "1.3rem", color: t.inkMuted }}>No problems match 🤔</div>
           : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 16 }}>
               {list.map(p => {
                 const dc = DIFF_COLOR[p.difficulty] || {};
@@ -248,7 +248,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                     tabIndex={0}
                     aria-label={`${isLocked(p) ? "Locked problem: " : "Open problem: "}${p.title}`}
                     onKeyDown={(e) => handleCardKeyDown(e, () => onSelectProblem(p.id))}
-                    style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "18px 20px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", gap: 10, opacity: isLocked(p) ? 0.92 : 1 }}
+                    style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "16px 18px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", gap: 12, opacity: isLocked(p) ? 0.92 : 1 }}
                     onMouseEnter={e => { e.currentTarget.style.transform = "translate(-2px,-2px)"; e.currentTarget.style.boxShadow = t.shadow; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}
                     onFocus={e => { e.currentTarget.style.transform = "translate(-2px,-2px)"; e.currentTarget.style.boxShadow = `${t.shadow}, 0 0 0 2px ${t.blue}66`; }}
