@@ -181,7 +181,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
               { key: "flagged", label: "Flagged", icon: <FlagIcon filled={flagFilter === "flagged"} size={14} /> },
             ].map(f => (
               <Button key={f.key} t={t} variant="ghost" pill onClick={() => setFlagFilter(f.key)}
-                style={{ borderColor: flagFilter === f.key ? t.blue : t.border, background: flagFilter === f.key ? t.blue + "18" : "transparent", color: flagFilter === f.key ? t.blue : t.inkMuted, display: "flex", alignItems: "center", gap: 5 }}>
+                style={{ borderColor: flagFilter === f.key ? t.blue : t.border, background: flagFilter === f.key ? t.blue + "18" : "transparent", color: flagFilter === f.key ? t.blue : t.ink, display: "flex", alignItems: "center", gap: 5 }}>
                 {f.icon}{f.label}
               </Button>
             ))}
@@ -189,7 +189,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", paddingBottom: 4 }}>
             {cats.map(cat => (
               <Button key={cat} t={t} variant="ghost" pill onClick={() => setFilter(cat)}
-                style={{ background: filter === cat ? t.ink : "transparent", color: filter === cat ? t.yellow : t.inkMuted }}>
+                style={{ background: filter === cat ? t.ink : "transparent", color: filter === cat ? t.yellow : t.ink }}>
                 {cat}
               </Button>
             ))}
@@ -220,15 +220,15 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                       <span style={{ fontSize: "1rem" }}>{CAT_ICON[p.category] || "📌"}</span>
                       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                         {isLocked(p) && (
-                          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", border: `1.5px solid ${t.border}`, borderRadius: 8, color: t.red }}>
+                          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.72rem", fontWeight: 700, padding: "1px 7px", border: `1.5px solid ${t.border}`, borderRadius: 8, color: t.red, background: t.red + "14" }}>
                             🔒 Pro
                           </span>
                         )}
-                        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", border: `1.5px solid ${t.border}`, borderRadius: 8, ...dc }}>{p.difficulty}</span>
+                        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.72rem", fontWeight: 700, padding: "1px 7px", border: `1.5px solid ${t.border}`, borderRadius: 8, ...dc }}>{p.difficulty}</span>
                       </div>
                     </div>
                     <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, color: t.ink, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
-                    <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.78rem", color: t.inkMuted, marginTop: 2 }}>{p.category}</div>
+                    <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.82rem", color: t.inkMuted, marginTop: 2 }}>{p.category}</div>
                   </div>
                 );
               })}
@@ -279,14 +279,14 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                       </div>
                     </div>
                     <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink, lineHeight: 1.3 }}>{p.title}</div>
-                    <div style={{ fontSize: "0.82rem", color: t.inkMuted, lineHeight: 1.6, flex: 1 }}>{p.desc}</div>
+                    <div style={{ fontSize: "0.86rem", color: t.inkMuted, lineHeight: 1.6, flex: 1 }}>{p.desc}</div>
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
                       {p.tags.slice(0, 2).map(tag => (
-                        <span key={tag} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", padding: "2px 7px", border: `1.5px solid ${t.border}`, borderRadius: 20, background: t.surfaceAlt, color: t.inkMuted }}>{tag}</span>
+                        <span key={tag} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.69rem", padding: "2px 7px", border: `1.5px solid ${t.border}`, borderRadius: 20, background: t.surfaceAlt, color: t.inkMuted }}>{tag}</span>
                       ))}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", color: t.inkMuted }}>{p.category}</span>
+                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.84rem", color: t.inkMuted }}>{p.category}</span>
                       <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9rem", fontWeight: 700, color: isLocked(p) ? t.red : t.blue }}>
                         {isLocked(p) ? "Upgrade to view →" : "Visualize →"}
                       </span>

@@ -250,7 +250,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                       )}
                     </div>
                     {nextBillingDate && isPro && (
-                      <div style={{ fontSize: "0.8rem", color: t.inkMuted, marginTop: 4 }}>
+                      <div style={{ fontSize: "0.84rem", color: t.inkMuted, marginTop: 4 }}>
                         Next billing date: {nextBillingDate}
                         {subscription?.cancel_at_period_end && " (canceled at period end)"}
                       </div>
@@ -264,7 +264,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                         fontWeight: 700,
                         padding: "4px 12px",
                         borderRadius: 20,
-                        background: t.green + "33",
+                        background: t.green + "2b",
                         color: t.green,
                         border: `1px solid ${t.green}`,
                       }}
@@ -274,7 +274,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                   )}
                 </div>
                 {plan?.features && Array.isArray(plan.features) && plan.features.length > 0 && (
-                  <ul style={{ margin: "16px 0 0", paddingLeft: 20, fontSize: "0.85rem", color: t.inkMuted, lineHeight: 1.6 }}>
+                  <ul style={{ margin: "16px 0 0", paddingLeft: 20, fontSize: "0.88rem", color: t.inkMuted, lineHeight: 1.6 }}>
                     {plan.features.map((f, i) => (
                       <li key={i}>{f}</li>
                     ))}
@@ -352,7 +352,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                         <div>
                           <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink }}>{p.name}</div>
                           {p.description && (
-                            <div style={{ fontSize: "0.82rem", color: t.inkMuted, marginTop: 2 }}>{p.description}</div>
+                            <div style={{ fontSize: "0.86rem", color: t.inkMuted, marginTop: 2 }}>{p.description}</div>
                           )}
                         </div>
                         <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1rem", fontWeight: 700, color: t.ink }}>
@@ -360,7 +360,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                         </div>
                       </div>
                       {p.features && Array.isArray(p.features) && p.features.length > 0 && (
-                        <ul style={{ margin: 0, paddingLeft: 18, fontSize: "0.8rem", color: t.inkMuted, lineHeight: 1.5 }}>
+                        <ul style={{ margin: 0, paddingLeft: 18, fontSize: "0.84rem", color: t.inkMuted, lineHeight: 1.5 }}>
                           {p.features.slice(0, 4).map((f, i) => (
                             <li key={i}>{f}</li>
                           ))}
@@ -391,7 +391,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
               </Card>
             )}
             {plan?.id === "lifetime" && (
-              <p style={{ margin: "12px 2px 0", fontSize: "0.85rem", color: t.inkMuted }}>
+              <p style={{ margin: "12px 2px 0", fontSize: "0.9rem", color: t.inkMuted }}>
                 You're on the highest plan.
               </p>
             )}

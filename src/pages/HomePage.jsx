@@ -72,7 +72,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
         {[{ n: "100+", l: "Problems Visualized" }, { n: "4", l: "Languages" }, { n: "Blind 75", l: "Coverage" }, { n: "∞", l: "Practice Runs" }].map((s, i, a) => (
           <div key={i} style={{ padding: mobile ? "14px 20px" : "22px 40px", textAlign: "center", borderRight: i < a.length - 1 ? `1.5px solid ${t.border}` : "none", flex: mobile ? "1 1 40%" : undefined }}>
             <div style={{ fontFamily: "'Caveat',cursive", fontSize: "2rem", fontWeight: 700, color: t.blue }}>{s.n}</div>
-            <div style={{ fontSize: "0.82rem", color: t.inkMuted, marginTop: 2 }}>{s.l}</div>
+            <div style={{ fontSize: "0.86rem", color: t.inkMuted, marginTop: 2 }}>{s.l}</div>
           </div>
         ))}
       </div>
@@ -101,15 +101,15 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
                     <span style={{ fontSize: "1.1rem" }}>{CAT_ICON[p.category] || "📌"}</span>
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       {isLocked(p) && (
-                        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7rem", fontWeight: 700, color: t.red }}>
+                        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.74rem", fontWeight: 700, color: t.red, padding: "1px 8px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: t.red + "14" }}>
                           🔒 Pro
                         </span>
                       )}
-                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7rem", fontWeight: 700, padding: "1px 8px", border: `1.5px solid ${t.border}`, borderRadius: 8, ...dc }}>{p.difficulty}</span>
+                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.74rem", fontWeight: 700, padding: "1px 8px", border: `1.5px solid ${t.border}`, borderRadius: 8, ...dc }}>{p.difficulty}</span>
                     </div>
                   </div>
                   <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05rem", fontWeight: 700, color: t.ink, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
-                  <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", color: isLocked(p) ? t.red : t.blue, marginTop: 6, fontWeight: 700 }}>
+                  <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.84rem", color: isLocked(p) ? t.red : t.blue, marginTop: 6, fontWeight: 700 }}>
                     {isLocked(p) ? "Upgrade to open →" : "Resume →"}
                   </div>
                 </Card>
@@ -170,7 +170,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
                 <span style={{ fontSize: "1.2rem" }}>{item.icon}</span>
               </div>
               <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.1rem", fontWeight: 700, color: t.ink, marginBottom: 6 }}>{item.title}</div>
-              <div style={{ fontSize: "0.83rem", color: t.inkMuted, lineHeight: 1.6 }}>{item.desc}</div>
+              <div style={{ fontSize: "0.87rem", color: t.inkMuted, lineHeight: 1.6 }}>{item.desc}</div>
             </Card>
           ))}
         </div>
