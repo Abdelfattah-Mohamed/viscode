@@ -52,6 +52,15 @@ Optional history of invoices (e.g. from Stripe webhooks).
 2. Ensure every user has a row in `profiles` (your signup flow should create one). The billing tables use `profiles.id` (UUID), not email.
 3. On signup, optionally insert a row into `user_subscriptions` with `plan_id = 'free'` and `user_id = profiles.id`.
 
+### Supabase CLI commands
+
+Use `npx supabase ...` for CLI operations in this project, for example:
+
+- `npx supabase login`
+- `npx supabase link --project-ref <YOUR_PROJECT_REF>`
+- `npx supabase functions deploy create-checkout-session`
+- `npx supabase functions deploy stripe-webhook`
+
 ## Usage ideas
 
 - **Check plan in app:** Query `user_subscriptions` (and join `billing_plans`) by `user_id` (from the current profile) to show plan name, features, and status.

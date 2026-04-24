@@ -119,6 +119,16 @@ User profile with **Favorites** and **Flagged** problem lists. Manage account an
 - **Google Identity Services** — optional Sign in with Google (`VITE_GOOGLE_CLIENT_ID`)
 - Inline styles (no UI library); `localStorage` + Supabase for persistence
 
+## Supabase CLI Note
+
+This repo does not pin the Supabase CLI as a local dependency. For Supabase CLI tasks, use:
+
+- `npx supabase login`
+- `npx supabase link --project-ref <YOUR_PROJECT_REF>`
+- `npx supabase functions deploy <function-name>`
+
+You can also install Supabase CLI globally if you prefer, but `npx supabase ...` is the default in this project.
+
 ---
 
 ## License
