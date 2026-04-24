@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
+import SectionHeader from "../components/ui/SectionHeader";
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 import { getAvatarEmoji } from "../data/avatars";
 
@@ -115,12 +116,12 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
       />
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "24px 12px 40px" : "40px 24px 60px" }}>
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontFamily: "'Caveat',cursive", fontSize: "2.4rem", fontWeight: 700, color: t.ink, margin: "0 0 6px" }}>
-            Problems <span style={{ color: t.blue }}>({PROB_LIST.length})</span>
-          </h1>
-          <p style={{ color: t.inkMuted, fontSize: "0.95rem", margin: 0 }}>Click any card to visualize it step-by-step.</p>
-        </div>
+        <SectionHeader
+          t={t}
+          title={<span>Problems <span style={{ color: t.blue }}>({PROB_LIST.length})</span></span>}
+          subtitle="Click any card to visualize it step-by-step."
+          style={{ marginBottom: 24 }}
+        />
 
         <div
           style={{
@@ -217,9 +218,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
         {/* Recently Visited */}
         {recent?.length > 0 && (
           <div style={{ marginBottom: 28 }}>
-            <h3 style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink, margin: "0 0 12px" }}>
-              Recently Visited
-            </h3>
+            <SectionHeader t={t} title="Recently Visited" compact style={{ marginBottom: 12 }} />
             <div style={{ display: "flex", gap: 10, overflowX: mobile ? "auto" : "hidden", WebkitOverflowScrolling: "touch", paddingBottom: 6 }}>
               {recent.slice(0, 5).map(id => {
                 const p = PROB_LIST.find(x => x.id === id);
@@ -289,7 +288,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                     <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink, lineHeight: 1.3 }}>{p.title}</div>
                     <div style={{ fontSize: "0.82rem", color: t.inkMuted, lineHeight: 1.6, flex: 1 }}>{p.desc}</div>
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
-                      {p.tags.slice(0, 3).map(tag => (
+                      {p.tags.slice(0, 2).map(tag => (
                         <span key={tag} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", padding: "2px 7px", border: `1.5px solid ${t.border}`, borderRadius: 20, background: t.surfaceAlt, color: t.inkMuted }}>{tag}</span>
                       ))}
                     </div>
