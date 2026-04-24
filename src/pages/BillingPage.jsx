@@ -151,6 +151,10 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
   const currentPlanRank = PLAN_ORDER[plan?.id] ?? 0;
   const upgradePlans = paidPlans.filter((p) => (PLAN_ORDER[p.id] ?? 0) > currentPlanRank);
   const isGuest = !user || user.isGuest;
+  const messageTone = message?.type === "error" ? "error" : message?.type === "success" ? "success" : "info";
+  const messageBg = messageTone === "error" ? t.red + "14" : messageTone === "success" ? t.green + "14" : t.surfaceAlt;
+  const messageBorder = messageTone === "error" ? t.red : messageTone === "success" ? t.green : t.border;
+  const messageIcon = messageTone === "error" ? "⚠" : messageTone === "success" ? "✓" : "i";
 
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
@@ -198,21 +202,30 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
         {message && (
           <div
             style={{
-              padding: "12px 16px",
+              padding: "12px 14px",
               borderRadius: 8,
               marginBottom: 24,
-              background:
-                message.type === "success"
-                  ? t.green + "22"
-                  : message.type === "error"
-                    ? t.red + "22"
-                    : t.surfaceAlt,
-              border: `1px solid ${message.type === "error" ? t.red : t.border}`,
-              color: message.type === "error" ? t.red : t.ink,
-              fontSize: "0.9rem",
+              background: messageBg,
+              border: `1.5px solid ${messageBorder}`,
+              color: messageTone === "error" ? t.red : t.ink,
+              fontSize: "0.88rem",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              justifyContent: "space-between",
             }}
           >
-            {message.text}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 20, height: 20, borderRadius: "50%", border: `1.5px solid ${messageBorder}`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.72rem", fontWeight: 700 }}>
+                {messageIcon}
+              </span>
+              <span>{message.text}</span>
+            </div>
+            {messageTone === "error" && (
+              <Button t={t} variant="ghost" size="sm" onClick={refetch} style={{ borderColor: t.red, color: t.red }}>
+                Retry
+              </Button>
+            )}
           </div>
         )}
 
@@ -253,6 +266,11 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                       <div style={{ fontSize: "0.84rem", color: t.inkMuted, marginTop: 4 }}>
                         Next billing date: {nextBillingDate}
                         {subscription?.cancel_at_period_end && " (canceled at period end)"}
+                      </div>
+                    )}
+                    {subscription?.cancel_at_period_end && (
+                      <div style={{ marginTop: 8, fontSize: "0.83rem", color: t.red, background: t.red + "14", border: `1px solid ${t.red}66`, borderRadius: 8, padding: "6px 8px", display: "inline-block" }}>
+                        Cancelation pending. Access remains active until period end.
                       </div>
                     )}
                   </div>

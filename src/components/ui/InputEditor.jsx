@@ -299,6 +299,16 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(() => buildInitialDraft(input, fields, visualizer, weightedGraphInput));
   const [error, setError] = useState(null);
+  const [showInputHint, setShowInputHint] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    try {
+      if (!localStorage.getItem("viscode-inputeditor-hint-dismissed")) {
+        setShowInputHint(true);
+      }
+    } catch (_) {}
+  }, [open]);
 
   useEffect(() => {
     setDraft(buildInitialDraft(input, fields, visualizer, weightedGraphInput));
@@ -330,6 +340,13 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
   const setField = (field, value) => {
     setDraft((prev) => ({ ...prev, [field]: value }));
     setError(null);
+  };
+
+  const dismissInputHint = () => {
+    setShowInputHint(false);
+    try {
+      localStorage.setItem("viscode-inputeditor-hint-dismissed", "1");
+    } catch (_) {}
   };
 
   const apply = () => {
@@ -452,6 +469,16 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
             </div>
 
             <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+              {showInputHint && (
+                <div style={{ border: `2px solid ${sketchBorder}`, borderRadius: 10, background: paper, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <div style={{ fontSize: "0.78rem", color: t.inkMuted }}>
+                    Onboarding tip: start with one small change, click <strong>Apply input</strong>, then use playback controls to see exactly what changed.
+                  </div>
+                  <button onClick={dismissInputHint} style={{ border: "none", background: "transparent", color: t.inkMuted, cursor: "pointer", fontSize: "0.78rem", padding: 0 }}>
+                    Dismiss
+                  </button>
+                </div>
+              )}
               <div style={{ border: `2px dashed ${sketchBorder}`, borderRadius: 10, background: paperAlt, padding: "10px 12px" }}>
                 <div style={{ fontFamily: sketchFont, fontSize: "1rem", fontWeight: 700, color: ink, marginBottom: 4 }}>
                   Input format quick help

@@ -1,3 +1,5 @@
+import { UI_MOTION } from "./motion";
+
 const SIZE_STYLES = {
   sm: { padding: "6px 12px", fontSize: "0.9rem" },
   md: { padding: "8px 16px", fontSize: "1rem" },
@@ -45,7 +47,7 @@ export default function Button({
         fontWeight: 700,
         borderRadius: pill ? 20 : 10,
         cursor: "pointer",
-        transition: "all 0.15s",
+        transition: UI_MOTION.standard,
         ...s,
         ...(variantStyles[variant] || variantStyles.secondary),
         ...style,

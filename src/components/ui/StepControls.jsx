@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 function Btn({ onClick, disabled, accent, t, children }) {
   return (
     <button
@@ -123,68 +125,94 @@ export default function StepControls({
   t,
   mobile,
 }) {
+  const [showPlaybackHint, setShowPlaybackHint] = useState(false);
   const progress = totalSteps > 1 ? (stepIndex / (totalSteps - 1)) * 100 : 0;
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("viscode-playback-hint-dismissed")) {
+        setShowPlaybackHint(true);
+      }
+    } catch (_) {}
+  }, []);
+
+  const dismissPlaybackHint = () => {
+    setShowPlaybackHint(false);
+    try {
+      localStorage.setItem("viscode-playback-hint-dismissed", "1");
+    } catch (_) {}
+  };
+
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: mobile ? 4 : 8,
-        padding: mobile ? "10px 8px" : "12px 16px",
-        borderTop: `1.5px solid ${t.border}`,
-        background: t.surfaceAlt,
-        flexShrink: 0,
-        flexWrap: mobile ? "wrap" : "nowrap",
-        justifyContent: mobile ? "center" : undefined,
-      }}
-    >
-      {/* Jump to start (all the way back) */}
-      <Btn onClick={jumpToStart} disabled={stepIndex === 0} t={t}>
-        <IconPrevDouble />
-      </Btn>
-
-      {/* Step back (single step with bar) */}
-      <Btn onClick={prev} disabled={stepIndex === 0} t={t}>
-        <IconPrevWithBar />
-      </Btn>
-
-      {/* Play / Pause */}
-      <Btn
-        onClick={isPlaying ? pause : play}
-        disabled={!isPlaying && stepIndex === totalSteps - 1}
-        accent
-        t={t}
+    <div style={{ borderTop: `1.5px solid ${t.border}`, background: t.surfaceAlt, flexShrink: 0 }}>
+      {showPlaybackHint && (
+        <div style={{ margin: mobile ? "8px 8px 0" : "8px 12px 0", padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: t.surface, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <span style={{ fontSize: "0.78rem", color: t.inkMuted }}>
+            Playback tip: use <strong>Space</strong> to play/pause, <strong>A/D</strong> to step, and speed to slow down tricky steps.
+          </span>
+          <button onClick={dismissPlaybackHint} style={{ border: "none", background: "transparent", color: t.inkMuted, cursor: "pointer", fontSize: "0.78rem", padding: 0 }}>
+            Dismiss
+          </button>
+        </div>
+      )}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: mobile ? 4 : 8,
+          padding: mobile ? "10px 8px" : "12px 16px",
+          flexWrap: mobile ? "wrap" : "nowrap",
+          justifyContent: mobile ? "center" : undefined,
+        }}
       >
-        {isPlaying ? <IconPause /> : <IconTriangle direction="right" />}
-      </Btn>
+        {/* Jump to start (all the way back) */}
+        <Btn onClick={jumpToStart} disabled={stepIndex === 0} t={t}>
+          <IconPrevDouble />
+        </Btn>
 
-      {/* Step forward (single step with bar) */}
-      <Btn onClick={next} disabled={stepIndex === totalSteps - 1} t={t}>
-        <IconNextWithBar />
-      </Btn>
+        {/* Step back (single step with bar) */}
+        <Btn onClick={prev} disabled={stepIndex === 0} t={t}>
+          <IconPrevWithBar />
+        </Btn>
 
-      {/* Jump to end (all the way forward) */}
-      <Btn onClick={jumpToEnd} disabled={stepIndex === totalSteps - 1} t={t}>
-        <IconNextDouble />
-      </Btn>
+        {/* Play / Pause */}
+        <Btn
+          onClick={isPlaying ? pause : play}
+          disabled={!isPlaying && stepIndex === totalSteps - 1}
+          accent
+          t={t}
+        >
+          {isPlaying ? <IconPause /> : <IconTriangle direction="right" />}
+        </Btn>
 
-      {/* Progress bar */}
-      <div style={{ flex: 1, height: 6, background: t.surfaceAlt, border: `1.5px solid ${t.border}`, borderRadius: 3, overflow: "hidden", margin: "0 4px" }}>
-        <div style={{ height: "100%", width: `${progress}%`, background: t.yellow, transition: "width 0.3s ease", borderRadius: 2 }} />
+        {/* Step forward (single step with bar) */}
+        <Btn onClick={next} disabled={stepIndex === totalSteps - 1} t={t}>
+          <IconNextWithBar />
+        </Btn>
+
+        {/* Jump to end (all the way forward) */}
+        <Btn onClick={jumpToEnd} disabled={stepIndex === totalSteps - 1} t={t}>
+          <IconNextDouble />
+        </Btn>
+
+        {/* Progress bar */}
+        <div style={{ flex: 1, height: 6, background: t.surfaceAlt, border: `1.5px solid ${t.border}`, borderRadius: 3, overflow: "hidden", margin: "0 4px" }}>
+          <div style={{ height: "100%", width: `${progress}%`, background: t.yellow, transition: "width 0.3s ease", borderRadius: 2 }} />
+        </div>
+
+        {/* Speed */}
+        <select defaultValue="900" onChange={e => setSpeed(Number(e.target.value))}
+          style={{ fontFamily: "'Caveat',cursive", fontSize: "0.85rem", border: `2px solid ${t.border}`, borderRadius: 6, padding: "2px 6px", background: t.surface, color: t.ink, cursor: "pointer" }}>
+          <option value="1600">0.5×</option>
+          <option value="900">1×</option>
+          <option value="500">1.5×</option>
+          <option value="300">2×</option>
+        </select>
+
+        <span style={{ fontFamily: "'Caveat',cursive", fontWeight: 700, color: t.inkMuted, fontSize: "0.95rem", whiteSpace: "nowrap" }}>
+          {stepIndex + 1} / {totalSteps}
+        </span>
       </div>
-
-      {/* Speed */}
-      <select defaultValue="900" onChange={e => setSpeed(Number(e.target.value))}
-        style={{ fontFamily: "'Caveat',cursive", fontSize: "0.85rem", border: `2px solid ${t.border}`, borderRadius: 6, padding: "2px 6px", background: t.surface, color: t.ink, cursor: "pointer" }}>
-        <option value="1600">0.5×</option>
-        <option value="900">1×</option>
-        <option value="500">1.5×</option>
-        <option value="300">2×</option>
-      </select>
-
-      <span style={{ fontFamily: "'Caveat',cursive", fontWeight: 700, color: t.inkMuted, fontSize: "0.95rem", whiteSpace: "nowrap" }}>
-        {stepIndex + 1} / {totalSteps}
-      </span>
     </div>
   );
 }

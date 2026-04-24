@@ -110,48 +110,20 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
           style={{ marginBottom: 24 }}
         />
 
-        <div
-          style={{
-            marginBottom: 20,
-            border: `1.5px solid ${t.border}`,
-            borderRadius: 10,
-            background: t.surface,
-            padding: "12px 14px",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <span
+        {!isPro && (
+          <div
             style={{
-              fontFamily: "'Caveat',cursive",
-              fontSize: "0.9rem",
-              fontWeight: 700,
-              color: t.green,
-              padding: "2px 9px",
+              marginBottom: 20,
               border: `1.5px solid ${t.border}`,
-              borderRadius: 999,
-              background: t.surfaceAlt,
+              borderRadius: 10,
+              background: t.surface,
+              padding: "12px 14px",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 8,
             }}
           >
-            Free: Famous Algorithms
-          </span>
-          <span
-            style={{
-              fontFamily: "'Caveat',cursive",
-              fontSize: "0.9rem",
-              fontWeight: 700,
-              color: t.red,
-              padding: "2px 9px",
-              border: `1.5px solid ${t.border}`,
-              borderRadius: 999,
-              background: t.surfaceAlt,
-            }}
-          >
-            Pro: Other categories
-          </span>
-          {!isPro && (
             <Button
               t={t}
               variant="primary"
@@ -163,8 +135,8 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
             >
               Upgrade to unlock all →
             </Button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Search + filter */}
         <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
@@ -174,21 +146,21 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
               placeholder="Search problems…"
               style={{ width: "100%", padding: "9px 14px 9px 36px", border: `1.5px solid ${t.border}`, borderRadius: 8, background: t.surface, color: t.ink, fontFamily: "'DM Sans',sans-serif", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
           </div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", overflowX: mobile ? "auto" : "visible", paddingBottom: mobile ? 4 : 0 }}>
             {[
               { key: "all", label: "All", icon: null },
               { key: "favorites", label: "Favorites", icon: <StarIcon filled={flagFilter === "favorites"} size={14} /> },
               { key: "flagged", label: "Flagged", icon: <FlagIcon filled={flagFilter === "flagged"} size={14} /> },
             ].map(f => (
-              <Button key={f.key} t={t} variant="ghost" pill onClick={() => setFlagFilter(f.key)}
+              <Button key={f.key} t={t} variant="ghost" pill size={mobile ? "sm" : "md"} onClick={() => setFlagFilter(f.key)}
                 style={{ borderColor: flagFilter === f.key ? t.blue : t.border, background: flagFilter === f.key ? t.blue + "18" : "transparent", color: flagFilter === f.key ? t.blue : t.ink, display: "flex", alignItems: "center", gap: 5 }}>
                 {f.icon}{f.label}
               </Button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", paddingBottom: 4 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: mobile ? "nowrap" : "wrap", overflowX: mobile ? "auto" : "visible", paddingBottom: 4 }}>
             {cats.map(cat => (
-              <Button key={cat} t={t} variant="ghost" pill onClick={() => setFilter(cat)}
+              <Button key={cat} t={t} variant="ghost" pill size={mobile ? "sm" : "md"} onClick={() => setFilter(cat)}
                 style={{ background: filter === cat ? t.ink : "transparent", color: filter === cat ? t.yellow : t.ink }}>
                 {cat}
               </Button>

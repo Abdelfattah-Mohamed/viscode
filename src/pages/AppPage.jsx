@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import NavBar from "../components/ui/NavBar";
 import { Card, CardHeader } from "../components/ui/Card";
 import AccountMenuChip from "../components/ui/AccountMenuChip";
+import { UI_MOTION } from "../components/ui/motion";
 import StepControls from "../components/ui/StepControls";
 import InputEditor from "../components/ui/InputEditor";
 import CodePanel from "../components/CodePanel";
@@ -58,6 +59,8 @@ export default function AppPage({
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [shareMsg, setShareMsg]      = useState("");
   const [whiteboardMaximized, setWhiteboardMaximized] = useState(false);
+  const [showWorkspaceTip, setShowWorkspaceTip] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(true);
   const [leftPanelPercent, setLeftPanelPercent] = useState(() => {
     try {
       const saved = localStorage.getItem("viscode-left-panel-percent");
@@ -106,6 +109,42 @@ export default function AppPage({
 
   const problem = PROBLEMS[selectedProblem];
   const notesData = useProblemNotes(user, selectedProblem);
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("viscode-workspace-tip-dismissed")) {
+        setShowWorkspaceTip(true);
+      }
+    } catch (_) {}
+  }, []);
+
+  const dismissWorkspaceTip = useCallback(() => {
+    setShowWorkspaceTip(false);
+    try {
+      localStorage.setItem("viscode-workspace-tip-dismissed", "1");
+    } catch (_) {}
+  }, []);
+
+  const iconButtonStyle = {
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    border: `1.5px solid ${t.border}`,
+    background: t.surfaceAlt,
+    color: t.inkMuted,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 0,
+  };
+  const metaPillStyle = {
+    fontFamily: "'Caveat',cursive",
+    fontSize: "0.8rem",
+    padding: "2px 10px",
+    border: `1.5px solid ${t.border}`,
+    borderRadius: 10,
+    fontWeight: 700,
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -457,19 +496,19 @@ export default function AppPage({
                   <button
                     onClick={() => fav?.toggleFavorite(selectedProblem)}
                     title={fav?.isFavorite(selectedProblem) ? "Remove from favorites" : "Add to favorites"}
-                    style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: t.inkMuted, display: "flex", borderRadius: 6 }}
+                    style={{ ...iconButtonStyle, background: "transparent", border: "none" }}
                   >
                     <StarIcon filled={fav?.isFavorite(selectedProblem)} size={18} />
                   </button>
                   <button
                     onClick={() => fav?.toggleFlagged(selectedProblem)}
                     title={fav?.isFlagged(selectedProblem) ? "Remove flag" : "Flag this problem"}
-                    style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: t.inkMuted, display: "flex", borderRadius: 6 }}
+                    style={{ ...iconButtonStyle, background: "transparent", border: "none" }}
                   >
                     <FlagIcon filled={fav?.isFlagged(selectedProblem)} size={18} />
                   </button>
                   <button onClick={handleShare} title="Copy share link"
-                    style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: shareMsg ? t.green : t.inkMuted, display: "flex", borderRadius: 6, position: "relative" }}>
+                    style={{ ...iconButtonStyle, background: "transparent", border: "none", color: shareMsg ? t.green : t.inkMuted, position: "relative" }}>
                     {shareMsg ? (
                       <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     ) : (
@@ -479,13 +518,15 @@ export default function AppPage({
                       </svg>
                     )}
                   </button>
-                  <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", padding: "1px 9px", border: `1.5px solid ${t.border}`, borderRadius: 10, ...DIFF_COLOR[problem.difficulty], fontWeight: 700 }}>{problem.difficulty}</span>
-                  <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", color: t.inkMuted }}>{problem.category}</span>
                 </div>
               }
             />
             <div style={{ padding: "12px 14px", fontSize: "0.85rem", lineHeight: 1.65, color: t.ink }}>
               <p dangerouslySetInnerHTML={{ __html: problem.description.replace(/<code>/g, `<code style="font-family:'JetBrains Mono',monospace;background:${t.surfaceAlt};padding:1px 5px;border-radius:4px;font-size:0.78rem;">`) }} />
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
+                <span style={{ ...metaPillStyle, ...DIFF_COLOR[problem.difficulty] }}>{problem.difficulty}</span>
+                <span style={{ ...metaPillStyle, color: t.inkMuted, background: t.surfaceAlt }}>{problem.category}</span>
+              </div>
               <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
                 <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.85rem", padding: "3px 12px", border: `2px solid ${t.border}`, borderRadius: 20, fontWeight: 600, background: t.blue + "22", color: t.ink }}>⏱ {problem.timeComplexity}</span>
                 <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.85rem", padding: "3px 12px", border: `2px solid ${t.border}`, borderRadius: 20, fontWeight: 600, background: t.purple + "22", color: t.ink }}>💾 {problem.spaceComplexity}</span>
@@ -500,10 +541,10 @@ export default function AppPage({
 
           {/* Code panel */}
           <Card t={t} density="compact" style={{ flexShrink: 0, height: mobile ? 320 : "clamp(340px, 45vh, 560px)", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", ...(!mobile && { flex: 1, height: "auto", minHeight: 200 }) }}>
-            <div style={{ display: "flex", alignItems: "center", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt, flexShrink: 0, paddingLeft: 4, paddingRight: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt, flexShrink: 0, paddingLeft: 4, paddingRight: 8 }}>
               {["Solution", "Explanation"].map(tab => (
                 <button key={tab} onClick={() => setSolTab(tab)}
-                  style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, padding: "9px 16px", border: "none", cursor: "pointer", background: "transparent", color: solutionTab === tab ? t.ink : t.inkMuted, borderBottom: solutionTab === tab ? `3px solid ${t.yellow}` : "3px solid transparent", transition: "all 0.15s", marginBottom: -1 }}>
+                  style={{ fontFamily: "'Caveat',cursive", fontSize: "0.96rem", fontWeight: 700, padding: "8px 14px", border: "none", cursor: "pointer", background: "transparent", color: solutionTab === tab ? t.ink : t.inkMuted, borderBottom: solutionTab === tab ? `2px solid ${t.yellow}` : "2px solid transparent", transition: UI_MOTION.fast, marginBottom: -1 }}>
                   {tab === "Solution" ? "💻 Solution" : "📖 Explanation"}
                 </button>
               ))}
@@ -550,7 +591,7 @@ export default function AppPage({
               height: 24,
               borderRadius: 1,
               background: isDraggingGutter ? t.yellow + "99" : t.border,
-              transition: "background 0.15s",
+              transition: UI_MOTION.fast,
             }} />
           </div>
         )}
@@ -560,14 +601,8 @@ export default function AppPage({
           <CardHeader icon="🎨" title="Whiteboard" t={t} density="compact"
             extra={
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button onClick={() => setWhiteboardMaximized(true)} title="Maximize whiteboard"
-                  style={{ width: 26, height: 26, borderRadius: 7, border: `1.5px solid ${t.border}`, background: t.surfaceAlt, color: t.inkMuted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></svg>
-                </button>
-                <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts (?)"
-                  style={{ width: 26, height: 26, borderRadius: 7, border: `1.5px solid ${t.border}`, background: t.surfaceAlt, color: t.inkMuted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 700, padding: 0 }}>
-                  ?
-                </button>
+                <InputEditor input={input} fields={problem.inputFields} onChange={setInput} onReset={player.reset} t={t} problem={problem} />
+                {!mobile && <div style={{ width: 1, height: 18, background: t.border, opacity: 0.6 }} />}
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <button onClick={() => setWhiteboardFontScale(s => Math.max(0.8, s - 0.1))}
                     style={{ padding: "2px 6px", borderRadius: 6, border: `1.5px solid ${t.border}`, background: t.surfaceAlt, color: t.ink, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.8rem" }}>
@@ -578,17 +613,36 @@ export default function AppPage({
                     A+
                   </button>
                 </div>
-                <InputEditor input={input} fields={problem.inputFields} onChange={setInput} onReset={player.reset} t={t} problem={problem} />
+                <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts (?)"
+                  style={{ ...iconButtonStyle, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 700 }}>
+                  ?
+                </button>
+                <button onClick={() => setWhiteboardMaximized(true)} title="Maximize whiteboard"
+                  style={iconButtonStyle}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></svg>
+                </button>
               </div>
             }
           />
-          <div style={{ padding: "10px 14px", flexShrink: 0 }}>
-            <div style={{ fontFamily: "'Caveat',cursive", fontSize: `${1.1 * whiteboardFontScale}rem`, fontWeight: 600, padding: "9px 14px", background: stepDescColor + (t._resolved === "dark" ? "33" : "cc"), border: `2px solid ${t.border}`, borderRadius: 8, minHeight: 42, display: "flex", alignItems: "center", gap: 8, color: t.ink, transition: "background 0.3s" }}>
+          {showWorkspaceTip && (
+            <div style={{ padding: "8px 12px 0", flexShrink: 0 }}>
+              <div style={{ padding: "8px 10px", border: `1.5px solid ${t.border}`, borderRadius: 8, background: t.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <span style={{ fontSize: "0.8rem", color: t.inkMuted }}>
+                  Tip: press <strong>Space</strong> to play/pause, <strong>E</strong> to toggle explanation, and use Edit Input for quick scenario testing.
+                </span>
+                <button onClick={dismissWorkspaceTip} style={{ border: "none", background: "transparent", color: t.inkMuted, cursor: "pointer", fontSize: "0.8rem", padding: 0 }}>
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+          <div style={{ padding: "8px 12px", flexShrink: 0 }}>
+            <div style={{ fontFamily: "'Caveat',cursive", fontSize: `${1.05 * whiteboardFontScale}rem`, fontWeight: 600, padding: "8px 12px", background: stepDescColor + (t._resolved === "dark" ? "33" : "cc"), border: `1.5px solid ${t.border}`, borderRadius: 8, minHeight: 40, display: "flex", alignItems: "center", gap: 8, color: t.ink, transition: UI_MOTION.emphasis }}>
               <span>💡</span>
               <span>{currentStep?.description || "Press ▶ to start the visualization"}</span>
             </div>
           </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: "4px 18px 18px", fontSize: `${whiteboardFontScale}rem` }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "4px 16px 16px", fontSize: `${whiteboardFontScale}rem` }}>
             {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : selectedProblem === "coin-change" ? (currentStep?.state?.dp ?? (() => { const a = Math.max(0, Number(input?.amount) ?? 11); const d = Array(a + 1).fill(a + 1); d[0] = 0; return d; })()) : selectedProblem === "knapsack-01" ? (currentStep?.state?.dp ?? Array((Number(input?.target) ?? 8) + 1).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : selectedProblem === "coin-change" || selectedProblem === "knapsack-01" ? "dp" : undefined} />}
             {problem.visualizer === "trapping"    && <TrappingRainWaterViz nums={input.nums?.length ? input.nums : (problem.defaultInput?.nums ?? [])} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
@@ -645,31 +699,36 @@ export default function AppPage({
           <StepControls {...player} t={t} mobile={mobile} />
           {/* Personal notes (under whiteboard) */}
           {notesData && (
-            <div style={{ borderTop: `1.5px solid ${t.border}`, padding: "12px 14px 14px", background: t.surfaceAlt + "80" }}>
-              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, color: t.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>📝 Personal notes</div>
-              <textarea
-                value={notesData.notes}
-                onChange={notesData.handleChange}
-                onBlur={notesData.handleBlur}
-                placeholder="Edge cases, hints, observations…"
-                disabled={notesData.loading}
-                rows={3}
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  padding: "10px 12px",
-                  border: `1.5px solid ${t.border}`,
-                  borderRadius: 8,
-                  background: t.surface,
-                  color: t.ink,
-                  fontFamily: "'DM Sans',sans-serif",
-                  fontSize: "0.85rem",
-                  lineHeight: 1.5,
-                  resize: "vertical",
-                  minHeight: 72,
-                  outline: "none",
-                }}
-              />
+            <div style={{ borderTop: `1.5px solid ${t.border}`, padding: "10px 12px 12px", background: t.surfaceAlt + "80" }}>
+              <button onClick={() => setNotesOpen((s) => !s)} style={{ width: "100%", border: "none", background: "transparent", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, color: t.ink, marginBottom: notesOpen ? 8 : 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span>📝 Personal notes</span>
+                <span style={{ color: t.inkMuted, fontSize: "0.85rem" }}>{notesOpen ? "Hide" : "Show"}</span>
+              </button>
+              {notesOpen && (
+                <textarea
+                  value={notesData.notes}
+                  onChange={notesData.handleChange}
+                  onBlur={notesData.handleBlur}
+                  placeholder="Edge cases, hints, observations…"
+                  disabled={notesData.loading}
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "10px 12px",
+                    border: `1.5px solid ${t.border}`,
+                    borderRadius: 8,
+                    background: t.surface,
+                    color: t.ink,
+                    fontFamily: "'DM Sans',sans-serif",
+                    fontSize: "0.85rem",
+                    lineHeight: 1.5,
+                    resize: "vertical",
+                    minHeight: 72,
+                    outline: "none",
+                  }}
+                />
+              )}
             </div>
           )}
         </Card>
