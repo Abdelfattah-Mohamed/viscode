@@ -21,6 +21,25 @@ function formatPrice(cents, interval) {
   return `$${d}`;
 }
 
+const ORIGINAL_DISCOUNT_PRICES = {
+  pro: 689,
+  pro_yearly: 4788,
+};
+
+function PriceWithDiscount({ plan, t }) {
+  const originalCents = ORIGINAL_DISCOUNT_PRICES[plan?.id];
+  if (!plan) return null;
+  if (!originalCents) return <>{formatPrice(plan.amount_cents, plan.interval)}</>;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+      <span style={{ textDecoration: "line-through", color: t.inkMuted, fontSize: "0.82em" }}>
+        ${(originalCents / 100).toFixed(2)}
+      </span>
+      <span>{formatPrice(plan.amount_cents, plan.interval)}</span>
+    </span>
+  );
+}
+
 const PLAN_ORDER = {
   free: 0,
   pro_weekly: 1,
@@ -51,17 +70,15 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
       setMessage({ type: "success", text: "Thank you! Your subscription is active." });
-      refetch();
       window.history.replaceState({}, "", "/billing");
     } else if (params.get("upgraded") === "true") {
       setMessage({ type: "success", text: "Plan update completed." });
-      refetch();
       window.history.replaceState({}, "", "/billing");
     } else if (params.get("canceled") === "true") {
       setMessage({ type: "info", text: "Checkout was canceled." });
       window.history.replaceState({}, "", "/billing");
     }
-  }, [refetch]);
+  }, []);
 
   const handleUpgrade = async (planId) => {
     if (!user?.email || checkoutPlan) return;
@@ -257,7 +274,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                   <div>
                     <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.35rem", fontWeight: 700, color: t.ink }}>{planName}</div>
                     <div style={{ fontSize: "0.85rem", color: t.inkMuted, marginTop: 4 }}>
-                      {plan && formatPrice(plan.amount_cents, plan.interval)}
+                      {plan && <PriceWithDiscount plan={plan} t={t} />}
                       {subscription?.status && (
                         <span style={{ marginLeft: 8, textTransform: "capitalize" }}>· {subscription.status}</span>
                       )}
@@ -374,7 +391,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                           )}
                         </div>
                         <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1rem", fontWeight: 700, color: t.ink }}>
-                          {formatPrice(p.amount_cents, p.interval)}
+                          <PriceWithDiscount plan={p} t={t} />
                         </div>
                       </div>
                       {p.features && Array.isArray(p.features) && p.features.length > 0 && (
