@@ -11,7 +11,8 @@ const EDGE_COLOR = "#64748b";
 const EDGE_HIGHLIGHT = "#e03131";
 
 export default function GraphViz({ stepState = {}, problemId, t }) {
-  const { n = 0, edges = [], highlighted = [], vis = [], count, componentId = [], done, validTree, nodeState = [], canFinish, directed, labels = [], result, queue } = stepState;
+  const { n = 0, edges = [], highlighted = [], vis = [], count, componentId = [], done, validTree, nodeState = [], canFinish, directed, labels = [], result, queue, stack, dist, mstEdges } = stepState;
+  const edgesNormalized = (edges || []).map((e) => (Array.isArray(e) && e.length >= 2 ? [Number(e[0]), Number(e[1]), e[2] != null ? Number(e[2]) : 1] : e));
   const isDark = t._resolved === "dark";
   const isComponents = problemId === "num-connected-components";
   const isValidTree = problemId === "graph-valid-tree";
@@ -53,7 +54,8 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
     const cy = SVG_SIZE / 2;
     const pos = [];
     const conn = new Set();
-    for (const [u, v] of edges) {
+    for (const e of edgesNormalized) {
+      const u = e[0], v = e[1];
       if (u >= 0 && u < n) conn.add(u);
       if (v >= 0 && v < n) conn.add(v);
     }
@@ -65,7 +67,7 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
       });
     }
     return { width: SVG_SIZE, height: SVG_SIZE, positions: pos, connectedNodes: conn };
-  }, [n, edges]);
+  }, [n, edgesNormalized]);
 
   useEffect(() => {
     if (!roughRef.current || n <= 0 || positions.length === 0) return;
@@ -73,8 +75,10 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
     g.innerHTML = "";
     const rc = rough.svg(g, { options: { roughness: 1.2, bowing: 2 } });
 
-    if (!directed) {
-      edges.forEach(([u, v]) => {
+    const weightedEdges = edgesNormalized.some((e) => e[2] != null && e[2] !== 1);
+    if (!directed && !weightedEdges) {
+      edgesNormalized.forEach((e) => {
+        const u = e[0], v = e[1];
         if (u >= positions.length || v >= positions.length) return;
         const pu = positions[u];
         const pv = positions[v];
@@ -107,7 +111,7 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
       });
       g.appendChild(node);
     });
-  }, [positions, edges, highlighted, vis, componentId, n, isComponents, isValidTree, isDark, directed, nodeState, connectedNodes]);
+  }, [positions, edgesNormalized, highlighted, vis, componentId, n, isComponents, isValidTree, isDark, directed, nodeState, connectedNodes]);
 
   if (n <= 0) {
     return (
@@ -127,7 +131,7 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
           ) : isAlienDictionary ? (
             <>Enter words as comma-separated, e.g. <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>wrt,wrf,er,ett,rftt</code></>
           ) : (
-            <>Enter <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>n</code> (nodes) and edges as a flat list, e.g. <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>0,1,1,2,3,4</code></>
+            <>Enter <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>n</code> (nodes) and edges: pairs <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>0,1,1,2</code> or weighted triples <code style={{ fontFamily: "'JetBrains Mono',monospace", background: t.surfaceAlt, padding: "2px 6px", borderRadius: 6 }}>0,1,4,1,2,3</code> (u,v,w)</>
           )}
         </p>
       </div>
@@ -264,7 +268,8 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
           <rect width="100%" height="100%" fill="url(#graph-dot-grid)" />
           {directed && (
             <g transform={`translate(${PADDING}, ${PADDING})`}>
-              {edges.map(([u, v], idx) => {
+              {edgesNormalized.map((e, idx) => {
+                const u = e[0], v = e[1], w = e[2];
                 if (u >= positions.length || v >= positions.length) return null;
                 const pu = positions[u];
                 const pv = positions[v];
@@ -279,18 +284,49 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
                 const x2 = pv.x - ux * trim;
                 const y2 = pv.y - uy * trim;
                 const isHl = highlighted.includes(u) && highlighted.includes(v);
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
                 return (
-                  <line
-                    key={idx}
-                    x1={x1}
-                    y1={y1}
-                    x2={x2}
-                    y2={y2}
-                    stroke={isHl ? EDGE_HIGHLIGHT : (isDark ? "#64748b" : "#1e1e1e")}
-                    strokeWidth={isHl ? 2.5 : 1.5}
-                    strokeLinecap="round"
-                    markerEnd={isHl ? "url(#graph-arrow-hl)" : "url(#graph-arrow)"}
-                  />
+                  <g key={idx}>
+                    <line
+                      x1={x1}
+                      y1={y1}
+                      x2={x2}
+                      y2={y2}
+                      stroke={isHl ? EDGE_HIGHLIGHT : (isDark ? "#64748b" : "#1e1e1e")}
+                      strokeWidth={isHl ? 2.5 : 1.5}
+                      strokeLinecap="round"
+                      markerEnd={isHl ? "url(#graph-arrow-hl)" : "url(#graph-arrow)"}
+                    />
+                    {w != null && w !== 1 && (
+                      <text x={midX} y={midY} textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, fill: isDark ? "#94a3b8" : "#475569", pointerEvents: "none" }}>
+                        {w}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+            </g>
+          )}
+          {!directed && edgesNormalized.some((e) => e[2] != null && e[2] !== 1) && (
+            <g transform={`translate(${PADDING}, ${PADDING})`}>
+              {edgesNormalized.map((e, idx) => {
+                const u = e[0], v = e[1], w = e[2];
+                if (u >= positions.length || v >= positions.length) return null;
+                const pu = positions[u];
+                const pv = positions[v];
+                const isHl = highlighted.includes(u) && highlighted.includes(v);
+                const midX = (pu.x + pv.x) / 2;
+                const midY = (pu.y + pv.y) / 2;
+                return (
+                  <g key={idx}>
+                    <line x1={pu.x} y1={pu.y} x2={pv.x} y2={pv.y} stroke={edgeColor(u, v)} strokeWidth={isHl ? 2.5 : 1.5} strokeLinecap="round" />
+                    {w != null && w !== 1 && (
+                      <text x={midX} y={midY} textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, fill: isDark ? "#94a3b8" : "#475569", pointerEvents: "none" }}>
+                        {w}
+                      </text>
+                    )}
+                  </g>
                 );
               })}
             </g>
@@ -354,6 +390,63 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
               (front → back)
             </span>
           )}
+        </div>
+      )}
+
+      {(Array.isArray(dist) || result != null || (Array.isArray(queue) && !isCloneGraph) || Array.isArray(stack) || Array.isArray(mstEdges)) && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            padding: "12px 14px",
+            borderRadius: 14,
+            background: isDark ? "rgba(31,41,55,0.5)" : "rgba(249,250,251,0.9)",
+            border: `1.5px solid ${t.border}`,
+          }}
+        >
+          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, color: t.inkMuted }}>
+            Output
+          </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {Array.isArray(dist) && dist.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.85rem", color: t.inkMuted }}>dist:</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.95rem", fontWeight: 700, color: t.ink }}>
+                  [{dist.map((d) => (d == null || Math.abs(d) >= 1e8 ? "∞" : String(d))).join(", ")}]
+                </span>
+              </div>
+            )}
+            {result != null && result !== "" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.95rem", fontWeight: 700, color: t.ink }}>{result}</span>
+              </div>
+            )}
+            {Array.isArray(queue) && !isCloneGraph && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.85rem", color: t.inkMuted }}>queue:</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.95rem", fontWeight: 700, color: t.ink }}>
+                  {queue.length === 0 ? "[]" : `[${queue.join(", ")}]`}
+                </span>
+              </div>
+            )}
+            {Array.isArray(stack) && stack.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.85rem", color: t.inkMuted }}>stack:</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.95rem", fontWeight: 700, color: t.ink }}>
+                  [{(stack || []).join(", ")}]
+                </span>
+              </div>
+            )}
+            {Array.isArray(mstEdges) && mstEdges.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.85rem", color: t.inkMuted }}>MST edges:</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.9rem", fontWeight: 700, color: t.ink }}>
+                  {mstEdges.join(", ")}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

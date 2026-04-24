@@ -106,9 +106,11 @@ export default function App() {
     window.history.pushState({}, "", pathFor("app", id));
   };
 
-  const navigate = (dest) => {
-    setPage(dest);
-    window.history.pushState({}, "", pathFor(dest, dest === "app" ? selectedProblem : null));
+  const navigate = (dest, search) => {
+    const pageOnly = (typeof dest === "string" && dest.includes("?")) ? dest.split("?")[0] : dest;
+    setPage(pageOnly);
+    const path = pathFor(pageOnly, pageOnly === "app" ? selectedProblem : null);
+    window.history.pushState({}, "", path + (search ?? ""));
   };
 
   if (auth.loading) {

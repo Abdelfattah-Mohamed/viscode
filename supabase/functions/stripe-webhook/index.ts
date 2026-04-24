@@ -36,10 +36,14 @@ async function verifyStripeSignature(payload: string, signature: string | null):
 }
 
 function planIdFromPriceId(priceId: string): string {
+  const weekly = Deno.env.get("STRIPE_PRICE_PRO_WEEKLY");
   const monthly = Deno.env.get("STRIPE_PRICE_PRO_MONTHLY");
   const yearly = Deno.env.get("STRIPE_PRICE_PRO_YEARLY");
+  const lifetime = Deno.env.get("STRIPE_PRICE_LIFETIME");
+  if (lifetime && priceId === lifetime) return "lifetime";
   if (priceId === yearly) return "pro_yearly";
   if (priceId === monthly) return "pro";
+  if (weekly && priceId === weekly) return "pro_weekly";
   return "pro";
 }
 

@@ -110,6 +110,34 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
         </div>
       )}
 
+      {/* Famous Algorithms */}
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "40px 12px 0" : "56px 24px 0" }}>
+        <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "1.6rem", fontWeight: 700, color: t.ink, margin: "0 0 16px" }}>
+          ⭐ Famous Algorithms
+        </h2>
+        <p style={{ fontSize: "0.9rem", color: t.inkMuted, marginBottom: 20 }}>
+          Bellman–Ford, Floyd–Warshall, Kosaraju, Tarjan, Kruskal's MST, A*, Dijkstra, Prim's, BFS, DFS, Union-Find, Fenwick Tree, Segment Tree, 0/1 Knapsack &amp; more.
+        </p>
+        <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8, flexWrap: mobile ? "nowrap" : "wrap", WebkitOverflowScrolling: "touch" }}>
+          {PROB_LIST.filter(p => p.category === "Famous Algorithms").slice(0, mobile ? 6 : 14).map(p => {
+            const dc = DIFF_COLOR[p.difficulty] || {};
+            return (
+              <div key={p.id} onClick={() => onSelectProblem(p.id)}
+                style={{ flex: mobile ? "0 0 140px" : "1 1 120px", minWidth: 0, padding: "12px 14px", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
+                onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                onMouseLeave={e => e.currentTarget.style.transform = ""}>
+                <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7rem", fontWeight: 700, padding: "1px 6px", border: `1.5px solid ${t.border}`, borderRadius: 6, ...dc }}>{p.difficulty}</span>
+                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700, color: t.ink, marginTop: 6, lineHeight: 1.25 }}>{p.title}</div>
+              </div>
+            );
+          })}
+        </div>
+        <button onClick={() => onNavigate("problems", "?cat=Famous+Algorithms")}
+          style={{ marginTop: 16, padding: "8px 20px", border: `1.5px solid ${t.border}`, borderRadius: 8, background: "transparent", color: t.blue, fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, cursor: "pointer" }}>
+          View all Famous Algorithms →
+        </button>
+      </div>
+
       {/* How it works */}
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "60px 24px" }}>
         <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "2rem", fontWeight: 700, color: t.ink, textAlign: "center", marginBottom: 40 }}>How It Works</h2>

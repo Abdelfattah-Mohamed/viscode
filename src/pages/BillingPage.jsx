@@ -8,6 +8,7 @@ import { createCheckoutSession } from "../utils/billingApi";
 function formatPrice(cents, interval) {
   if (cents === 0) return "$0";
   const d = (cents / 100).toFixed(2);
+  if (interval === "week") return `$${d}/week`;
   if (interval === "month") return `$${d}/month`;
   if (interval === "year") return `$${d}/year`;
   if (interval === "one_time") return `$${d} once`;

@@ -5,6 +5,7 @@ import {
   USER_SUBSCRIPTIONS_TABLE,
   BILLING_PLANS_TABLE,
 } from "../utils/supabase";
+import { mergeBillingPlansFromDb } from "../data/billingPlans";
 
 export function useSubscription(user) {
   const [subscription, setSubscription] = useState(null);
@@ -50,7 +51,8 @@ export function useSubscription(user) {
       const profileId = profile.id;
 
       const { data: plansData } = await sb.from(BILLING_PLANS_TABLE).select("*").order("amount_cents");
-      setPlans(plansData || []);
+      const mergedPlans = mergeBillingPlansFromDb(plansData);
+      setPlans(mergedPlans);
 
       const { data: subRow, error: subErr } = await sb
         .from(USER_SUBSCRIPTIONS_TABLE)
@@ -74,7 +76,7 @@ export function useSubscription(user) {
           },
           { onConflict: "user_id" }
         );
-        const p = (plansData || []).find((x) => x.id === "free");
+        const p = mergedPlans.find((x) => x.id === "free");
         setSubscription({
           plan_id: "free",
           status: "active",
@@ -84,7 +86,7 @@ export function useSubscription(user) {
         setPlan(p || null);
       } else {
         setSubscription(subRow);
-        const p = (plansData || []).find((x) => x.id === subRow.plan_id);
+        const p = mergedPlans.find((x) => x.id === subRow.plan_id);
         setPlan(p || null);
       }
     } catch (e) {
@@ -98,7 +100,11 @@ export function useSubscription(user) {
     refetch();
   }, [refetch]);
 
-  const isPro = plan?.id === "pro" || plan?.id === "pro_yearly" || plan?.id === "lifetime";
+  const isPro =
+    plan?.id === "pro_weekly" ||
+    plan?.id === "pro" ||
+    plan?.id === "pro_yearly" ||
+    plan?.id === "lifetime";
   const planName = plan?.name || "Free";
   const nextBillingDate = subscription?.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString(undefined, {

@@ -126,18 +126,23 @@ create table if not exists public.billing_plans (
   name text not null,
   description text,
   amount_cents integer not null default 0,
-  interval text check (interval in ('month', 'year', 'one_time')),
+  interval text check (interval in ('week', 'month', 'year', 'one_time')),
   stripe_price_id text,
   features jsonb default '[]',
   created_at timestamptz not null default now()
 );
 
--- Seed default plans: free $0/mo, pro $4.99/mo, pro_yearly $39.99/yr, lifetime $89.99 one-time
+-- Allow `week` on DBs created before weekly billing (must run before seed insert)
+alter table public.billing_plans drop constraint if exists billing_plans_interval_check;
+alter table public.billing_plans add constraint billing_plans_interval_check check (interval in ('week', 'month', 'year', 'one_time'));
+
+-- Seed default plans: free; weekly/monthly/yearly/lifetime (amounts match Stripe prices)
 insert into public.billing_plans (id, name, description, amount_cents, interval, features)
 values
   ('free', 'Free', 'Basic access', 0, 'month', '["Limited problems", "Basic visualizations"]'),
-  ('pro', 'Pro', 'Full access', 499, 'month', '["All problems", "All visualizations", "Export", "Priority support"]'),
-  ('pro_yearly', 'Pro (Yearly)', 'Full access, billed yearly', 3999, 'year', '["All problems", "All visualizations", "Export", "Priority support", "Save 33%"]'),
+  ('pro_weekly', 'Pro (Weekly)', 'Full access, billed weekly', 159, 'week', '["All problems", "All visualizations", "Export", "Priority support"]'),
+  ('pro', 'Pro (Monthly)', 'Full access, billed monthly', 399, 'month', '["All problems", "All visualizations", "Export", "Priority support"]'),
+  ('pro_yearly', 'Pro (Yearly)', 'Full access, billed yearly', 3999, 'year', '["All problems", "All visualizations", "Export", "Priority support", "Best value"]'),
   ('lifetime', 'Lifetime', 'One-time payment, access forever', 8999, 'one_time', '["All problems", "All visualizations", "Export", "Priority support", "Never pay again"]')
 on conflict (id) do update set
   name = excluded.name,

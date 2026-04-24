@@ -1151,6 +1151,58 @@ function stubArraySteps(input) {
   steps.push({ stepType: "done", description: "Done", state: { done: true, nums: [...nums], i: nums.length - 1, highlight: [] } });
   return steps;
 }
+
+export function generateKnapsackSteps(input) {
+  const weights = Array.isArray(input?.nums) ? input.nums.map(Number).filter((w) => !isNaN(w) && w > 0) : [2, 3, 4, 5];
+  const W = Math.max(0, Number(input?.target) ?? 8);
+  const values = weights.map((_, i) => (i + 1) * 2 + 1);
+  const n = weights.length;
+  const steps = [];
+  const dp = Array(W + 1).fill(0);
+
+  steps.push({
+    stepType: "init",
+    description: `dp[0..${W}] = 0`,
+    state: { dp: [...dp], i: -1, w: -1, highlight: [], target: W },
+  });
+
+  for (let i = 0; i < n; i++) {
+    steps.push({
+      stepType: "loop_i",
+      description: `Item ${i}: weight=${weights[i]}, value=${values[i]}`,
+      state: { dp: [...dp], i, w: -1, highlight: [], target: W },
+    });
+    const wEnd = weights[i];
+    const wStep = Math.max(1, Math.floor((W - wEnd + 1) / 3));
+    for (let w = W; w >= wEnd; w -= wStep) {
+      const newVal = dp[w - weights[i]] + values[i];
+      const prev = dp[w];
+      steps.push({
+        stepType: "loop_w",
+        description: `w=${w}: max(dp[${w}], dp[${w - weights[i]}]+${values[i]})`,
+        state: { dp: [...dp], i, w, highlight: [w], target: W },
+      });
+      if (newVal > prev) dp[w] = newVal;
+      steps.push({
+        stepType: "update",
+        description: dp[w] > prev ? `dp[${w}]=${dp[w]}` : `dp[${w}] unchanged`,
+        state: { dp: [...dp], i, w, highlight: [w], target: W },
+      });
+    }
+    for (let w = wEnd; w <= W; w++) {
+      const newVal = dp[w - weights[i]] + values[i];
+      if (newVal > dp[w]) dp[w] = newVal;
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: `Max value = dp[${W}] = ${dp[W]}`,
+    state: { dp: [...dp], i: n - 1, w: W, highlight: [W], done: true, target: W },
+  });
+  return steps;
+}
+
 export function generateInsertIntervalSteps(input) {
   const nums = input?.nums || [];
   const pairs = [];
@@ -3640,4 +3692,5 @@ export const STEP_GENERATORS = {
   "lca-of-bst":             generateLCAOfBSTSteps,
   "serialize-deserialize-btree": generateSerializeDeserializeSteps,
   "find-median-from-data-stream": generateFindMedianSteps,
+  "knapsack-01": generateKnapsackSteps,
 };

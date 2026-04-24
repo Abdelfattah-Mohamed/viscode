@@ -5,19 +5,21 @@ This project includes a simple billing schema in Supabase for plans and subscrip
 ## Tables
 
 ### `billing_plans`
-Defines plan tiers (e.g. free, pro, pro_yearly).
+Defines plan tiers (e.g. free, weekly, monthly, yearly, lifetime).
 
 | Column            | Type    | Description                                      |
 |-------------------|---------|--------------------------------------------------|
-| id                | text PK | Plan key: `free`, `pro`, `pro_yearly`            |
+| id                | text PK | `free`, `pro_weekly`, `pro`, `pro_yearly`, `lifetime` |
 | name              | text    | Display name                                     |
 | description       | text    | Short description                                |
 | amount_cents      | integer | Price in cents (0 for free)                      |
-| interval          | text    | `month`, `year`, or `one_time`                   |
+| interval          | text    | `week`, `month`, `year`, or `one_time`           |
 | stripe_price_id   | text    | Optional Stripe Price ID                         |
 | features          | jsonb   | Array of feature strings                         |
 
-Default seed: **free** ($0/mo), **pro** ($4.99/mo), **pro_yearly** ($39.99/yr).
+Default seed: **free** ($0), **pro_weekly** ($1.59/wk), **pro** ($3.99/mo), **pro_yearly** ($39.99/yr), **lifetime** ($89.99 once).
+
+Edge Function secrets: `STRIPE_PRICE_PRO_WEEKLY`, `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_YEARLY`, `STRIPE_PRICE_LIFETIME` (recurring prices must use matching Stripe intervals: week / month / year).
 
 ### `user_subscriptions`
 One row per user: their current plan and optional Stripe data.
@@ -54,7 +56,7 @@ Optional history of invoices (e.g. from Stripe webhooks).
 
 - **Check plan in app:** Query `user_subscriptions` (and join `billing_plans`) by `user_id` (from the current profile) to show plan name, features, and status.
 - **Stripe:** Store `stripe_customer_id` and `stripe_subscription_id` when you create a Stripe customer/subscription. Use webhooks to update `user_subscriptions` (status, period end) and to insert rows into `billing_invoices`.
-- **Gating features:** If `plan_id` is `free`, restrict access to certain problems or visualizations; allow full access for `pro` or `pro_yearly`.
+- **Gating features:** If `plan_id` is `free`, restrict access; allow full access for `pro_weekly`, `pro`, `pro_yearly`, or `lifetime`.
 
 ## RLS
 

@@ -148,6 +148,24 @@ export default function AppPage({
       ?? langDef.lineMap["loop"]
       ?? langDef.lineMap["compare"]
       ?? langDef.lineMap["visit"]
+      ?? langDef.lineMap["relax"]
+      ?? langDef.lineMap["add_edge"]
+      ?? langDef.lineMap["pop"]
+      ?? langDef.lineMap["push"]
+      ?? langDef.lineMap["update"]
+      ?? langDef.lineMap["query"]
+      ?? langDef.lineMap["find"]
+      ?? langDef.lineMap["union"]
+      ?? langDef.lineMap["add"]
+      ?? langDef.lineMap["recurse"]
+      ?? langDef.lineMap["build"]
+      ?? langDef.lineMap["build_leaf"]
+      ?? langDef.lineMap["build_merge"]
+      ?? langDef.lineMap["query_combine"]
+      ?? langDef.lineMap["loop_i"]
+      ?? langDef.lineMap["loop_w"]
+      ?? langDef.lineMap["loop_k"]
+      ?? langDef.lineMap["loop_ij"]
       ?? langDef.lineMap["build_edges"]
       ?? langDef.lineMap["add_edge"]
       ?? langDef.lineMap["init_queue"]
@@ -313,7 +331,7 @@ export default function AppPage({
               </div>
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: "8px 20px 20px", fontSize: `${whiteboardFontScale}rem` }}>
-              {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : selectedProblem === "coin-change" ? (currentStep?.state?.dp ?? (() => { const a = Math.max(0, Number(input?.amount) ?? 11); const d = Array(a + 1).fill(a + 1); d[0] = 0; return d; })()) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : selectedProblem === "coin-change" ? "dp" : undefined} />}
+              {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : selectedProblem === "coin-change" ? (currentStep?.state?.dp ?? (() => { const a = Math.max(0, Number(input?.amount) ?? 11); const d = Array(a + 1).fill(a + 1); d[0] = 0; return d; })()) : selectedProblem === "knapsack-01" ? (currentStep?.state?.dp ?? Array((Number(input?.target) ?? 8) + 1).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : selectedProblem === "coin-change" || selectedProblem === "knapsack-01" ? "dp" : undefined} />}
               {problem.visualizer === "trapping"    && <TrappingRainWaterViz nums={input.nums?.length ? input.nums : (problem.defaultInput?.nums ?? [])} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "duplicate"   && <DuplicateViz          nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
@@ -589,7 +607,7 @@ export default function AppPage({
             </div>
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "4px 18px 18px", fontSize: `${whiteboardFontScale}rem` }}>
-            {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : selectedProblem === "coin-change" ? (currentStep?.state?.dp ?? (() => { const a = Math.max(0, Number(input?.amount) ?? 11); const d = Array(a + 1).fill(a + 1); d[0] = 0; return d; })()) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : selectedProblem === "coin-change" ? "dp" : undefined} />}
+            {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : selectedProblem === "coin-change" ? (currentStep?.state?.dp ?? (() => { const a = Math.max(0, Number(input?.amount) ?? 11); const d = Array(a + 1).fill(a + 1); d[0] = 0; return d; })()) : selectedProblem === "knapsack-01" ? (currentStep?.state?.dp ?? Array((Number(input?.target) ?? 8) + 1).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : selectedProblem === "coin-change" || selectedProblem === "knapsack-01" ? "dp" : undefined} />}
             {problem.visualizer === "trapping"    && <TrappingRainWaterViz nums={input.nums?.length ? input.nums : (problem.defaultInput?.nums ?? [])} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "duplicate"   && <DuplicateViz          nums={input.nums || []}   stepState={currentStep?.state} t={t} />}

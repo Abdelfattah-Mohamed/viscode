@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
+const STRIPE_PRICE_PRO_WEEKLY = Deno.env.get("STRIPE_PRICE_PRO_WEEKLY");
 const STRIPE_PRICE_PRO_MONTHLY = Deno.env.get("STRIPE_PRICE_PRO_MONTHLY");
 const STRIPE_PRICE_PRO_YEARLY = Deno.env.get("STRIPE_PRICE_PRO_YEARLY");
 const STRIPE_PRICE_LIFETIME = Deno.env.get("STRIPE_PRICE_LIFETIME");
@@ -35,7 +36,13 @@ function stripePost(path: string, body: Record<string, string>) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
-  if (!STRIPE_SECRET_KEY || !STRIPE_PRICE_PRO_MONTHLY || !STRIPE_PRICE_PRO_YEARLY || !STRIPE_PRICE_LIFETIME) {
+  if (
+    !STRIPE_SECRET_KEY ||
+    !STRIPE_PRICE_PRO_WEEKLY ||
+    !STRIPE_PRICE_PRO_MONTHLY ||
+    !STRIPE_PRICE_PRO_YEARLY ||
+    !STRIPE_PRICE_LIFETIME
+  ) {
     return jsonResponse(
       { error: "Stripe is not configured (STRIPE_SECRET_KEY or price IDs missing)" },
       503
@@ -50,8 +57,16 @@ Deno.serve(async (req) => {
     if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return jsonResponse({ error: "Valid email required" }, 400);
     }
-    if (planId !== "pro" && planId !== "pro_yearly" && planId !== "lifetime") {
-      return jsonResponse({ error: "plan_id must be 'pro', 'pro_yearly', or 'lifetime'" }, 400);
+    if (
+      planId !== "pro_weekly" &&
+      planId !== "pro" &&
+      planId !== "pro_yearly" &&
+      planId !== "lifetime"
+    ) {
+      return jsonResponse(
+        { error: "plan_id must be 'pro_weekly', 'pro', 'pro_yearly', or 'lifetime'" },
+        400
+      );
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -67,11 +82,14 @@ Deno.serve(async (req) => {
     }
 
     const isLifetime = planId === "lifetime";
-    const priceId = planId === "lifetime"
-      ? STRIPE_PRICE_LIFETIME
-      : planId === "pro_yearly"
-        ? STRIPE_PRICE_PRO_YEARLY
-        : STRIPE_PRICE_PRO_MONTHLY;
+    const priceId =
+      planId === "lifetime"
+        ? STRIPE_PRICE_LIFETIME
+        : planId === "pro_yearly"
+          ? STRIPE_PRICE_PRO_YEARLY
+          : planId === "pro_weekly"
+            ? STRIPE_PRICE_PRO_WEEKLY
+            : STRIPE_PRICE_PRO_MONTHLY;
     const origin = req.headers.get("origin") || "http://localhost:5173";
     const successUrl = `${origin}/billing?success=true&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${origin}/billing?canceled=true`;
