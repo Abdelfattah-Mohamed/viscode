@@ -34,7 +34,7 @@ const FlagIcon = ({ filled, size = 18 }) => (
   </svg>
 );
 
-export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem, onLogout, username, fav, mobile, recent }) {
+export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, onSelectProblem, onLogout, username, fav, mobile, recent, isPro }) {
   const parsed = parseProblemsUrl();
   const [search, setSearch] = useState(parsed.q);
   const [filter, setFilter] = useState(parsed.cat);
@@ -52,14 +52,28 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
     updateUrl();
   }, [updateUrl]);
 
-  const cats = ["All", ...Array.from(new Set(PROB_LIST.map(p => p.category)))];
-  const list = PROB_LIST.filter(p => {
+  const categories = Array.from(new Set(PROB_LIST.map((p) => p.category)));
+  const cats = [
+    "All",
+    ...(categories.includes("Famous Algorithms") ? ["Famous Algorithms"] : []),
+    ...categories.filter((c) => c !== "Famous Algorithms"),
+  ];
+  const filtered = PROB_LIST.filter(p => {
     if (filter !== "All" && p.category !== filter) return false;
     if (search && !p.title.toLowerCase().includes(search.toLowerCase()) && !p.desc.toLowerCase().includes(search.toLowerCase())) return false;
     if (flagFilter === "favorites" && !fav?.isFavorite(p.id)) return false;
     if (flagFilter === "flagged" && !fav?.isFlagged(p.id)) return false;
     return true;
   });
+  const list = filter === "All"
+    ? [...filtered].sort((a, b) => {
+        const aFamous = a.category === "Famous Algorithms" ? 0 : 1;
+        const bFamous = b.category === "Famous Algorithms" ? 0 : 1;
+        if (aFamous !== bFamous) return aFamous - bFamous;
+        return a.title.localeCompare(b.title);
+      })
+    : filtered;
+  const isLocked = (p) => !isPro && p.category !== "Famous Algorithms";
 
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
@@ -149,7 +163,14 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                     onMouseLeave={e => e.currentTarget.style.transform = ""}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                       <span style={{ fontSize: "1rem" }}>{CAT_ICON[p.category] || "📌"}</span>
-                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", border: `1.5px solid ${t.border}`, borderRadius: 8, ...dc }}>{p.difficulty}</span>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        {isLocked(p) && (
+                          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", border: `1.5px solid ${t.border}`, borderRadius: 8, color: t.red }}>
+                            🔒 Pro
+                          </span>
+                        )}
+                        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", border: `1.5px solid ${t.border}`, borderRadius: 8, ...dc }}>{p.difficulty}</span>
+                      </div>
                     </div>
                     <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, color: t.ink, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
                     <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.78rem", color: t.inkMuted, marginTop: 2 }}>{p.category}</div>
@@ -168,12 +189,17 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                 const dc = DIFF_COLOR[p.difficulty] || {};
                 return (
                   <div key={p.id} onClick={() => onSelectProblem(p.id)}
-                    style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "18px 20px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", gap: 10 }}
+                    style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "18px 20px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", gap: 10, opacity: isLocked(p) ? 0.92 : 1 }}
                     onMouseEnter={e => { e.currentTarget.style.transform = "translate(-2px,-2px)"; e.currentTarget.style.boxShadow = t.shadow; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <span style={{ fontSize: "1.3rem" }}>{CAT_ICON[p.category] || "📌"}</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {isLocked(p) && (
+                          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", border: `1.5px solid ${t.border}`, borderRadius: 10, color: t.red }}>
+                            🔒 Pro
+                          </span>
+                        )}
                         <button
                           onClick={e => { e.stopPropagation(); fav?.toggleFavorite(p.id); }}
                           title={fav?.isFavorite(p.id) ? "Remove from favorites" : "Add to favorites"}
@@ -200,7 +226,9 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", color: t.inkMuted }}>{p.category}</span>
-                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9rem", fontWeight: 700, color: t.blue }}>Visualize →</span>
+                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9rem", fontWeight: 700, color: isLocked(p) ? t.red : t.blue }}>
+                        {isLocked(p) ? "Upgrade to view →" : "Visualize →"}
+                      </span>
                     </div>
                   </div>
                 );

@@ -4,6 +4,7 @@ import { useAuth }            from "./hooks/useAuth";
 import { useFavorites }       from "./hooks/useFavorites";
 import { useIsMobile }        from "./hooks/useIsMobile";
 import { useRecentProblems }  from "./hooks/useRecentProblems";
+import { useSubscription }    from "./hooks/useSubscription";
 import { PROBLEMS }           from "./data/problems";
 import AuthScreen   from "./components/ui/AuthScreen";
 import HomePage     from "./pages/HomePage";
@@ -47,6 +48,10 @@ function pathFor(page, problemId) {
   return "/";
 }
 
+function isFreeProblem(problemId) {
+  return PROBLEMS[problemId]?.category === "Famous Algorithms";
+}
+
 export default function App() {
   const [themeMode, setThemeModeRaw] = useState(() => {
     try {
@@ -74,6 +79,7 @@ export default function App() {
   const favData = useFavorites(auth.user);
   const fav  = auth.user?.isGuest ? null : favData;
   const { recent, track } = useRecentProblems();
+  const { isPro, loading: subscriptionLoading } = useSubscription(auth.user);
   const prevUser = useRef(null);
 
 
@@ -103,8 +109,25 @@ export default function App() {
     prevUser.current = auth.user;
   }, [auth.user]);
 
+  const promptPremium = (problemId) => {
+    const title = PROBLEMS[problemId]?.title || "This problem";
+    window.alert(
+      `${title} is a premium problem.\n\n` +
+      "Famous Algorithms are free for all users.\n" +
+      "Upgrade to Pro to unlock all other problems."
+    );
+    setPage("billing");
+    window.history.pushState({}, "", pathFor("billing"));
+  };
+
+  const canAccessProblem = (id) => isPro || isFreeProblem(id);
+
   const selectProblem = (id) => {
     if (!PROBLEMS[id]) return;
+    if (!canAccessProblem(id)) {
+      promptPremium(id);
+      return;
+    }
     setSelected(id);
     setSharedInput(null);
     setPage("app");
@@ -119,7 +142,14 @@ export default function App() {
     window.history.pushState({}, "", path + (search ?? ""));
   };
 
-  if (auth.loading) {
+  useEffect(() => {
+    if (!auth.user || subscriptionLoading) return;
+    if (page === "app" && selectedProblem && !canAccessProblem(selectedProblem)) {
+      promptPremium(selectedProblem);
+    }
+  }, [auth.user, subscriptionLoading, page, selectedProblem, isPro]);
+
+  if (auth.loading || (auth.user && subscriptionLoading)) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: t.bg, fontFamily: "'Caveat',cursive", fontSize: "1.4rem", color: t.inkMuted }}>
         Loading…
@@ -137,7 +167,7 @@ export default function App() {
         t={t} themeMode={themeMode} setThemeMode={setThemeMode}
         onNavigate={navigate} onLogout={auth.logout}
         username={auth.user?.username} mobile={mobile}
-        recent={recent} onSelectProblem={selectProblem}
+        recent={recent} onSelectProblem={selectProblem} isPro={isPro}
       />
     );
   }
@@ -151,6 +181,7 @@ export default function App() {
         username={auth.user?.username}
         fav={fav} mobile={mobile}
         recent={recent}
+        isPro={isPro}
       />
     );
   }
@@ -190,7 +221,16 @@ export default function App() {
   return (
     <AppPage
       selectedProblem={selectedProblem}
-      setSelectedProblem={id => { if (PROBLEMS[id]) { setSelected(id); track(id); window.history.pushState({}, "", pathFor("app", id)); } }}
+      setSelectedProblem={(id) => {
+        if (!PROBLEMS[id]) return;
+        if (!canAccessProblem(id)) {
+          promptPremium(id);
+          return;
+        }
+        setSelected(id);
+        track(id);
+        window.history.pushState({}, "", pathFor("app", id));
+      }}
       t={t} themeMode={themeMode} setThemeMode={setThemeMode}
       onNavigate={navigate}
       onLogout={auth.logout}

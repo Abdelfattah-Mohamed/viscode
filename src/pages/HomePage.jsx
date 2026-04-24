@@ -4,8 +4,9 @@ import ThemeToggle from "../components/ui/ThemeToggle";
 
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
-export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, mobile, recent, onSelectProblem }) {
+export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, mobile, recent, onSelectProblem, isPro }) {
   const [userMenuOpen, setMenuOpen] = useState(false);
+  const isLocked = (p) => p && !isPro && p.category !== "Famous Algorithms";
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
       <style>{`
@@ -93,16 +94,25 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
               if (!p) return null;
               const dc = DIFF_COLOR[p.difficulty] || {};
               return (
-                <div key={id} onClick={() => onSelectProblem(id)}
+              <div key={id} onClick={() => onSelectProblem(id)}
                   style={{ flex: mobile ? "0 0 180px" : "1 1 0%", minWidth: 0, padding: "14px 16px", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
                   onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
                   onMouseLeave={e => e.currentTarget.style.transform = ""}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <span style={{ fontSize: "1.1rem" }}>{CAT_ICON[p.category] || "📌"}</span>
-                    <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7rem", fontWeight: 700, padding: "1px 8px", border: `1.5px solid ${t.border}`, borderRadius: 8, ...dc }}>{p.difficulty}</span>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      {isLocked(p) && (
+                        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7rem", fontWeight: 700, color: t.red }}>
+                          🔒 Pro
+                        </span>
+                      )}
+                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7rem", fontWeight: 700, padding: "1px 8px", border: `1.5px solid ${t.border}`, borderRadius: 8, ...dc }}>{p.difficulty}</span>
+                    </div>
                   </div>
                   <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05rem", fontWeight: 700, color: t.ink, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
-                  <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", color: t.blue, marginTop: 6, fontWeight: 700 }}>Resume →</div>
+                  <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.8rem", color: isLocked(p) ? t.red : t.blue, marginTop: 6, fontWeight: 700 }}>
+                    {isLocked(p) ? "Upgrade to open →" : "Resume →"}
+                  </div>
                 </div>
               );
             })}
