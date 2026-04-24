@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { Card } from "../components/ui/Card";
@@ -38,11 +38,22 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const currentAvatarId = user?.avatarId && user.avatarId >= 1 && user.avatarId <= 10 ? user.avatarId : 1;
+  const hasExternalPicture = !!user?.picture && !user?.picture?.startsWith?.("avatar:") && !imageLoadFailed;
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
     : null;
 
+  useEffect(() => {
+    setImageLoadFailed(false);
+  }, [user?.picture]);
+
+  useEffect(() => {
+    if (showAvatarPicker) setImageLoadFailed(false);
+  }, [showAvatarPicker]);
+
+  
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <style>{`* { box-sizing: border-box; } ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:${t.border};border-radius:3px}`}</style>
@@ -86,7 +97,7 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
                 width: 80,
                 height: 80,
                 borderRadius: "50%",
-                background: user?.picture && !user?.picture?.startsWith?.("avatar:") ? "transparent" : t.blue,
+                background: hasExternalPicture ? "transparent" : t.blue,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -97,8 +108,13 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
                 overflow: "hidden",
               }}
             >
-              {user?.picture && !user.picture.startsWith?.("avatar:") ? (
-                <img src={user.picture} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {hasExternalPicture ? (
+                <img
+                  src={user.picture}
+                  alt=""
+                  onError={() => setImageLoadFailed(true)}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
               ) : (
                 <span style={{ fontSize: "2.5rem" }}>{getAvatarEmoji(currentAvatarId)}</span>
               )}

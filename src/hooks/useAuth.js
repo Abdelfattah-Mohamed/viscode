@@ -48,7 +48,8 @@ async function hashPassword(password) {
 
 function profileToRow(profile, passwordHash) {
   const now = new Date().toISOString();
-  const avatarUrl = profile.picture || (profile.avatarId ? `avatar:${profile.avatarId}` : null);
+  const hasAvatarId = Number.isInteger(profile.avatarId) && profile.avatarId >= 1 && profile.avatarId <= 10;
+  const avatarUrl = hasAvatarId ? `avatar:${profile.avatarId}` : (profile.picture || null);
   const row = {
     email: profile.email || null,
     username: profile.username || "User",
@@ -65,11 +66,13 @@ function rowToProfile(row) {
   if (!row) return null;
   const avatarUrl = row.avatar_url;
   const isAvatarId = typeof avatarUrl === "string" && avatarUrl.startsWith("avatar:");
+  const parsedAvatarId = isAvatarId ? parseInt(avatarUrl.slice(7), 10) : undefined;
+  const validAvatarId = Number.isInteger(parsedAvatarId) && parsedAvatarId >= 1 && parsedAvatarId <= 10;
   return {
     username: row.username,
     email: row.email ?? undefined,
     picture: isAvatarId ? undefined : avatarUrl ?? undefined,
-    avatarId: isAvatarId ? parseInt(avatarUrl.slice(7), 10) : undefined,
+    avatarId: validAvatarId ? parsedAvatarId : undefined,
     sub: row.google_sub ?? undefined,
     isGoogle: row.provider === "google",
     createdAt: row.created_at,
@@ -291,6 +294,10 @@ export function useAuth() {
   const updateProfile = (updates) => {
     if (!user) return;
     const next = { ...user, ...updates };
+    if (Object.prototype.hasOwnProperty.call(updates, "avatarId")) {
+      // Choosing an in-app avatar should take precedence over a stale remote image URL.
+      next.picture = undefined;
+    }
     setUser(next);
     try {
       localStorage.setItem("vc:session", JSON.stringify(next));
