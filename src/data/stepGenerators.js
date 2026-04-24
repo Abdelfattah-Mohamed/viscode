@@ -3030,6 +3030,100 @@ export function generateNumConnectedComponentsSteps(input) {
   return steps;
 }
 
+export function generateBellmanFordSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const raw = Array.isArray(input?.nums) ? input.nums : [];
+  const edges = [];
+  for (let i = 0; i + 2 < raw.length; i += 3) {
+    const u = Number(raw[i]);
+    const v = Number(raw[i + 1]);
+    const w = Number(raw[i + 2]);
+    if (!Number.isNaN(u) && !Number.isNaN(v) && !Number.isNaN(w)) edges.push([u, v, w]);
+  }
+
+  const steps = [];
+  const INF = 1e9;
+  if (n <= 0) {
+    steps.push({ stepType: "init", description: "Enter n and weighted edges (u,v,w)", state: { n: 0, edges: [], dist: [], highlighted: [], directed: true } });
+    steps.push({ stepType: "done", description: "Done", state: { n: 0, edges: [], dist: [], highlighted: [], directed: true, done: true } });
+    return steps;
+  }
+
+  const dist = Array(n).fill(INF);
+  const source = 0;
+  dist[source] = 0;
+
+  steps.push({
+    stepType: "init",
+    description: `Initialize dist: source=${source}, others=∞. Graph has ${n} nodes and ${edges.length} edges`,
+    state: { n, edges: [...edges], dist: [...dist], highlighted: [source], directed: true },
+  });
+
+  for (let pass = 1; pass <= Math.max(0, n - 1); pass++) {
+    let changed = false;
+    steps.push({
+      stepType: "loop",
+      description: `Pass ${pass}/${Math.max(0, n - 1)}: relax every edge`,
+      state: { n, edges: [...edges], dist: [...dist], highlighted: [], directed: true },
+    });
+
+    for (const [u, v, w] of edges) {
+      if (u < 0 || u >= n || v < 0 || v >= n) continue;
+      steps.push({
+        stepType: "relax",
+        description: `Check edge ${u}→${v} (w=${w}): dist[${u}] + ${w} < dist[${v}] ?`,
+        state: { n, edges: [...edges], dist: [...dist], highlighted: [u, v], directed: true },
+      });
+      if (dist[u] < INF && dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        changed = true;
+        steps.push({
+          stepType: "update",
+          description: `Relaxed ${u}→${v}: dist[${v}] = ${dist[v]}`,
+          state: { n, edges: [...edges], dist: [...dist], highlighted: [u, v], directed: true },
+        });
+      }
+    }
+
+    if (!changed) {
+      steps.push({
+        stepType: "done",
+        description: `No updates in pass ${pass} → distances are finalized early`,
+        state: { n, edges: [...edges], dist: [...dist], highlighted: [], directed: true, done: true },
+      });
+      return steps;
+    }
+  }
+
+  let hasNegativeCycle = false;
+  let cycleEdge = null;
+  for (const [u, v, w] of edges) {
+    if (u < 0 || u >= n || v < 0 || v >= n) continue;
+    if (dist[u] < INF && dist[u] + w < dist[v]) {
+      hasNegativeCycle = true;
+      cycleEdge = [u, v];
+      break;
+    }
+  }
+
+  steps.push({
+    stepType: "done",
+    description: hasNegativeCycle
+      ? "Negative cycle detected (an edge can still be relaxed)"
+      : "✓ Bellman-Ford complete: shortest distances from source 0",
+    state: {
+      n,
+      edges: [...edges],
+      dist: [...dist],
+      highlighted: cycleEdge || [],
+      directed: true,
+      result: hasNegativeCycle ? "Negative cycle detected" : "No negative cycle",
+      done: true,
+    },
+  });
+  return steps;
+}
+
 export function generateGraphValidTreeSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const edges = buildEdgesFromNums(n, input?.nums || []);
@@ -3692,5 +3786,6 @@ export const STEP_GENERATORS = {
   "lca-of-bst":             generateLCAOfBSTSteps,
   "serialize-deserialize-btree": generateSerializeDeserializeSteps,
   "find-median-from-data-stream": generateFindMedianSteps,
+  "bellman-ford":            generateBellmanFordSteps,
   "knapsack-01": generateKnapsackSteps,
 };

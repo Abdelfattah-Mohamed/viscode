@@ -38,21 +38,23 @@ function trimTrailingNulls(arr) {
   return next;
 }
 
-function parseEdgeLines(raw) {
+function parseEdgeLines(raw, tupleSize = 2) {
   const lines = String(raw || "")
     .split("\n")
     .map((x) => x.trim())
     .filter(Boolean);
   const edges = [];
   for (const line of lines) {
-    const parts = line
-      .replace(/\[|\]/g, "")
-      .split(/[\s,\-]+/)
-      .map((x) => x.trim())
-      .filter(Boolean);
+    const parts = (line.replace(/\[|\]/g, "").match(/-?\d+(?:\.\d+)?/g) || []).map((x) => x.trim());
     if (parts.length < 2) continue;
     const a = Number(parts[0]);
     const b = Number(parts[1]);
+    if (tupleSize >= 3) {
+      if (parts.length < 3) continue;
+      const w = Number(parts[2]);
+      if (!Number.isNaN(a) && !Number.isNaN(b) && !Number.isNaN(w)) edges.push([a, b, w]);
+      continue;
+    }
     if (!Number.isNaN(a) && !Number.isNaN(b)) edges.push([a, b]);
   }
   return edges;
@@ -143,7 +145,7 @@ function TreePreview({ complete, t }) {
   );
 }
 
-function GraphPreview({ edges, n, t }) {
+function GraphPreview({ edges, n, t, weighted = false }) {
   const sketchBorder = t._resolved === "dark" ? "#8a8f98" : "#1f2937";
   const paper = t._resolved === "dark" ? "#1f2024" : "#fffdf8";
   const ink = t._resolved === "dark" ? "#f3f4f6" : "#1f2937";
@@ -183,11 +185,25 @@ function GraphPreview({ edges, n, t }) {
       viewBox={`0 0 ${width} ${height}`}
       style={{ border: `2px solid ${sketchBorder}`, borderRadius: 10, background: paper, maxHeight: 240 }}
     >
-      {edges.map(([a, b], i) => {
+      {edges.map(([a, b, w], i) => {
         const pa = pos.get(a);
         const pb = pos.get(b);
         if (!pa || !pb) return null;
-        return <line key={`ge-${i}`} x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y} stroke={sketchBorder} strokeWidth="2" />;
+        const midX = (pa.x + pb.x) / 2;
+        const midY = (pa.y + pb.y) / 2;
+        return (
+          <g key={`ge-${i}`}>
+            <line x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y} stroke={sketchBorder} strokeWidth="2" />
+            {weighted && (
+              <>
+                <rect x={midX - 11} y={midY - 10} width={22} height={16} rx={5} fill={paper} stroke={sketchBorder} strokeWidth="1.2" />
+                <text x={midX} y={midY + 1.5} textAnchor="middle" fontSize="10" fill={ink} fontWeight="700">
+                  {String(w)}
+                </text>
+              </>
+            )}
+          </g>
+        );
       })}
       {nodes.map((id) => {
         const p = pos.get(id);
@@ -204,6 +220,12 @@ function GraphPreview({ edges, n, t }) {
   );
 }
 
+function isWeightedGraphProblem(problem, visualizer) {
+  if (visualizer !== "graph") return false;
+  const text = `${problem?.title || ""} ${problem?.description || ""} ${problem?.example?.input || ""}`.toLowerCase();
+  return /(weighted|weight|shortest path|bellman|dijkstra|floyd|kruskal|prim|a\*)/.test(text);
+}
+
 function inferFieldKind(field, input, fields, visualizer) {
   if (field === "grid" && fields.includes("rows")) return "matrix";
   if (visualizer === "graph" && field === "nums" && fields.includes("n")) return "graph";
@@ -216,7 +238,7 @@ function inferFieldKind(field, input, fields, visualizer) {
   return "string";
 }
 
-function buildInitialDraft(input, fields, visualizer) {
+function buildInitialDraft(input, fields, visualizer, weightedGraphInput = false) {
   const draft = {};
   for (const f of fields) {
     const kind = inferFieldKind(f, input, fields, visualizer);
@@ -232,7 +254,10 @@ function buildInitialDraft(input, fields, visualizer) {
     if (kind === "graph") {
       const nums = Array.isArray(input[f]) ? input[f] : [];
       const lines = [];
-      for (let i = 0; i + 1 < nums.length; i += 2) lines.push(`${nums[i]} ${nums[i + 1]}`);
+      const stride = weightedGraphInput ? 3 : 2;
+      for (let i = 0; i + stride - 1 < nums.length; i += stride) {
+        lines.push(weightedGraphInput ? `${nums[i]} ${nums[i + 1]} ${nums[i + 2]}` : `${nums[i]} ${nums[i + 1]}`);
+      }
       draft[f] = lines.join("\n");
       continue;
     }
@@ -254,19 +279,20 @@ function buildInitialDraft(input, fields, visualizer) {
 
 export default function InputEditor({ input, fields, onChange, onReset, t, problem }) {
   const visualizer = problem?.visualizer || "";
+  const weightedGraphInput = useMemo(() => isWeightedGraphProblem(problem, visualizer), [problem, visualizer]);
   const sketchBorder = t._resolved === "dark" ? "#8a8f98" : "#1f2937";
   const paper = t._resolved === "dark" ? "#222328" : "#fffdf8";
   const paperAlt = t._resolved === "dark" ? "#2a2b31" : "#fff7ed";
   const ink = t._resolved === "dark" ? "#f3f4f6" : "#1f2937";
   const sketchFont = "'Caveat', 'Comic Sans MS', cursive";
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(() => buildInitialDraft(input, fields, visualizer));
+  const [draft, setDraft] = useState(() => buildInitialDraft(input, fields, visualizer, weightedGraphInput));
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setDraft(buildInitialDraft(input, fields, visualizer));
+    setDraft(buildInitialDraft(input, fields, visualizer, weightedGraphInput));
     setError(null);
-  }, [fields.join(","), problem?.title]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fields.join(","), problem?.title, problem?.description, weightedGraphInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const schema = useMemo(
     () =>
@@ -320,7 +346,7 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
           if (fields.includes("rows")) next.rows = rows;
           if (fields.includes("cols")) next.cols = cols;
         } else if (kind === "graph") {
-          const edges = parseEdgeLines(draft[field]);
+          const edges = parseEdgeLines(draft[field], weightedGraphInput ? 3 : 2);
           next[field] = edges.flat();
         } else if (kind === "pairs") {
           next[field] = parseEdgeLines(draft[field]).flat();
@@ -345,7 +371,7 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
   };
 
   const resetDraft = () => {
-    setDraft(buildInitialDraft(input, fields, visualizer));
+    setDraft(buildInitialDraft(input, fields, visualizer, weightedGraphInput));
     setError(null);
   };
 
@@ -406,7 +432,7 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
               <div>
                 <div style={{ fontFamily: sketchFont, fontSize: "1.45rem", fontWeight: 700, color: ink }}>Input Editor</div>
                 <div style={{ fontSize: "0.8rem", color: t.inkMuted }}>
-                  {problem?.title || "Problem"} · Excalidraw style
+                  {problem?.title || "Problem"}
                 </div>
               </div>
               <button onClick={() => setOpen(false)} style={pill()}>
@@ -437,7 +463,7 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
                         rows={kind === "string" ? 3 : 5}
                         placeholder={
                           kind === "graph"
-                            ? "One edge per line: 0 1"
+                            ? (weightedGraphInput ? "One weighted edge per line: u v w (e.g. 0 1 4)" : "One edge per line: u v (e.g. 0 1)")
                             : kind === "tree"
                               ? "Level-order values: 3, 9, 20, null, null, 15, 7"
                               : kind === "pairs"
@@ -464,11 +490,19 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
                         />
                       )}
                       {kind === "graph" && (
-                        <GraphPreview
-                          edges={parseEdgeLines(draft[field])}
-                          n={Number(draft.n ?? input.n ?? 0)}
-                          t={t}
-                        />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          <GraphPreview
+                            edges={parseEdgeLines(draft[field], weightedGraphInput ? 3 : 2)}
+                            n={Number(draft.n ?? input.n ?? 0)}
+                            t={t}
+                            weighted={weightedGraphInput}
+                          />
+                          <div style={{ fontSize: "0.72rem", color: t.inkMuted }}>
+                            {weightedGraphInput
+                              ? "Weighted graph format: each line is u v w (from, to, weight)."
+                              : "Graph format: each line is u v (from, to)."}
+                          </div>
+                        </div>
                       )}
                     </div>
                   )}

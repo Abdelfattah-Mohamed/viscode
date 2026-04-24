@@ -3,7 +3,7 @@ import rough from "roughjs";
 
 const NODE_R = 28;
 const PADDING = 48;
-const SVG_SIZE = 240;
+const SVG_SIZE = 300;
 
 // Excalidraw-style pastel palette
 const COMPONENT_COLORS = ["", "#6965db", "#70b050", "#e03131", "#f2a33c", "#eb8af0", "#4dabf7"];
@@ -13,6 +13,7 @@ const EDGE_HIGHLIGHT = "#e03131";
 export default function GraphViz({ stepState = {}, problemId, t }) {
   const { n = 0, edges = [], highlighted = [], vis = [], count, componentId = [], done, validTree, nodeState = [], canFinish, directed, labels = [], result, queue, stack, dist, mstEdges } = stepState;
   const edgesNormalized = (edges || []).map((e) => (Array.isArray(e) && e.length >= 2 ? [Number(e[0]), Number(e[1]), e[2] != null ? Number(e[2]) : 1] : e));
+  const isWeightedGraph = (edges || []).some((e) => Array.isArray(e) && e.length >= 3);
   const isDark = t._resolved === "dark";
   const isComponents = problemId === "num-connected-components";
   const isValidTree = problemId === "graph-valid-tree";
@@ -49,7 +50,7 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
 
   const { width, height, positions, connectedNodes } = useMemo(() => {
     if (n <= 0) return { width: SVG_SIZE, height: SVG_SIZE, positions: [], connectedNodes: new Set() };
-    const radius = Math.min(90, 150 - n * 5);
+    const radius = Math.min(120, Math.max(80, 175 - n * 6));
     const cx = SVG_SIZE / 2;
     const cy = SVG_SIZE / 2;
     const pos = [];
@@ -75,8 +76,7 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
     g.innerHTML = "";
     const rc = rough.svg(g, { options: { roughness: 1.2, bowing: 2 } });
 
-    const weightedEdges = edgesNormalized.some((e) => e[2] != null && e[2] !== 1);
-    if (!directed && !weightedEdges) {
+    if (!directed && !isWeightedGraph) {
       edgesNormalized.forEach((e) => {
         const u = e[0], v = e[1];
         if (u >= positions.length || v >= positions.length) return;
@@ -111,7 +111,7 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
       });
       g.appendChild(node);
     });
-  }, [positions, edgesNormalized, highlighted, vis, componentId, n, isComponents, isValidTree, isDark, directed, nodeState, connectedNodes]);
+  }, [positions, edgesNormalized, highlighted, vis, componentId, n, isComponents, isValidTree, isDark, directed, nodeState, connectedNodes, isWeightedGraph]);
 
   if (n <= 0) {
     return (
@@ -298,17 +298,28 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
                       strokeLinecap="round"
                       markerEnd={isHl ? "url(#graph-arrow-hl)" : "url(#graph-arrow)"}
                     />
-                    {w != null && w !== 1 && (
-                      <text x={midX} y={midY} textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, fill: isDark ? "#94a3b8" : "#475569", pointerEvents: "none" }}>
-                        {w}
-                      </text>
+                    {isWeightedGraph && (
+                      (() => {
+                        const nx = -uy;
+                        const ny = ux;
+                        const lx = midX + nx * 12;
+                        const ly = midY + ny * 12;
+                        return (
+                          <g>
+                            <circle cx={lx} cy={ly} r={11} fill={isDark ? "#0f172a" : "#ffffff"} stroke={isDark ? "#475569" : "#cbd5e1"} strokeWidth="1.5" />
+                            <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 800, fill: isDark ? "#e2e8f0" : "#0f172a", pointerEvents: "none" }}>
+                              {w}
+                            </text>
+                          </g>
+                        );
+                      })()
                     )}
                   </g>
                 );
               })}
             </g>
           )}
-          {!directed && edgesNormalized.some((e) => e[2] != null && e[2] !== 1) && (
+          {!directed && isWeightedGraph && (
             <g transform={`translate(${PADDING}, ${PADDING})`}>
               {edgesNormalized.map((e, idx) => {
                 const u = e[0], v = e[1], w = e[2];
@@ -318,13 +329,23 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
                 const isHl = highlighted.includes(u) && highlighted.includes(v);
                 const midX = (pu.x + pv.x) / 2;
                 const midY = (pu.y + pv.y) / 2;
+                const dx = pv.x - pu.x;
+                const dy = pv.y - pu.y;
+                const len = Math.hypot(dx, dy) || 1;
+                const nx = -dy / len;
+                const ny = dx / len;
+                const lx = midX + nx * 10;
+                const ly = midY + ny * 10;
                 return (
                   <g key={idx}>
                     <line x1={pu.x} y1={pu.y} x2={pv.x} y2={pv.y} stroke={edgeColor(u, v)} strokeWidth={isHl ? 2.5 : 1.5} strokeLinecap="round" />
-                    {w != null && w !== 1 && (
-                      <text x={midX} y={midY} textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, fill: isDark ? "#94a3b8" : "#475569", pointerEvents: "none" }}>
+                    {isWeightedGraph && (
+                      <>
+                        <circle cx={lx} cy={ly} r={11} fill={isDark ? "#0f172a" : "#ffffff"} stroke={isDark ? "#475569" : "#cbd5e1"} strokeWidth="1.5" />
+                        <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 800, fill: isDark ? "#e2e8f0" : "#0f172a", pointerEvents: "none" }}>
                         {w}
-                      </text>
+                        </text>
+                      </>
                     )}
                   </g>
                 );
