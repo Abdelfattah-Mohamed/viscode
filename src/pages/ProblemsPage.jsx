@@ -75,6 +75,12 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
       })
     : filtered;
   const isLocked = (p) => !isPro && p.category !== "Famous Algorithms";
+  const handleCardKeyDown = (e, action) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      action();
+    }
+  };
 
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
@@ -206,9 +212,15 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                 const dc = DIFF_COLOR[p.difficulty] || {};
                 return (
                   <div key={id} onClick={() => onSelectProblem(id)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open ${p.title}`}
+                    onKeyDown={(e) => handleCardKeyDown(e, () => onSelectProblem(id))}
                     style={{ flex: mobile ? "0 0 170px" : "1 1 0%", minWidth: 0, padding: "12px 14px", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
                     onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-                    onMouseLeave={e => e.currentTarget.style.transform = ""}>
+                    onMouseLeave={e => e.currentTarget.style.transform = ""}
+                    onFocus={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `${t.shadowSm}, 0 0 0 2px ${t.blue}66`; }}
+                    onBlur={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                       <span style={{ fontSize: "1rem" }}>{CAT_ICON[p.category] || "📌"}</span>
                       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -237,9 +249,15 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                 const dc = DIFF_COLOR[p.difficulty] || {};
                 return (
                   <div key={p.id} onClick={() => onSelectProblem(p.id)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${isLocked(p) ? "Locked problem: " : "Open problem: "}${p.title}`}
+                    onKeyDown={(e) => handleCardKeyDown(e, () => onSelectProblem(p.id))}
                     style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "18px 20px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", gap: 10, opacity: isLocked(p) ? 0.92 : 1 }}
                     onMouseEnter={e => { e.currentTarget.style.transform = "translate(-2px,-2px)"; e.currentTarget.style.boxShadow = t.shadow; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}>
+                    onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}
+                    onFocus={e => { e.currentTarget.style.transform = "translate(-2px,-2px)"; e.currentTarget.style.boxShadow = `${t.shadow}, 0 0 0 2px ${t.blue}66`; }}
+                    onBlur={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <span style={{ fontSize: "1.3rem" }}>{CAT_ICON[p.category] || "📌"}</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>

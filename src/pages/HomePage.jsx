@@ -8,6 +8,12 @@ import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
 export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, user, mobile, recent, onSelectProblem, isPro }) {
   const isLocked = (p) => p && !isPro && p.category !== "Famous Algorithms";
+  const handleCardKeyDown = (e, action) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      action();
+    }
+  };
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
       <style>{`
@@ -81,9 +87,15 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
               const dc = DIFF_COLOR[p.difficulty] || {};
               return (
               <Card key={id} t={t} density="compact" onClick={() => onSelectProblem(id)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open ${p.title}`}
+                  onKeyDown={(e) => handleCardKeyDown(e, () => onSelectProblem(id))}
                   style={{ flex: mobile ? "0 0 180px" : "1 1 0%", minWidth: 0, padding: "14px 16px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
                   onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-                  onMouseLeave={e => e.currentTarget.style.transform = ""}>
+                  onMouseLeave={e => e.currentTarget.style.transform = ""}
+                  onFocus={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `${t.shadowSm}, 0 0 0 2px ${t.blue}66`; }}
+                  onBlur={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <span style={{ fontSize: "1.1rem" }}>{CAT_ICON[p.category] || "📌"}</span>
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -120,9 +132,15 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
             const dc = DIFF_COLOR[p.difficulty] || {};
             return (
               <Card key={p.id} t={t} density="compact" onClick={() => onSelectProblem(p.id)}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open ${p.title}`}
+                onKeyDown={(e) => handleCardKeyDown(e, () => onSelectProblem(p.id))}
                 style={{ flex: mobile ? "0 0 140px" : "1 1 120px", minWidth: 0, padding: "12px 14px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-                onMouseLeave={e => e.currentTarget.style.transform = ""}>
+                onMouseLeave={e => e.currentTarget.style.transform = ""}
+                onFocus={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `${t.shadowSm}, 0 0 0 2px ${t.blue}66`; }}
+                onBlur={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}>
                 <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7rem", fontWeight: 700, padding: "1px 6px", border: `1.5px solid ${t.border}`, borderRadius: 6, ...dc }}>{p.difficulty}</span>
                 <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700, color: t.ink, marginTop: 6, lineHeight: 1.25 }}>{p.title}</div>
               </Card>
