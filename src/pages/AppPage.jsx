@@ -596,7 +596,7 @@ export default function AppPage({
                     A+
                   </button>
                 </div>
-                <InputEditor input={input} fields={problem.inputFields} onChange={setInput} onReset={player.reset} t={t} />
+                <InputEditor input={input} fields={problem.inputFields} onChange={setInput} onReset={player.reset} t={t} problem={problem} />
               </div>
             }
           />

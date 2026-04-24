@@ -24,10 +24,13 @@ export default function ContainerViz({ heights = [], stepState = {}, t }) {
 
   const totalWidth = marginLeft + n * cellWidth + 16;
 
+  const xAxisLabelY = chartHeight - marginBottom + 14;
+  const pointerLabelY = chartHeight - marginBottom + 28;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.95em", fontWeight: 600, color: t.inkMuted, marginBottom: 8 }}>heights</div>
-      <svg width={totalWidth} height={chartHeight + 32} style={{ display: "block" }} aria-hidden>
+      <svg width={totalWidth} height={chartHeight + 42} style={{ display: "block" }} aria-hidden>
         {/* Y-axis */}
         <line x1={marginLeft - 4} y1={0} x2={marginLeft - 4} y2={chartHeight - marginBottom} stroke={t.border} strokeWidth="1.5" />
         {Array.from({ length: maxH + 1 }, (_, i) => (
@@ -76,25 +79,38 @@ export default function ContainerViz({ heights = [], stepState = {}, t }) {
 
         {/* X-axis baseline */}
         <line x1={marginLeft} y1={chartHeight - marginBottom} x2={marginLeft + n * cellWidth} y2={chartHeight - marginBottom} stroke={t.border} strokeWidth="1.5" />
-      </svg>
 
-      {/* Index labels */}
-      <div style={{ display: "flex", gap: 0, marginLeft: marginLeft, marginTop: -8 }}>
+        {/* X-axis index labels (kept inside same SVG coordinates for perfect alignment) */}
         {arr.map((_, idx) => (
-          <div key={idx} style={{ width: cellWidth, textAlign: "center", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7rem", color: t.inkMuted }}>
+          <text
+            key={`x-${idx}`}
+            x={xForIndex(idx) + barWidth / 2}
+            y={xAxisLabelY}
+            textAnchor="middle"
+            fill={t.inkMuted}
+            fontFamily="'JetBrains Mono',monospace"
+            fontSize="10"
+          >
             {idx}
-          </div>
+          </text>
         ))}
-      </div>
 
-      {/* L / R labels under boundary bars */}
-      <div style={{ display: "flex", gap: 0, marginLeft: marginLeft, marginTop: 4 }}>
+        {/* L / R pointer labels (also inside SVG coordinates) */}
         {arr.map((_, idx) => (
-          <div key={idx} style={{ width: cellWidth, textAlign: "center", fontFamily: "'Caveat',cursive", fontSize: "0.8rem", fontWeight: 700, color: idx === left ? "#dc2626" : idx === right ? "#dc2626" : "transparent" }}>
+          <text
+            key={`lr-${idx}`}
+            x={xForIndex(idx) + barWidth / 2}
+            y={pointerLabelY}
+            textAnchor="middle"
+            fill={idx === left || idx === right ? "#dc2626" : "transparent"}
+            fontFamily="'Caveat',cursive"
+            fontSize="13"
+            fontWeight="700"
+          >
             {idx === left ? "L" : idx === right ? "R" : ""}
-          </div>
+          </text>
         ))}
-      </div>
+      </svg>
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
         <div style={{ padding: "8px 14px", border: `2px solid ${t.border}`, borderRadius: 8, background: t.surfaceAlt, fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700 }}>
