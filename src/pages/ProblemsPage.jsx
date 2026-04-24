@@ -3,6 +3,7 @@ import NavBar from "../components/ui/NavBar";
 import SectionHeader from "../components/ui/SectionHeader";
 import AccountMenuChip from "../components/ui/AccountMenuChip";
 import PageContainer from "../components/ui/PageContainer";
+import Button from "../components/ui/Button";
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
 function problemsUrlParams(view, cat, q) {
@@ -151,23 +152,17 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
             Pro: Other categories
           </span>
           {!isPro && (
-            <button
+            <Button
+              t={t}
+              variant="primary"
               onClick={() => onNavigate("billing")}
               style={{
                 marginLeft: "auto",
-                fontFamily: "'Caveat',cursive",
-                fontSize: "0.95rem",
-                fontWeight: 700,
-                padding: "6px 12px",
-                border: `1.5px solid ${t.border}`,
                 borderRadius: 8,
-                background: t.ink,
-                color: t.yellow,
-                cursor: "pointer",
               }}
             >
               Upgrade to unlock all →
-            </button>
+            </Button>
           )}
         </div>
 
@@ -185,18 +180,18 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
               { key: "favorites", label: "Favorites", icon: <StarIcon filled={flagFilter === "favorites"} size={14} /> },
               { key: "flagged", label: "Flagged", icon: <FlagIcon filled={flagFilter === "flagged"} size={14} /> },
             ].map(f => (
-              <button key={f.key} onClick={() => setFlagFilter(f.key)}
-                style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9rem", fontWeight: 700, padding: "6px 14px", border: `1.5px solid ${flagFilter === f.key ? t.blue : t.border}`, borderRadius: 20, cursor: "pointer", background: flagFilter === f.key ? t.blue + "18" : "transparent", color: flagFilter === f.key ? t.blue : t.inkMuted, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 5 }}>
+              <Button key={f.key} t={t} variant="ghost" pill onClick={() => setFlagFilter(f.key)}
+                style={{ borderColor: flagFilter === f.key ? t.blue : t.border, background: flagFilter === f.key ? t.blue + "18" : "transparent", color: flagFilter === f.key ? t.blue : t.inkMuted, display: "flex", alignItems: "center", gap: 5 }}>
                 {f.icon}{f.label}
-              </button>
+              </Button>
             ))}
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", paddingBottom: 4 }}>
             {cats.map(cat => (
-              <button key={cat} onClick={() => setFilter(cat)}
-                style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9rem", fontWeight: 700, padding: "6px 14px", border: `1.5px solid ${t.border}`, borderRadius: 20, cursor: "pointer", background: filter === cat ? t.ink : "transparent", color: filter === cat ? t.yellow : t.inkMuted, transition: "all 0.15s" }}>
+              <Button key={cat} t={t} variant="ghost" pill onClick={() => setFilter(cat)}
+                style={{ background: filter === cat ? t.ink : "transparent", color: filter === cat ? t.yellow : t.inkMuted }}>
                 {cat}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

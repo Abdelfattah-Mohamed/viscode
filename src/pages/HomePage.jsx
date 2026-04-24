@@ -1,5 +1,6 @@
 import NavBar from "../components/ui/NavBar";
 import { Card } from "../components/ui/Card";
+import Button from "../components/ui/Button";
 import SectionHeader from "../components/ui/SectionHeader";
 import AccountMenuChip from "../components/ui/AccountMenuChip";
 import PageContainer from "../components/ui/PageContainer";
@@ -55,14 +56,14 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
           VisCode runs algorithms step-by-step with live animations synced to real code in C++, Java, JavaScript, and Python.
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <button onClick={() => onNavigate("problems")}
-            style={{ padding: "14px 36px", border: `2px solid ${t.border}`, borderRadius: 10, background: t.ink, color: t.yellow, fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, cursor: "pointer", boxShadow: t.shadow }}>
+          <Button t={t} variant="primary" size="lg" onClick={() => onNavigate("problems")}
+            style={{ borderWidth: 2 }}>
             Start Visualizing →
-          </button>
-          <button onClick={() => onNavigate("problems")}
-            style={{ padding: "14px 36px", border: `2px solid ${t.border}`, borderRadius: 10, background: "transparent", color: t.ink, fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, cursor: "pointer", boxShadow: t.shadowSm }}>
+          </Button>
+          <Button t={t} variant="ghost" size="lg" onClick={() => onNavigate("problems")}
+            style={{ borderWidth: 2, boxShadow: t.shadowSm }}>
             Browse Problems
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -147,10 +148,10 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
             );
           })}
         </div>
-        <button onClick={() => onNavigate("problems", "?cat=Famous+Algorithms")}
-          style={{ marginTop: 16, padding: "8px 20px", border: `1.5px solid ${t.border}`, borderRadius: 8, background: "transparent", color: t.blue, fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, cursor: "pointer" }}>
+        <Button t={t} variant="ghost" onClick={() => onNavigate("problems", "?cat=Famous+Algorithms")}
+          style={{ marginTop: 16, borderRadius: 8, color: t.blue }}>
           View all Famous Algorithms →
-        </button>
+        </Button>
       </PageContainer>
 
       {/* How it works */}
@@ -179,10 +180,10 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
       <div style={{ textAlign: "center", padding: "48px 24px 64px", borderTop: `1.5px solid ${t.border}`, background: t.surface }}>
         <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "2rem", fontWeight: 700, color: t.ink, marginBottom: 14 }}>Ready to level up? 🎯</h2>
         <p style={{ color: t.inkMuted, marginBottom: 28, fontSize: "0.95rem" }}>Ace your next technical interview, one visual at a time.</p>
-        <button onClick={() => onNavigate("problems")}
-          style={{ padding: "14px 44px", border: `2px solid ${t.border}`, borderRadius: 10, background: t.ink, color: t.yellow, fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, cursor: "pointer", boxShadow: t.shadow }}>
+        <Button t={t} variant="primary" size="lg" onClick={() => onNavigate("problems")}
+          style={{ padding: "14px 44px", borderWidth: 2 }}>
           Start for Free →
-        </button>
+        </Button>
       </div>
     </div>
   );
