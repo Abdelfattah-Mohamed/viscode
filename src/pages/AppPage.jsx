@@ -7,6 +7,7 @@ import InputEditor from "../components/ui/InputEditor";
 import CodePanel from "../components/CodePanel";
 import ExplanationPanel from "../components/ExplanationPanel";
 import SimilarProblems from "../components/SimilarProblems";
+import { getAvatarEmoji } from "../data/avatars";
 import {
   ArrayVisualizer, ConsecutiveVisualizer,
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
@@ -70,6 +71,8 @@ export default function AppPage({
     return 45;
   });
   const [isDraggingGutter, setIsDraggingGutter] = useState(false);
+  const avatarId = user?.avatarId && user.avatarId >= 1 && user.avatarId <= 10 ? user.avatarId : 1;
+  const hasExternalPicture = !!user?.picture && !user?.picture?.startsWith?.("avatar:");
   const leftPanelPercentRef = useRef(leftPanelPercent);
   leftPanelPercentRef.current = leftPanelPercent;
 
@@ -417,8 +420,12 @@ export default function AppPage({
             <div style={{ position: "relative" }}>
               <button onClick={() => setMenuOpen(o => !o)}
                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", border: `2px solid ${t.border}`, borderRadius: 8, background: "transparent", color: t.ink, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700, boxShadow: t.shadowSm }}>
-                <div style={{ width: 26, height: 26, borderRadius: "50%", background: t.blue, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "0.8rem" }}>
-                  {username?.[0]?.toUpperCase() || "G"}
+                <div style={{ width: 26, height: 26, borderRadius: "50%", background: hasExternalPicture ? "transparent" : t.blue, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "0.8rem", overflow: "hidden" }}>
+                  {hasExternalPicture ? (
+                    <img src={user.picture} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: "1rem", lineHeight: 1 }}>{getAvatarEmoji(avatarId)}</span>
+                  )}
                 </div>
                 {!mobile && (username ?? "User")} ▾
               </button>
@@ -468,8 +475,8 @@ export default function AppPage({
           }}
         >
           {/* Problem statement */}
-          <Card t={t} style={{ flexShrink: 0 }}>
-            <CardHeader icon="📋" title={problem.title} t={t}
+          <Card t={t} density="compact" style={{ flexShrink: 0 }}>
+            <CardHeader icon="📋" title={problem.title} t={t} density="compact"
               extra={
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <button
@@ -517,7 +524,7 @@ export default function AppPage({
           </Card>
 
           {/* Code panel */}
-          <Card t={t} style={{ flexShrink: 0, height: mobile ? 320 : "clamp(340px, 45vh, 560px)", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", ...(!mobile && { flex: 1, height: "auto", minHeight: 200 }) }}>
+          <Card t={t} density="compact" style={{ flexShrink: 0, height: mobile ? 320 : "clamp(340px, 45vh, 560px)", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", ...(!mobile && { flex: 1, height: "auto", minHeight: 200 }) }}>
             <div style={{ display: "flex", alignItems: "center", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt, flexShrink: 0, paddingLeft: 4, paddingRight: 10 }}>
               {["Solution", "Explanation"].map(tab => (
                 <button key={tab} onClick={() => setSolTab(tab)}
@@ -574,8 +581,8 @@ export default function AppPage({
         )}
 
         {/* RIGHT — Visualizer */}
-        <Card t={t} style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: mobile ? 420 : 0, flex: mobile ? "none" : 1, minWidth: 0 }}>
-          <CardHeader icon="🎨" title="Whiteboard" t={t}
+        <Card t={t} density="compact" style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: mobile ? 420 : 0, flex: mobile ? "none" : 1, minWidth: 0 }}>
+          <CardHeader icon="🎨" title="Whiteboard" t={t} density="compact"
             extra={
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <button onClick={() => setWhiteboardMaximized(true)} title="Maximize whiteboard"
