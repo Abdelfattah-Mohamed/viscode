@@ -15,6 +15,14 @@ function formatPrice(cents, interval) {
   return `$${d}`;
 }
 
+const PLAN_ORDER = {
+  free: 0,
+  pro_weekly: 1,
+  pro: 2,
+  pro_yearly: 3,
+  lifetime: 4,
+};
+
 export default function BillingPage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, mobile }) {
   const {
     subscription,
@@ -62,6 +70,8 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
   };
 
   const paidPlans = plans.filter((p) => p.id !== "free");
+  const currentPlanRank = PLAN_ORDER[plan?.id] ?? 0;
+  const upgradePlans = paidPlans.filter((p) => (PLAN_ORDER[p.id] ?? 0) > currentPlanRank);
   const isGuest = !user || user.isGuest;
 
   return (
@@ -195,7 +205,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
               </div>
             </Card>
 
-            {!isPro && paidPlans.length > 0 && (
+            {upgradePlans.length > 0 && (
               <Card t={t} style={{ overflow: "hidden" }}>
                 <div style={{ padding: "16px 20px", borderBottom: `1.5px solid ${t.border}`, display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: "1.2rem" }}>⬆️</span>
@@ -204,7 +214,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                   </span>
                 </div>
                 <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
-                  {paidPlans.map((p) => (
+                  {upgradePlans.map((p) => (
                     <div
                       key={p.id}
                       style={{
@@ -259,6 +269,11 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                   ))}
                 </div>
               </Card>
+            )}
+            {plan?.id === "lifetime" && (
+              <p style={{ margin: "12px 2px 0", fontSize: "0.85rem", color: t.inkMuted }}>
+                You're on the highest plan.
+              </p>
             )}
 
         <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
