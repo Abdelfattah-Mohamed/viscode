@@ -182,74 +182,86 @@ export default function AppPage({
   const codeLines = langDef?.code?.length ?? 0;
   const activeLine = (() => {
     if (!currentStep || !langDef?.lineMap || codeLines === 0) return -1;
-    const raw = langDef.lineMap[currentStep.stepType]
-      ?? langDef.lineMap["loop"]
-      ?? langDef.lineMap["compare"]
-      ?? langDef.lineMap["visit"]
-      ?? langDef.lineMap["relax"]
-      ?? langDef.lineMap["add_edge"]
-      ?? langDef.lineMap["pop"]
-      ?? langDef.lineMap["push"]
-      ?? langDef.lineMap["update"]
-      ?? langDef.lineMap["query"]
-      ?? langDef.lineMap["find"]
-      ?? langDef.lineMap["union"]
-      ?? langDef.lineMap["add"]
-      ?? langDef.lineMap["recurse"]
-      ?? langDef.lineMap["build"]
-      ?? langDef.lineMap["build_leaf"]
-      ?? langDef.lineMap["build_merge"]
-      ?? langDef.lineMap["query_combine"]
-      ?? langDef.lineMap["loop_i"]
-      ?? langDef.lineMap["loop_w"]
-      ?? langDef.lineMap["loop_k"]
-      ?? langDef.lineMap["loop_ij"]
-      ?? langDef.lineMap["build_edges"]
-      ?? langDef.lineMap["add_edge"]
-      ?? langDef.lineMap["init_queue"]
-      ?? langDef.lineMap["update_leftMax"]
-      ?? langDef.lineMap["add_water_left"]
-      ?? langDef.lineMap["update_rightMax"]
-      ?? langDef.lineMap["add_water_right"]
-      ?? langDef.lineMap["transpose"]
-      ?? langDef.lineMap["reverse"]
-      ?? langDef.lineMap["scan"]
-      ?? langDef.lineMap["mark_zero"]
-      ?? langDef.lineMap["sweep"]
-      ?? langDef.lineMap["zero_col0"]
-      ?? langDef.lineMap["zero_row0"]
-      ?? langDef.lineMap["try_start"]
-      ?? langDef.lineMap["base"]
-      ?? langDef.lineMap["dfs_base"]
-      ?? langDef.lineMap["dfs_fail"]
-      ?? langDef.lineMap["dfs_mark"]
-      ?? langDef.lineMap["dfs_recurse"]
-      ?? langDef.lineMap["dfs_backtrack"]
-      ?? langDef.lineMap["found"]
-      ?? langDef.lineMap["go_right"]
-      ?? langDef.lineMap["go_down"]
-      ?? langDef.lineMap["go_left"]
-      ?? langDef.lineMap["go_up"]
-      ?? langDef.lineMap["try_odd"]
-      ?? langDef.lineMap["try_even"]
-      ?? langDef.lineMap["add_right"]
-      ?? langDef.lineMap["shrink"]
-      ?? langDef.lineMap["update_best"]
-      ?? langDef.lineMap["read_len"]
-      ?? langDef.lineMap["push_result"]
-      ?? langDef.lineMap["add_push"]
-      ?? langDef.lineMap["add_balance"]
-      ?? langDef.lineMap["add_rebalance"]
-      ?? langDef.lineMap["median"]
-      ?? langDef.lineMap["ser_base"]
-      ?? langDef.lineMap["ser_recurse"]
-      ?? langDef.lineMap["ser_done"]
-      ?? langDef.lineMap["des_base"]
-      ?? langDef.lineMap["des_build"]
-      ?? langDef.lineMap["des_recurse"]
-      ?? langDef.lineMap["done"]
-      ?? langDef.lineMap["init"]
-      ?? 1;
+    const stepType = currentStep.stepType;
+    const aliases = {
+      update: ["relax", "visit"],
+      pop: ["goal_check", "visit", "loop"],
+      stack_built: ["dfs1_push", "init"],
+      new_scc: ["dfs2_visit", "visit", "init"],
+      dfs_recurse: ["recurse", "visit"],
+      build_leaf: ["build"],
+      build_merge: ["build", "query_combine"],
+    };
+    const candidates = [
+      stepType,
+      ...(aliases[stepType] || []),
+      "compare",
+      "visit",
+      "relax",
+      "add_edge",
+      "pop",
+      "push",
+      "update",
+      "query",
+      "find",
+      "union",
+      "add",
+      "recurse",
+      "build",
+      "build_leaf",
+      "build_merge",
+      "query_combine",
+      "loop_i",
+      "loop_w",
+      "loop_k",
+      "loop_ij",
+      "build_edges",
+      "init_queue",
+      "update_leftMax",
+      "add_water_left",
+      "update_rightMax",
+      "add_water_right",
+      "transpose",
+      "reverse",
+      "scan",
+      "mark_zero",
+      "sweep",
+      "zero_col0",
+      "zero_row0",
+      "try_start",
+      "base",
+      "dfs_base",
+      "dfs_fail",
+      "dfs_mark",
+      "dfs_recurse",
+      "dfs_backtrack",
+      "found",
+      "go_right",
+      "go_down",
+      "go_left",
+      "go_up",
+      "try_odd",
+      "try_even",
+      "add_right",
+      "shrink",
+      "update_best",
+      "read_len",
+      "push_result",
+      "add_push",
+      "add_balance",
+      "add_rebalance",
+      "median",
+      "ser_base",
+      "ser_recurse",
+      "ser_done",
+      "des_base",
+      "des_build",
+      "des_recurse",
+      "done",
+      "init",
+      "loop",
+    ];
+    const raw = candidates.map((key) => langDef.lineMap[key]).find((line) => Number.isFinite(line)) ?? 1;
     if (raw < 1) return -1;
     return Math.min(raw, codeLines);
   })();
