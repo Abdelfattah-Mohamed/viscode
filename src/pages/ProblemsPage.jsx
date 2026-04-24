@@ -115,6 +115,68 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
           <p style={{ color: t.inkMuted, fontSize: "0.95rem", margin: 0 }}>Click any card to visualize it step-by-step.</p>
         </div>
 
+        <div
+          style={{
+            marginBottom: 18,
+            border: `1.5px solid ${t.border}`,
+            borderRadius: 10,
+            background: t.surface,
+            padding: "12px 14px",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "'Caveat',cursive",
+              fontSize: "0.9rem",
+              fontWeight: 700,
+              color: t.green,
+              padding: "2px 9px",
+              border: `1.5px solid ${t.border}`,
+              borderRadius: 999,
+              background: t.surfaceAlt,
+            }}
+          >
+            Free: Famous Algorithms
+          </span>
+          <span
+            style={{
+              fontFamily: "'Caveat',cursive",
+              fontSize: "0.9rem",
+              fontWeight: 700,
+              color: t.red,
+              padding: "2px 9px",
+              border: `1.5px solid ${t.border}`,
+              borderRadius: 999,
+              background: t.surfaceAlt,
+            }}
+          >
+            Pro: Other categories
+          </span>
+          {!isPro && (
+            <button
+              onClick={() => onNavigate("billing")}
+              style={{
+                marginLeft: "auto",
+                fontFamily: "'Caveat',cursive",
+                fontSize: "0.95rem",
+                fontWeight: 700,
+                padding: "6px 12px",
+                border: `1.5px solid ${t.border}`,
+                borderRadius: 8,
+                background: t.ink,
+                color: t.yellow,
+                cursor: "pointer",
+              }}
+            >
+              Upgrade to unlock all →
+            </button>
+          )}
+        </div>
+
         {/* Search + filter */}
         <div style={{ display: "flex", gap: 12, marginBottom: 28, flexWrap: "wrap" }}>
           <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
