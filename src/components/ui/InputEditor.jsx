@@ -238,6 +238,17 @@ function inferFieldKind(field, input, fields, visualizer) {
   return "string";
 }
 
+function kindHelp(kind, weightedGraphInput) {
+  if (kind === "int") return "Single number (e.g. 7)";
+  if (kind === "array") return "Numbers separated by comma/new line (e.g. 1, 2, 3)";
+  if (kind === "string") return "Plain text string";
+  if (kind === "tree") return "Level-order nodes, use null for missing (e.g. 3, 9, 20, null, null, 15, 7)";
+  if (kind === "pairs") return "One pair per line: a, b";
+  if (kind === "matrix") return "Use rows/cols and edit cells in the table";
+  if (kind === "graph") return weightedGraphInput ? "One weighted edge per line: u v w" : "One edge per line: u v";
+  return "Enter value";
+}
+
 function buildInitialDraft(input, fields, visualizer, weightedGraphInput = false) {
   const draft = {};
   for (const f of fields) {
@@ -441,6 +452,19 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
             </div>
 
             <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ border: `2px dashed ${sketchBorder}`, borderRadius: 10, background: paperAlt, padding: "10px 12px" }}>
+                <div style={{ fontFamily: sketchFont, fontSize: "1rem", fontWeight: 700, color: ink, marginBottom: 4 }}>
+                  Input format quick help
+                </div>
+                <div style={{ display: "grid", gap: 4, fontSize: "0.78rem", color: t.inkMuted }}>
+                  {Array.from(new Set(schema.map((x) => x.kind))).map((k) => (
+                    <div key={`help-${k}`}>
+                      <strong style={{ color: ink }}>{k}:</strong> {kindHelp(k, weightedGraphInput)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {schema.map(({ field, kind }) => (
                 <div key={field} style={{ border: `2px solid ${sketchBorder}`, borderRadius: 10, padding: 12, background: paperAlt }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>

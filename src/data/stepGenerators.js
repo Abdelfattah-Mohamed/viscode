@@ -2404,6 +2404,17 @@ function buildEdgesFromNums(n, nums) {
   }
   return edges;
 }
+
+function buildWeightedEdgesFromNums(n, nums) {
+  const edges = [];
+  for (let i = 0; i + 2 < (nums || []).length; i += 3) {
+    const u = Number(nums[i]);
+    const v = Number(nums[i + 1]);
+    const w = Number(nums[i + 2]);
+    if (!Number.isNaN(u) && !Number.isNaN(v) && !Number.isNaN(w)) edges.push([u, v, w]);
+  }
+  return edges;
+}
 export function generateEvalRpnSteps(input) {
   const s = input?.s != null ? String(input.s).trim() : "";
   const tokens = s ? s.split(",").map(t => t.trim()).filter(Boolean) : [];
@@ -3710,6 +3721,348 @@ export function generateCourseScheduleSteps(input) {
   return steps;
 }
 
+export function generateBfsGraphSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+  if (n <= 0) {
+    steps.push({ stepType: "init", description: "Enter n and edges", state: { n: 0, edges: [], highlighted: [], queue: [] } });
+    steps.push({ stepType: "done", description: "Done", state: { n: 0, edges: [], highlighted: [], queue: [], done: true } });
+    return steps;
+  }
+  const g = Array.from({ length: n }, () => []);
+  for (const [a, b] of edges) if (a >= 0 && a < n && b >= 0 && b < n) { g[a].push(b); g[b].push(a); }
+  const vis = Array(n).fill(false);
+  const q = [0];
+  const order = [];
+  vis[0] = true;
+  steps.push({ stepType: "init", description: "BFS from node 0", state: { n, edges: [...edges], highlighted: [0], queue: [0] } });
+  let qi = 0;
+  while (qi < q.length) {
+    const u = q[qi++];
+    order.push(u);
+    steps.push({ stepType: "pop", description: `Dequeue ${u}`, state: { n, edges: [...edges], highlighted: [u], queue: q.slice(qi), result: `order=[${order.join(", ")}]` } });
+    for (const v of g[u]) {
+      if (!vis[v]) {
+        vis[v] = true;
+        q.push(v);
+        steps.push({ stepType: "visit", description: `Visit ${v} from ${u}, enqueue`, state: { n, edges: [...edges], highlighted: [u, v], queue: q.slice(qi), result: `order=[${order.join(", ")}]` } });
+      }
+    }
+  }
+  steps.push({ stepType: "done", description: `BFS order: [${order.join(", ")}]`, state: { n, edges: [...edges], highlighted: [], queue: [], result: `order=[${order.join(", ")}]`, done: true } });
+  return steps;
+}
+
+export function generateDfsGraphSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+  if (n <= 0) return [{ stepType: "init", description: "Enter n and edges", state: { n: 0, edges: [], highlighted: [] } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], highlighted: [], done: true } }];
+  const g = Array.from({ length: n }, () => []);
+  for (const [a, b] of edges) if (a >= 0 && a < n && b >= 0 && b < n) { g[a].push(b); g[b].push(a); }
+  const vis = Array(n).fill(false);
+  const order = [];
+  steps.push({ stepType: "init", description: "DFS from node 0", state: { n, edges: [...edges], highlighted: [0] } });
+  function dfs(u) {
+    vis[u] = true;
+    order.push(u);
+    steps.push({ stepType: "visit", description: `Visit ${u}`, state: { n, edges: [...edges], highlighted: [u], result: `order=[${order.join(", ")}]` } });
+    for (const v of g[u]) {
+      if (!vis[v]) {
+        steps.push({ stepType: "dfs_recurse", description: `DFS ${u} -> ${v}`, state: { n, edges: [...edges], highlighted: [u, v], result: `order=[${order.join(", ")}]` } });
+        dfs(v);
+      }
+    }
+  }
+  dfs(0);
+  steps.push({ stepType: "done", description: `DFS order: [${order.join(", ")}]`, state: { n, edges: [...edges], highlighted: [], result: `order=[${order.join(", ")}]`, done: true } });
+  return steps;
+}
+
+export function generateDijkstraSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildWeightedEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+  if (n <= 0) return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], dist: [] } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], dist: [], done: true } }];
+  const g = Array.from({ length: n }, () => []);
+  for (const [u, v, w] of edges) if (u >= 0 && u < n && v >= 0 && v < n) g[u].push([v, w]);
+  const INF = 1e9;
+  const dist = Array(n).fill(INF);
+  dist[0] = 0;
+  const used = Array(n).fill(false);
+  steps.push({ stepType: "init", description: "Dijkstra from source 0", state: { n, edges: [...edges], dist: [...dist], highlighted: [0], directed: true } });
+  for (let iter = 0; iter < n; iter++) {
+    let u = -1;
+    for (let i = 0; i < n; i++) if (!used[i] && (u === -1 || dist[i] < dist[u])) u = i;
+    if (u === -1 || dist[u] >= INF) break;
+    used[u] = true;
+    steps.push({ stepType: "pop", description: `Pick closest unvisited node ${u} (dist=${dist[u]})`, state: { n, edges: [...edges], dist: [...dist], highlighted: [u], directed: true } });
+    for (const [v, w] of g[u]) {
+      if (dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        steps.push({ stepType: "relax", description: `Relax ${u}->${v} (w=${w}), dist[${v}]=${dist[v]}`, state: { n, edges: [...edges], dist: [...dist], highlighted: [u, v], directed: true } });
+      }
+    }
+  }
+  steps.push({ stepType: "done", description: "Shortest distances computed", state: { n, edges: [...edges], dist: [...dist], highlighted: [], directed: true, done: true } });
+  return steps;
+}
+
+export function generatePrimMstSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildWeightedEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+  if (n <= 0) return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], mstEdges: [] } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], mstEdges: [], done: true } }];
+  const g = Array.from({ length: n }, () => []);
+  for (const [u, v, w] of edges) if (u >= 0 && u < n && v >= 0 && v < n) { g[u].push([v, w]); g[v].push([u, w]); }
+  const inMst = Array(n).fill(false);
+  const mstEdges = [];
+  inMst[0] = true;
+  steps.push({ stepType: "init", description: "Prim: start from node 0", state: { n, edges: [...edges], highlighted: [0], mstEdges: [] } });
+  while (mstEdges.length < n - 1) {
+    let best = null;
+    for (let u = 0; u < n; u++) {
+      if (!inMst[u]) continue;
+      for (const [v, w] of g[u]) {
+        if (inMst[v]) continue;
+        if (!best || w < best[2]) best = [u, v, w];
+      }
+    }
+    if (!best) break;
+    const [u, v, w] = best;
+    inMst[v] = true;
+    mstEdges.push(`${u}-${v}(${w})`);
+    steps.push({ stepType: "add_edge", description: `Add minimum crossing edge ${u}-${v} (w=${w})`, state: { n, edges: [...edges], highlighted: [u, v], mstEdges: [...mstEdges] } });
+  }
+  steps.push({ stepType: "done", description: "Prim MST built", state: { n, edges: [...edges], highlighted: [], mstEdges: [...mstEdges], done: true } });
+  return steps;
+}
+
+export function generateKruskalSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildWeightedEdgesFromNums(n, input?.nums || []).slice().sort((a, b) => a[2] - b[2]);
+  const steps = [];
+  if (n <= 0) return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], mstEdges: [] } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], mstEdges: [], done: true } }];
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const rank = Array(n).fill(0);
+  const find = (x) => {
+    let p = x;
+    while (parent[p] !== p) p = parent[p];
+    while (x !== p) { const nx = parent[x]; parent[x] = p; x = nx; }
+    return p;
+  };
+  const unite = (a, b) => {
+    let pa = find(a), pb = find(b);
+    if (pa === pb) return false;
+    if (rank[pa] < rank[pb]) [pa, pb] = [pb, pa];
+    parent[pb] = pa;
+    if (rank[pa] === rank[pb]) rank[pa]++;
+    return true;
+  };
+  const mstEdges = [];
+  steps.push({ stepType: "init", description: "Kruskal: sort edges by weight", state: { n, edges: [...edges], mstEdges: [] } });
+  for (const [u, v, w] of edges) {
+    steps.push({ stepType: "visit", description: `Check edge ${u}-${v} (w=${w})`, state: { n, edges: [...edges], highlighted: [u, v], mstEdges: [...mstEdges] } });
+    if (unite(u, v)) {
+      mstEdges.push(`${u}-${v}(${w})`);
+      steps.push({ stepType: "add_edge", description: `Add edge ${u}-${v} to MST`, state: { n, edges: [...edges], highlighted: [u, v], mstEdges: [...mstEdges] } });
+      if (mstEdges.length === n - 1) break;
+    }
+  }
+  steps.push({ stepType: "done", description: "Kruskal MST built", state: { n, edges: [...edges], highlighted: [], mstEdges: [...mstEdges], done: true } });
+  return steps;
+}
+
+export function generateFloydWarshallSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildWeightedEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+  if (n <= 0) return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], result: "" } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], result: "", done: true } }];
+  const INF = 1e8;
+  const dist = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 0 : INF)));
+  for (const [u, v, w] of edges) if (u >= 0 && u < n && v >= 0 && v < n) dist[u][v] = Math.min(dist[u][v], w);
+  steps.push({ stepType: "init", description: "Initialize distance matrix", state: { n, edges: [...edges], directed: true, result: "dist initialized" } });
+  for (let k = 0; k < n; k++) {
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (dist[i][k] < INF && dist[k][j] < INF && dist[i][k] + dist[k][j] < dist[i][j]) {
+          dist[i][j] = dist[i][k] + dist[k][j];
+          steps.push({ stepType: "relax", description: `Update dist[${i}][${j}] via ${k} -> ${dist[i][j]}`, state: { n, edges: [...edges], directed: true, highlighted: [i, k, j], result: `k=${k}` } });
+        }
+      }
+    }
+  }
+  const hasNegCycle = dist.some((row, i) => row[i] < 0);
+  steps.push({ stepType: "done", description: hasNegCycle ? "Negative cycle detected" : "All-pairs shortest paths computed", state: { n, edges: [...edges], directed: true, result: hasNegCycle ? "Negative cycle detected" : "No negative cycle", done: true } });
+  return steps;
+}
+
+export function generateAStarSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildWeightedEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+  if (n <= 0) return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], dist: [] } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], dist: [], done: true } }];
+  const start = 0;
+  const goal = n - 1;
+  const g = Array.from({ length: n }, () => []);
+  for (const [u, v, w] of edges) if (u >= 0 && u < n && v >= 0 && v < n) g[u].push([v, w]);
+  const dist = Array(n).fill(1e9);
+  dist[start] = 0;
+  const h = (x) => Math.abs(goal - x);
+  const open = [[h(start), 0, start]];
+  const seen = new Set();
+  steps.push({ stepType: "init", description: `A*: start=${start}, goal=${goal}, h(x)=|goal-x|`, state: { n, edges: [...edges], dist: [...dist], directed: true, highlighted: [start] } });
+  while (open.length) {
+    open.sort((a, b) => a[0] - b[0]);
+    const [f, gcost, u] = open.shift();
+    if (seen.has(u)) continue;
+    seen.add(u);
+    steps.push({ stepType: "pop", description: `Expand ${u} with f=${f}, g=${gcost}`, state: { n, edges: [...edges], dist: [...dist], directed: true, highlighted: [u] } });
+    if (u === goal) break;
+    for (const [v, w] of g[u]) {
+      const ng = gcost + w;
+      if (ng < dist[v]) {
+        dist[v] = ng;
+        open.push([ng + h(v), ng, v]);
+        steps.push({ stepType: "relax", description: `Update ${v}: g=${ng}, f=${ng + h(v)}`, state: { n, edges: [...edges], dist: [...dist], directed: true, highlighted: [u, v] } });
+      }
+    }
+  }
+  steps.push({ stepType: "done", description: "A* exploration complete", state: { n, edges: [...edges], dist: [...dist], directed: true, highlighted: [goal], done: true } });
+  return steps;
+}
+
+export function generateKosarajuSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+  if (n <= 0) return [{ stepType: "init", description: "Enter n and directed edges", state: { n: 0, edges: [], directed: true } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], directed: true, done: true } }];
+  const g = Array.from({ length: n }, () => []);
+  const gt = Array.from({ length: n }, () => []);
+  for (const [u, v] of edges) if (u >= 0 && u < n && v >= 0 && v < n) { g[u].push(v); gt[v].push(u); }
+  const vis = Array(n).fill(false);
+  const order = [];
+  function dfs1(u) {
+    vis[u] = true;
+    for (const v of g[u]) if (!vis[v]) dfs1(v);
+    order.push(u);
+  }
+  for (let i = 0; i < n; i++) if (!vis[i]) dfs1(i);
+  steps.push({ stepType: "stack_built", description: `Finish order stack: [${order.join(", ")}]`, state: { n, edges: [...edges], directed: true, stack: [...order] } });
+  vis.fill(false);
+  let scc = 0;
+  function dfs2(u) {
+    vis[u] = true;
+    steps.push({ stepType: "visit", description: `SCC ${scc}: visit ${u} on transpose`, state: { n, edges: [...edges], directed: true, highlighted: [u], result: `scc=${scc}` } });
+    for (const v of gt[u]) if (!vis[v]) dfs2(v);
+  }
+  while (order.length) {
+    const u = order.pop();
+    if (vis[u]) continue;
+    scc++;
+    steps.push({ stepType: "new_scc", description: `Start SCC ${scc} from ${u}`, state: { n, edges: [...edges], directed: true, highlighted: [u], stack: [...order] } });
+    dfs2(u);
+  }
+  steps.push({ stepType: "done", description: `Kosaraju done: ${scc} SCC(s)`, state: { n, edges: [...edges], directed: true, result: `${scc} SCC(s)`, done: true } });
+  return steps;
+}
+
+export function generateTarjanSccSteps(input) {
+  const n = Math.max(0, Number(input?.n) ?? 0);
+  const edges = buildEdgesFromNums(n, input?.nums || []);
+  const steps = [];
+  if (n <= 0) return [{ stepType: "init", description: "Enter n and directed edges", state: { n: 0, edges: [], directed: true } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], directed: true, done: true } }];
+  const g = Array.from({ length: n }, () => []);
+  for (const [u, v] of edges) if (u >= 0 && u < n && v >= 0 && v < n) g[u].push(v);
+  const id = Array(n).fill(-1);
+  const low = Array(n).fill(0);
+  const onSt = Array(n).fill(false);
+  const st = [];
+  let timer = 0;
+  let scc = 0;
+  function dfs(u) {
+    id[u] = low[u] = timer++;
+    st.push(u);
+    onSt[u] = true;
+    steps.push({ stepType: "visit", description: `Visit ${u}: id=${id[u]}, low=${low[u]}`, state: { n, edges: [...edges], directed: true, highlighted: [u], stack: [...st] } });
+    for (const v of g[u]) {
+      if (id[v] === -1) {
+        dfs(v);
+        low[u] = Math.min(low[u], low[v]);
+      } else if (onSt[v]) {
+        low[u] = Math.min(low[u], id[v]);
+      }
+    }
+    if (low[u] === id[u]) {
+      scc++;
+      const comp = [];
+      while (st.length) {
+        const x = st.pop();
+        onSt[x] = false;
+        comp.push(x);
+        if (x === u) break;
+      }
+      steps.push({ stepType: "pop_scc", description: `Pop SCC ${scc}: [${comp.join(", ")}]`, state: { n, edges: [...edges], directed: true, highlighted: [...comp], stack: [...st], result: `${scc} SCC(s)` } });
+    }
+  }
+  for (let i = 0; i < n; i++) if (id[i] === -1) dfs(i);
+  steps.push({ stepType: "done", description: `Tarjan done: ${scc} SCC(s)`, state: { n, edges: [...edges], directed: true, result: `${scc} SCC(s)`, done: true } });
+  return steps;
+}
+
+export function generateUnionFindSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums.map((x) => Number(x)).filter((x) => !Number.isNaN(x)) : [];
+  const n = nums.length || 5;
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const steps = [{ stepType: "init", description: `Init parent[i]=i for ${n} nodes`, state: { nums: [...parent], highlighted: [] } }];
+  for (let i = 0; i + 1 < n; i += 2) {
+    parent[i + 1] = i;
+    steps.push({ stepType: "union", description: `union(${i}, ${i + 1}) -> parent[${i + 1}] = ${i}`, state: { nums: [...parent], highlighted: [i, i + 1] } });
+  }
+  steps.push({ stepType: "done", description: "Final representative array", state: { nums: [...parent], highlighted: [], done: true } });
+  return steps;
+}
+
+export function generateFenwickTreeSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums.map((x) => Number(x) || 0) : [];
+  const n = nums.length;
+  const bit = Array(n + 1).fill(0);
+  const steps = [{ stepType: "init", description: "Fenwick tree build", state: { nums: [...bit], highlighted: [] } }];
+  const update = (i, delta) => {
+    while (i <= n) {
+      bit[i] += delta;
+      steps.push({ stepType: "update", description: `bit[${i}] += ${delta} -> ${bit[i]}`, state: { nums: [...bit], highlighted: [i] } });
+      i += i & -i;
+    }
+  };
+  for (let i = 0; i < n; i++) update(i + 1, nums[i]);
+  steps.push({ stepType: "done", description: "BIT built", state: { nums: [...bit], highlighted: [], done: true } });
+  return steps;
+}
+
+export function generateSegmentTreeSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums.map((x) => Number(x) || 0) : [];
+  const n = nums.length;
+  const seg = Array(Math.max(1, 4 * n)).fill(0);
+  const steps = [{ stepType: "init", description: "Segment tree build", state: { nums: [...nums], highlighted: [] } }];
+  function build(v, l, r) {
+    if (l === r) {
+      seg[v] = nums[l];
+      steps.push({ stepType: "build_leaf", description: `Leaf [${l}] = ${nums[l]}`, state: { nums: [...seg], highlighted: [v] } });
+      return;
+    }
+    const m = Math.floor((l + r) / 2);
+    build(v * 2, l, m);
+    build(v * 2 + 1, m + 1, r);
+    seg[v] = seg[v * 2] + seg[v * 2 + 1];
+    steps.push({ stepType: "build_merge", description: `Node ${v} covers [${l},${r}] = ${seg[v]}`, state: { nums: [...seg], highlighted: [v] } });
+  }
+  if (n > 0) build(1, 0, n - 1);
+  steps.push({ stepType: "done", description: "Segment tree built", state: { nums: [...seg], highlighted: [], done: true } });
+  return steps;
+}
+
 export const STEP_GENERATORS = {
   "two-sum":              generateTwoSumSteps,
   "longest-consecutive":  generateLongestConsecutiveSteps,
@@ -3787,5 +4140,17 @@ export const STEP_GENERATORS = {
   "serialize-deserialize-btree": generateSerializeDeserializeSteps,
   "find-median-from-data-stream": generateFindMedianSteps,
   "bellman-ford":            generateBellmanFordSteps,
+  "floyd-warshall":          generateFloydWarshallSteps,
+  "kosaraju":                generateKosarajuSteps,
+  "tarjan-scc":              generateTarjanSccSteps,
+  "mst-kruskal":             generateKruskalSteps,
+  "a-star":                  generateAStarSteps,
+  "dijkstra":                generateDijkstraSteps,
+  "prim-mst":                generatePrimMstSteps,
+  "bfs-graph":               generateBfsGraphSteps,
+  "dfs-graph":               generateDfsGraphSteps,
+  "union-find":              generateUnionFindSteps,
+  "fenwick-tree":            generateFenwickTreeSteps,
+  "segment-tree":            generateSegmentTreeSteps,
   "knapsack-01": generateKnapsackSteps,
 };

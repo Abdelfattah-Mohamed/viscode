@@ -1003,6 +1003,71 @@ export const PROBLEMS = {
   "knapsack-01": { title: "0/1 Knapsack", difficulty: "Medium", category: "Famous Algorithms", timeComplexity: "O(n × W)", spaceComplexity: "O(W)", visualizer: "array", description: "Given weights and values of n items and capacity W, maximize total value without exceeding weight. Each item use at most once.", example: { input: "weights = [2,3,4,5], values = [3,4,5,6], W = 8", output: "Max value (e.g. 10)", note: "dp[w] = max value with capacity w." }, defaultInput: { nums: [2, 3, 4, 5], target: 8 }, inputFields: ["nums", "target"], explanation: [{ emoji: "💡", title: "Idea", body: "DP: dp[w] = max value achievable with capacity w. For each item (weight wi, value vi), iterate w from W down to wi: dp[w] = max(dp[w], dp[w-wi] + vi)." }, { emoji: "👣", title: "Steps", body: "1. dp[0..W] = 0.\n2. For each item (wi, vi): for w from W down to wi, dp[w] = max(dp[w], dp[w-wi] + vi).\n3. Return dp[W]." }, { emoji: "⚡", title: "Complexity", body: "Time O(n×W), space O(W). Pseudo-polynomial (depends on W)." }], languages: { cpp: { code: ["int knapsack(int W, vector<int>& wt, vector<int>& val) {","    vector<int> dp(W+1, 0);","    for (int i = 0; i < wt.size(); i++)","        for (int w = W; w >= wt[i]; w--)","            dp[w] = max(dp[w], dp[w - wt[i]] + val[i]);","    return dp[W];","}"], lineMap: { init: 2, loop: 4, loop_i: 3, loop_w: 4, update: 5, done: 7 } }, java: { code: ["int knapsack(int W, int[] wt, int[] val) {","    int[] dp = new int[W+1];","    for (int i = 0; i < wt.length; i++)","        for (int w = W; w >= wt[i]; w--)","            dp[w] = Math.max(dp[w], dp[w - wt[i]] + val[i]);","    return dp[W];","}"], lineMap: { init: 2, loop: 4, loop_i: 3, loop_w: 4, update: 5, done: 7 } }, javascript: { code: ["function knapsack(W, wt, val) {","  const dp = Array(W+1).fill(0);","  for (let i = 0; i < wt.length; i++)","    for (let w = W; w >= wt[i]; w--)","      dp[w] = Math.max(dp[w], dp[w - wt[i]] + val[i]);","  return dp[W];","}"], lineMap: { init: 2, loop: 4, loop_i: 3, loop_w: 4, update: 5, done: 7 } }, python: { code: ["def knapsack(W, wt, val):","    dp = [0] * (W + 1)","    for i in range(len(wt)):","        for w in range(W, wt[i] - 1, -1):","            dp[w] = max(dp[w], dp[w - wt[i]] + val[i])","    return dp[W]"], lineMap: { init: 2, loop: 4, loop_i: 3, loop_w: 4, update: 5, done: 6 } } } },
 };
 
+const FAMOUS_ALGO_EXPLANATION_BOOST = {
+  "bellman-ford": [
+    { emoji: "🧠", title: "Why V-1 Passes Are Enough", body: "The longest simple path in a graph with V vertices has at most V-1 edges. Each full relaxation pass can correctly settle shortest paths that use one more edge. After V-1 passes, any further improvement means a cycle is helping — and if it still improves distance, that cycle must be negative." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use Bellman-Ford when negative weights are possible or when you must detect negative cycles. It is slower than Dijkstra on non-negative graphs. Always guard relax with dist[u] != INF to avoid overflow-style bugs on unreachable nodes." },
+  ],
+  "floyd-warshall": [
+    { emoji: "🧠", title: "DP Interpretation", body: "Think of dist[i][j] as the best distance from i to j using only intermediate nodes from set {0..k}. At step k, either keep old dist[i][j], or route through k: dist[i][k] + dist[k][j]. This is a classic dynamic programming transition over intermediate nodes." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use for all-pairs shortest paths on small/medium dense graphs. For sparse graphs, running Dijkstra from each node is often better. Choose a large INF and skip additions involving INF to avoid invalid arithmetic; check dist[i][i] < 0 for negative cycles." },
+  ],
+  "kosaraju": [
+    { emoji: "🧠", title: "Why Transpose Works", body: "The first DFS orders vertices by finish time so SCCs appear in a stack order that respects condensation DAG direction. Reversing edges (transpose) flips that DAG, so starting DFS from the latest-finished node isolates exactly one SCC before crossing to others." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use when SCC grouping is needed and two DFS passes are acceptable. Common bugs: forgetting to include isolated nodes, failing to clear visited before second pass, or not reversing all edges correctly." },
+  ],
+  "tarjan-scc": [
+    { emoji: "🧠", title: "Low-Link Intuition", body: "low[u] is the smallest discovery id reachable from u using tree edges plus at most one back edge to a node currently on stack. If low[u] == id[u], u is the root of an SCC, and every stacked node above u belongs to that SCC until u is popped." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use Tarjan for SCCs in one DFS pass (efficient and elegant). Common mistakes: updating low with low[v] for non-stack neighbors, or forgetting the onStack check; both break SCC boundaries." },
+  ],
+  "mst-kruskal": [
+    { emoji: "🧠", title: "Greedy Correctness Intuition", body: "By the cut property, the lightest edge crossing any cut is safe to include in some MST. Sorting edges and adding only those that connect different components repeatedly picks safe edges while avoiding cycles." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Great for sparse graphs and when edges are already listed globally. Ensure graph is undirected and connected if you expect one full MST; otherwise result is a minimum spanning forest." },
+  ],
+  "a-star": [
+    { emoji: "🧠", title: "Heuristic Quality Matters", body: "A* behaves like Dijkstra when h(n)=0, and becomes faster as h gets closer to true remaining distance without overestimating. Admissible + consistent heuristics preserve optimality and avoid excessive reprocessing." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use when you have a meaningful heuristic to a goal (maps/grids/pathfinding). Bad heuristic (too weak) gives little speedup; non-admissible heuristic can produce non-optimal paths." },
+  ],
+  "dijkstra": [
+    { emoji: "🧠", title: "Greedy Invariant", body: "When node u is popped with smallest tentative distance, dist[u] is final (for non-negative edges). Any alternative path to u through another unsettled node would be at least as large, so no future relaxation can improve u." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use for single-source shortest path with non-negative weights. Do not use with negative edges. In heap implementations, stale entries are normal; skip them via if poppedDist > dist[u]." },
+  ],
+  "prim-mst": [
+    { emoji: "🧠", title: "Cut Property View", body: "At each step Prim keeps one growing tree. The minimum-weight edge leaving that tree is always safe to add to an MST. This mirrors Dijkstra structure, but priority is edge weight-to-tree, not path distance-from-source." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Great for dense adjacency structures and incremental MST growth. If graph is disconnected, Prim from one source only covers one component; run per component for a forest." },
+  ],
+  "bfs-graph": [
+    { emoji: "🧠", title: "Level-by-Level Guarantee", body: "BFS visits vertices in nondecreasing distance from source in unweighted graphs. The first time you dequeue a node, you have found its shortest path length measured in edges." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use for unweighted shortest paths, connectivity, and layer traversal. Mark visited when enqueuing (not dequeuing) to prevent duplicates and queue blow-up." },
+  ],
+  "dfs-graph": [
+    { emoji: "🧠", title: "Traversal Tree Semantics", body: "DFS builds a depth-first forest and naturally exposes entry/exit times, back edges, and recursion structure. Those properties power cycle detection, topological sorting, articulation points, and SCC algorithms." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use for exhaustive exploration and recursion-style graph tasks. Watch recursion depth on large graphs; iterative stack DFS can avoid call-stack overflow." },
+  ],
+  "union-find": [
+    { emoji: "🧠", title: "Why Near-Constant Time", body: "Path compression flattens trees during find, and union by rank/size prevents tall trees. Together they make repeated operations extremely fast: amortized inverse-Ackermann time, practically constant." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use for dynamic connectivity, cycle checks, and Kruskal. It does not store full graph structure or path lengths, only component membership." },
+  ],
+  "fenwick-tree": [
+    { emoji: "🧠", title: "Bit Trick Intuition", body: "i & -i extracts the least significant set bit, which represents the size of the range stored at index i. Moving i += lowbit climbs to parent ranges (update), and i -= lowbit walks prefix contributors (query)." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use for point updates + prefix/range sums with compact code. Most bugs come from indexing: Fenwick is usually 1-indexed; convert carefully from 0-indexed arrays." },
+  ],
+  "segment-tree": [
+    { emoji: "🧠", title: "Range Decomposition", body: "Any query interval can be decomposed into O(log n) disjoint segment-tree nodes. That is why range queries and point updates are logarithmic while still supporting many aggregate operations via merge functions." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use when Fenwick is too limited (min/max, custom merges, range updates with lazy propagation). Pitfalls: wrong identity element for disjoint segments and off-by-one bounds in recursion." },
+  ],
+  "knapsack-01": [
+    { emoji: "🧠", title: "Why Reverse Capacity Loop", body: "Iterating capacity from high to low ensures each item is used at most once: dp[w - wi] still refers to the previous item state in this iteration. Forward iteration would accidentally allow reusing the same item multiple times." },
+    { emoji: "🧪", title: "When to Use / Pitfalls", body: "Use for pick-or-skip problems with capacity constraints and one-time items. If items can be reused infinitely, switch to unbounded knapsack (forward capacity loop)." },
+  ],
+};
+
+Object.entries(FAMOUS_ALGO_EXPLANATION_BOOST).forEach(([problemId, extraBlocks]) => {
+  if (PROBLEMS[problemId]) {
+    PROBLEMS[problemId].explanation = [...(PROBLEMS[problemId].explanation || []), ...extraBlocks];
+  }
+});
+
 // ── Blind 75 order (LeetCode) from https://dev.to/jaiminbariya/leetcode-blind-75-49mp ──
 const BLIND_75_ORDER = [
   "two-sum", "best-time-stock", "contains-duplicate", "product-except-self", "max-subarray", "max-product-subarray",
