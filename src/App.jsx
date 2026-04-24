@@ -76,6 +76,7 @@ export default function App() {
   const { recent, track } = useRecentProblems();
   const prevUser = useRef(null);
 
+
   useEffect(() => {
     if (shared.current) {
       window.history.replaceState({}, "", pathFor("app", shared.current.pid));
@@ -93,7 +94,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!prevUser.current && auth.user && !shared.current) setPage("home");
+    if (!prevUser.current && auth.user && !shared.current) {
+      const route = getRouteFromPath(window.location.pathname);
+      // Keep the in-memory page aligned with current URL after auth rehydrate.
+      setPage(route.page);
+      if (route.problemId) setSelected(route.problemId);
+    }
     prevUser.current = auth.user;
   }, [auth.user]);
 
