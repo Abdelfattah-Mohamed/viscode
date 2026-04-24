@@ -1,17 +1,12 @@
-import { useState } from "react";
 import NavBar from "../components/ui/NavBar";
-import ThemeToggle from "../components/ui/ThemeToggle";
 import { Card } from "../components/ui/Card";
 import SectionHeader from "../components/ui/SectionHeader";
+import AccountMenuChip from "../components/ui/AccountMenuChip";
 
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
-import { getAvatarEmoji } from "../data/avatars";
 
 export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, user, mobile, recent, onSelectProblem, isPro }) {
-  const [userMenuOpen, setMenuOpen] = useState(false);
   const isLocked = (p) => p && !isPro && p.category !== "Famous Algorithms";
-  const avatarId = user?.avatarId && user.avatarId >= 1 && user.avatarId <= 10 ? user.avatarId : 1;
-  const hasExternalPicture = !!user?.picture && !user?.picture?.startsWith?.("avatar:");
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
       <style>{`
@@ -23,33 +18,16 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
 
       <NavBar page="home" onNavigate={onNavigate} t={t} themeMode={themeMode} mobile={mobile}
         right={
-          <div style={{ display: "flex", alignItems: "center", gap: mobile ? 8 : 12 }}>
-            {!mobile && <ThemeToggle mode={themeMode} setMode={setThemeMode} t={t} />}
-            {!mobile && <div style={{ width: 1, height: 28, background: t.border, opacity: 0.3 }} />}
-            <div style={{ position: "relative" }}>
-              <button onClick={() => setMenuOpen(o => !o)}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", border: `2px solid ${t.border}`, borderRadius: 8, background: "transparent", color: t.ink, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700, boxShadow: t.shadowSm }}>
-                <div style={{ width: 26, height: 26, borderRadius: "50%", background: hasExternalPicture ? "transparent" : t.blue, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "0.8rem", overflow: "hidden" }}>
-                  {hasExternalPicture ? (
-                    <img src={user.picture} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <span style={{ fontSize: "1rem", lineHeight: 1 }}>{getAvatarEmoji(avatarId)}</span>
-                  )}
-                </div>
-                {!mobile && (username ?? "User")} ▾
-              </button>
-              {userMenuOpen && (
-                <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, boxShadow: t.shadow, zIndex: 300, minWidth: 160, overflow: "hidden" }}>
-                  <div style={{ padding: "10px 16px", fontFamily: "'Caveat',cursive", fontSize: "0.9rem", color: t.inkMuted, borderBottom: `1.5px solid ${t.border}` }}>{username ?? "User"}</div>
-                  {mobile && <div style={{ padding: "8px 16px", borderBottom: `1.5px solid ${t.border}` }}><ThemeToggle mode={themeMode} setMode={setThemeMode} t={t} /></div>}
-                  <button onClick={() => { setMenuOpen(false); onNavigate("profile"); }}
-                    style={{ width: "100%", padding: "10px 16px", textAlign: "left", border: "none", background: "transparent", color: t.ink, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700 }}>Profile</button>
-                  <button onClick={() => { setMenuOpen(false); onLogout(); }}
-                    style={{ width: "100%", padding: "10px 16px", textAlign: "left", border: "none", background: "transparent", color: t.red, cursor: "pointer", fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700 }}>Sign out</button>
-                </div>
-              )}
-            </div>
-          </div>
+          <AccountMenuChip
+            t={t}
+            mobile={mobile}
+            themeMode={themeMode}
+            setThemeMode={setThemeMode}
+            username={username}
+            user={user}
+            onProfile={() => onNavigate("profile")}
+            onLogout={onLogout}
+          />
         }
       />
 
