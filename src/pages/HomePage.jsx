@@ -2,6 +2,7 @@ import NavBar from "../components/ui/NavBar";
 import { Card } from "../components/ui/Card";
 import SectionHeader from "../components/ui/SectionHeader";
 import AccountMenuChip from "../components/ui/AccountMenuChip";
+import PageContainer from "../components/ui/PageContainer";
 
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
@@ -71,7 +72,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
 
       {/* Continue where you left off */}
       {recent?.length > 0 && (
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "32px 12px 0" : "48px 24px 0" }}>
+        <PageContainer mobile={mobile} paddingMobile="32px 12px 0" paddingDesktop="48px 24px 0">
           <SectionHeader t={t} title="Continue Where You Left Off" compact style={{ marginBottom: 16 }} />
           <div style={{ display: "flex", gap: 12, overflowX: mobile ? "auto" : "hidden", WebkitOverflowScrolling: "touch", paddingBottom: 8 }}>
             {recent.slice(0, 5).map(id => {
@@ -102,11 +103,11 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
               );
             })}
           </div>
-        </div>
+        </PageContainer>
       )}
 
       {/* Famous Algorithms */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "40px 12px 0" : "56px 24px 0" }}>
+      <PageContainer mobile={mobile} paddingMobile="40px 12px 0" paddingDesktop="56px 24px 0">
         <SectionHeader
           t={t}
           title="⭐ Famous Algorithms"
@@ -132,10 +133,10 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
           style={{ marginTop: 16, padding: "8px 20px", border: `1.5px solid ${t.border}`, borderRadius: 8, background: "transparent", color: t.blue, fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, cursor: "pointer" }}>
           View all Famous Algorithms →
         </button>
-      </div>
+      </PageContainer>
 
       {/* How it works */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "60px 24px" }}>
+      <PageContainer mobile={mobile} paddingMobile="48px 12px" paddingDesktop="60px 24px">
         <SectionHeader t={t} title="How It Works" compact style={{ marginBottom: 24, justifyContent: "center", textAlign: "center" }} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
           {[
@@ -154,7 +155,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
             </Card>
           ))}
         </div>
-      </div>
+      </PageContainer>
 
       {/* CTA footer */}
       <div style={{ textAlign: "center", padding: "48px 24px 64px", borderTop: `1.5px solid ${t.border}`, background: t.surface }}>

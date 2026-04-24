@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import NavBar from "../components/ui/NavBar";
 import SectionHeader from "../components/ui/SectionHeader";
 import AccountMenuChip from "../components/ui/AccountMenuChip";
+import PageContainer from "../components/ui/PageContainer";
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
 function problemsUrlParams(view, cat, q) {
@@ -94,7 +95,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
         }
       />
 
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "24px 12px 40px" : "40px 24px 60px" }}>
+      <PageContainer mobile={mobile} paddingMobile="24px 12px 40px" paddingDesktop="40px 24px 60px">
         <SectionHeader
           t={t}
           title={<span>Problems <span style={{ color: t.blue }}>({PROB_LIST.length})</span></span>}
@@ -281,7 +282,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                 );
               })}
             </div>}
-      </div>
+      </PageContainer>
     </div>
   );
 }
