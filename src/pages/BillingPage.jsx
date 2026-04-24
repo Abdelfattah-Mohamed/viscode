@@ -3,7 +3,7 @@ import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { Card } from "../components/ui/Card";
 import { useSubscription } from "../hooks/useSubscription";
-import { createCheckoutSession } from "../utils/billingApi";
+import { createCheckoutSession, changeSubscriptionPlan } from "../utils/billingApi";
 
 function formatPrice(cents, interval) {
   if (cents === 0) return "$0";
@@ -55,6 +55,23 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
     if (!user?.email || checkoutPlan) return;
     setCheckoutPlan(planId);
     setMessage(null);
+    const canUseProrationUpgrade =
+      !!subscription?.stripe_subscription_id &&
+      plan?.id !== "lifetime" &&
+      planId !== "lifetime";
+
+    if (canUseProrationUpgrade) {
+      const changeResult = await changeSubscriptionPlan(user.email, plan?.id, planId);
+      setCheckoutPlan(null);
+      if (changeResult.error) {
+        setMessage({ type: "error", text: changeResult.error });
+        return;
+      }
+      setMessage({ type: "success", text: "Plan upgraded successfully. Proration credit applied automatically." });
+      refetch();
+      return;
+    }
+
     const result = await createCheckoutSession(user.email, planId);
     if (result.error) {
       setCheckoutPlan(null);

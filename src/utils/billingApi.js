@@ -15,3 +15,22 @@ export async function createCheckoutSession(email, planId) {
   if (data?.url) return { url: data.url };
   return { error: "No checkout URL returned" };
 }
+
+/**
+ * Upgrades an existing recurring Stripe subscription with proration.
+ * Returns { ok } on success or { error }.
+ */
+export async function changeSubscriptionPlan(email, currentPlanId, targetPlanId) {
+  const sb = getSupabase();
+  if (!sb) return { error: "Not configured" };
+  const { data, error } = await sb.functions.invoke("change-subscription-plan", {
+    body: {
+      email: email?.trim()?.toLowerCase(),
+      current_plan_id: currentPlanId,
+      target_plan_id: targetPlanId,
+    },
+  });
+  if (error) return { error: error.message || "Failed to change subscription plan" };
+  if (data?.error) return { error: data.error };
+  return { ok: true };
+}
