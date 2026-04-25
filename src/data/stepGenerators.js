@@ -1155,7 +1155,15 @@ function stubArraySteps(input) {
 export function generateKnapsackSteps(input) {
   const weights = Array.isArray(input?.nums) ? input.nums.map(Number).filter((w) => !isNaN(w) && w > 0) : [2, 3, 4, 5];
   const W = Math.max(0, Number(input?.target) ?? 8);
-  const values = weights.map((_, i) => (i + 1) * 2 + 1);
+  const rawValues = Array.isArray(input?.val)
+    ? input.val
+    : Array.isArray(input?.values)
+      ? input.values
+      : [];
+  const values = weights.map((_, i) => {
+    const v = Number(rawValues[i]);
+    return Number.isFinite(v) ? v : (i + 1) * 2 + 1;
+  });
   const n = weights.length;
   const steps = [];
   const dp = Array(W + 1).fill(0);
@@ -1163,42 +1171,59 @@ export function generateKnapsackSteps(input) {
   steps.push({
     stepType: "init",
     description: `dp[0..${W}] = 0`,
-    state: { dp: [...dp], i: -1, w: -1, highlight: [], target: W },
+    state: { dp: [...dp], i: -1, w: -1, sourceW: -1, highlight: [], target: W, weights: [...weights], values: [...values] },
   });
 
   for (let i = 0; i < n; i++) {
     steps.push({
       stepType: "loop_i",
       description: `Item ${i}: weight=${weights[i]}, value=${values[i]}`,
-      state: { dp: [...dp], i, w: -1, highlight: [], target: W },
+      state: { dp: [...dp], i, w: -1, sourceW: -1, highlight: [], target: W, weights: [...weights], values: [...values] },
     });
     const wEnd = weights[i];
-    const wStep = Math.max(1, Math.floor((W - wEnd + 1) / 3));
-    for (let w = W; w >= wEnd; w -= wStep) {
+    for (let w = W; w >= wEnd; w -= 1) {
       const newVal = dp[w - weights[i]] + values[i];
       const prev = dp[w];
       steps.push({
         stepType: "loop_w",
         description: `w=${w}: max(dp[${w}], dp[${w - weights[i]}]+${values[i]})`,
-        state: { dp: [...dp], i, w, highlight: [w], target: W },
+        state: {
+          dp: [...dp],
+          i,
+          w,
+          sourceW: w - weights[i],
+          highlight: [w, w - weights[i]],
+          target: W,
+          weights: [...weights],
+          values: [...values],
+          candidate: newVal,
+          prev,
+        },
       });
       if (newVal > prev) dp[w] = newVal;
       steps.push({
         stepType: "update",
         description: dp[w] > prev ? `dp[${w}]=${dp[w]}` : `dp[${w}] unchanged`,
-        state: { dp: [...dp], i, w, highlight: [w], target: W },
+        state: {
+          dp: [...dp],
+          i,
+          w,
+          sourceW: w - weights[i],
+          highlight: [w, w - weights[i]],
+          target: W,
+          weights: [...weights],
+          values: [...values],
+          candidate: newVal,
+          prev,
+        },
       });
-    }
-    for (let w = wEnd; w <= W; w++) {
-      const newVal = dp[w - weights[i]] + values[i];
-      if (newVal > dp[w]) dp[w] = newVal;
     }
   }
 
   steps.push({
     stepType: "done",
     description: `Max value = dp[${W}] = ${dp[W]}`,
-    state: { dp: [...dp], i: n - 1, w: W, highlight: [W], done: true, target: W },
+    state: { dp: [...dp], i: n - 1, w: W, sourceW: -1, highlight: [W], done: true, target: W, weights: [...weights], values: [...values] },
   });
   return steps;
 }

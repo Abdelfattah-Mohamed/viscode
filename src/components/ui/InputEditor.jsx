@@ -424,6 +424,11 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
     });
   };
 
+  const displayFieldName = (field) => {
+    if (problem?.title === "0/1 Knapsack" && field === "nums") return "weights";
+    return field;
+  };
+
   return (
     <>
       <button onClick={() => setOpen(true)} style={{ ...pill(), marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
@@ -495,7 +500,7 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
               {schema.map(({ field, kind }) => (
                 <div key={field} style={{ border: `2px solid ${sketchBorder}`, borderRadius: 10, padding: 12, background: paperAlt }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-                    <div style={{ fontFamily: sketchFont, fontSize: "1.1rem", fontWeight: 700, color: ink }}>{field}</div>
+                    <div style={{ fontFamily: sketchFont, fontSize: "1.1rem", fontWeight: 700, color: ink }}>{displayFieldName(field)}</div>
                     <div style={{ fontSize: "0.72rem", color: t.inkMuted, textTransform: "uppercase" }}>{kind}</div>
                   </div>
 
