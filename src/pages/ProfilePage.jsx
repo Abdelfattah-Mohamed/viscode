@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import NavBar from "../components/ui/NavBar";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import { Card } from "../components/ui/Card";
+import Button from "../components/ui/Button";
+import PageContainer from "../components/ui/PageContainer";
+import SectionHeader from "../components/ui/SectionHeader";
 import { AVATARS, getAvatarEmoji } from "../data/avatars";
 import { PROBLEMS, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
@@ -39,11 +42,19 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
   const [deleteError, setDeleteError] = useState("");
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
+  const [studyListTab, setStudyListTab] = useState("favorites");
   const currentAvatarId = user?.avatarId && user.avatarId >= 1 && user.avatarId <= 10 ? user.avatarId : 1;
   const hasExternalPicture = !!user?.picture && !user?.picture?.startsWith?.("avatar:") && !imageLoadFailed;
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
     : null;
+  const favoriteCount = fav?.favorites?.length || 0;
+  const flaggedCount = fav?.flagged?.length || 0;
+  const savedCount = favoriteCount + flaggedCount;
+  const activeStudyIds = studyListTab === "favorites" ? (fav?.favorites || []) : (fav?.flagged || []);
+  const activeStudyEmpty = studyListTab === "favorites"
+    ? "No favorite problems yet. Star problems you want to revisit often."
+    : "No flagged problems yet. Flag problems you want to revisit.";
 
   useEffect(() => {
     setImageLoadFailed(false);
@@ -89,58 +100,63 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
         }
       />
 
-      <div style={{ flex: 1, maxWidth: 700, margin: "0 auto", padding: "40px 24px 60px", width: "100%" }}>
-        <Card t={t} style={{ overflow: "hidden" }}>
-          <div style={{ padding: "28px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, borderBottom: `1.5px solid ${t.border}` }}>
-            <div
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                background: hasExternalPicture ? "transparent" : t.blue,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontFamily: "'Caveat',cursive",
-                fontSize: "2.2rem",
-                fontWeight: 700,
-                overflow: "hidden",
-              }}
-            >
-              {hasExternalPicture ? (
-                <img
-                  src={user.picture}
-                  alt=""
-                  onError={() => setImageLoadFailed(true)}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              ) : (
-                <span style={{ fontSize: "2.5rem" }}>{getAvatarEmoji(currentAvatarId)}</span>
+      <PageContainer mobile={mobile} maxWidth={980} paddingMobile="24px 12px 44px" paddingDesktop="40px 24px 60px" style={{ flex: 1, width: "100%" }}>
+        <Card t={t} style={{ overflow: "hidden", background: `linear-gradient(135deg, ${t.surface} 0%, ${t.surfaceAlt} 100%)` }}>
+          <div style={{ padding: mobile ? "22px 18px" : "28px 30px", display: "grid", gridTemplateColumns: mobile ? "1fr" : "auto 1fr auto", alignItems: "center", gap: mobile ? 18 : 24, borderBottom: `1.5px solid ${t.border}` }}>
+            <div style={{ display: "flex", justifyContent: mobile ? "center" : "flex-start" }}>
+              <div
+                style={{
+                  width: 88,
+                  height: 88,
+                  borderRadius: "50%",
+                  background: hasExternalPicture ? "transparent" : t.blue,
+                  border: `2px solid ${t.border}`,
+                  boxShadow: t.shadowSm,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  fontFamily: "'Caveat',cursive",
+                  fontSize: "2.2rem",
+                  fontWeight: 700,
+                  overflow: "hidden",
+                }}
+              >
+                {hasExternalPicture ? (
+                  <img
+                    src={user.picture}
+                    alt=""
+                    onError={() => setImageLoadFailed(true)}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <span style={{ fontSize: "2.6rem" }}>{getAvatarEmoji(currentAvatarId)}</span>
+                )}
+              </div>
+            </div>
+            <div style={{ textAlign: mobile ? "center" : "left", minWidth: 0 }}>
+              <div style={{ fontSize: "0.78rem", fontWeight: 800, color: t.inkMuted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5 }}>
+                Account profile
+              </div>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "2rem", lineHeight: 1.05, fontWeight: 700, color: t.ink }}>{user?.username || "—"}</div>
+              <div style={{ marginTop: 8, color: t.inkMuted, fontSize: "0.9rem", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {user?.email || (user?.isGuest ? "Guest session" : "No email available")}
+              </div>
+              {memberSince && (
+                <div style={{ marginTop: 5, color: t.inkMuted, fontSize: "0.84rem" }}>
+                  Member since {memberSince}
+                </div>
               )}
             </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.5rem", fontWeight: 700, color: t.ink }}>{user?.username || "—"}</div>
+            <div style={{ display: "flex", flexDirection: mobile ? "row" : "column", justifyContent: mobile ? "center" : "flex-end", gap: 10, flexWrap: "wrap" }}>
               {!user?.isGuest && onUpdateProfile && (
-                <button
-                  type="button"
-                  onClick={() => setShowAvatarPicker(true)}
-                  style={{
-                    marginTop: 8,
-                    padding: "6px 14px",
-                    fontFamily: "'DM Sans',sans-serif",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    border: `2px solid ${t.border}`,
-                    borderRadius: 8,
-                    background: t.surface,
-                    color: t.ink,
-                    cursor: "pointer",
-                  }}
-                >
+                <Button t={t} variant="secondary" size="sm" onClick={() => setShowAvatarPicker(true)} style={{ borderRadius: 8 }}>
                   Change avatar
-                </button>
+                </Button>
               )}
+              <Button t={t} variant="secondary" size="sm" onClick={() => onNavigate("billing")} style={{ borderRadius: 8 }}>
+                Billing
+              </Button>
             </div>
           </div>
 
@@ -198,48 +214,84 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
             </div>
           )}
 
-          <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: "0.75rem", fontWeight: 600, color: t.inkMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Username</label>
-              <div style={{ padding: "10px 14px", background: t.surfaceAlt, borderRadius: 8, border: `1.5px solid ${t.border}`, fontFamily: "'Caveat',cursive", fontSize: "1.1rem", fontWeight: 600, color: t.ink }}>
-                {user?.username || "—"}
-              </div>
-            </div>
-            {user?.email && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: t.inkMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Email</label>
-                <div style={{ padding: "10px 14px", background: t.surfaceAlt, borderRadius: 8, border: `1.5px solid ${t.border}`, fontFamily: "'DM Sans',sans-serif", fontSize: "0.95rem", color: t.ink }}>
-                  {user.email}
+          <div style={{ padding: mobile ? "18px" : "22px 24px", display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 12, borderBottom: `1.5px solid ${t.border}` }}>
+            {[
+              { label: "Favorites", value: favoriteCount, color: t.yellow },
+              { label: "Flagged", value: flaggedCount, color: t.red },
+              { label: "Saved items", value: savedCount, color: t.blue },
+            ].map((stat) => (
+              <div key={stat.label} style={{ padding: "14px 15px", borderRadius: 12, border: `1.25px solid ${t.border}`, background: t.surface, boxShadow: t.shadowSm }}>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1.25rem", fontWeight: 900, color: stat.color }}>
+                  {stat.value}
+                </div>
+                <div style={{ marginTop: 3, color: t.inkMuted, fontSize: "0.82rem", fontWeight: 700 }}>
+                  {stat.label}
                 </div>
               </div>
-            )}
-            {memberSince && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: t.inkMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Member since</label>
-                <div style={{ padding: "10px 14px", background: t.surfaceAlt, borderRadius: 8, border: `1.5px solid ${t.border}`, fontSize: "0.9rem", color: t.ink }}>
-                  {memberSince}
-                </div>
-              </div>
-            )}
+            ))}
           </div>
+
         </Card>
 
-        {/* Favorites */}
-        <Card t={t} style={{ marginTop: 24, overflow: "hidden" }}>
-          <div style={{ padding: "16px 20px", borderBottom: `1.5px solid ${t.border}`, display: "flex", alignItems: "center", gap: 8 }}>
-            <StarIcon filled size={20} />
-            <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, color: t.ink }}>
-              Favorites {fav?.favorites.length ? <span style={{ color: t.blue }}>({fav.favorites.length})</span> : null}
-            </span>
+        {/* Study lists */}
+        <div style={{ marginTop: 28 }}>
+          <SectionHeader
+            t={t}
+            title="Study lists"
+            subtitle="Keep important problems organized for review."
+            compact
+            style={{ marginBottom: 14 }}
+          />
+        </div>
+        <Card t={t} style={{ overflow: "hidden" }}>
+          <div style={{ padding: "14px 16px", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[
+              { key: "favorites", label: "Favorites", count: favoriteCount, icon: <StarIcon filled={studyListTab === "favorites"} size={15} />, color: t.yellow },
+              { key: "flagged", label: "Flagged", count: flaggedCount, icon: <FlagIcon filled={studyListTab === "flagged"} size={15} />, color: t.red },
+            ].map((tab) => {
+              const active = studyListTab === tab.key;
+              return (
+                <Button
+                  key={tab.key}
+                  t={t}
+                  variant={active ? "primary" : "ghost"}
+                  size="sm"
+                  onClick={() => setStudyListTab(tab.key)}
+                  style={{
+                    borderRadius: 999,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    color: active ? t.yellow : t.ink,
+                    background: active ? t.ink : t.surface,
+                  }}
+                >
+                  {tab.icon}
+                  {tab.label}
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", color: active ? t.yellow : tab.color }}>
+                    {tab.count}
+                  </span>
+                </Button>
+              );
+            })}
           </div>
           <div style={{ padding: "12px 16px" }}>
-            {!fav?.favorites.length ? (
+            {!activeStudyIds.length ? (
               <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.88rem", textAlign: "center", padding: "16px 0" }}>
-                No favorite problems yet. Star problems to add them here.
+                {activeStudyEmpty}
               </p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {fav.favorites.map(id => {
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  maxHeight: 340,
+                  overflowY: activeStudyIds.length > 5 ? "auto" : "visible",
+                  paddingRight: activeStudyIds.length > 5 ? 4 : 0,
+                }}
+              >
+                {activeStudyIds.map(id => {
                   const p = PROBLEMS[id];
                   if (!p) return null;
                   const dc = DIFF_COLOR[p.difficulty] || {};
@@ -255,53 +307,12 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
                       </div>
                       <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.72rem", fontWeight: 700, padding: "1px 8px", border: `1.5px solid ${t.border}`, borderRadius: 10, ...dc, flexShrink: 0 }}>{p.difficulty}</span>
                       <button
-                        onClick={e => { e.stopPropagation(); fav.toggleFavorite(id); }}
-                        title="Remove from favorites"
-                        style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: t.inkMuted, display: "flex", borderRadius: 6, flexShrink: 0 }}
-                      >
-                        <XIcon size={16} />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Flagged */}
-        <Card t={t} style={{ marginTop: 16, overflow: "hidden" }}>
-          <div style={{ padding: "16px 20px", borderBottom: `1.5px solid ${t.border}`, display: "flex", alignItems: "center", gap: 8 }}>
-            <FlagIcon filled size={20} />
-            <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, color: t.ink }}>
-              Flagged {fav?.flagged.length ? <span style={{ color: t.red }}>({fav.flagged.length})</span> : null}
-            </span>
-          </div>
-          <div style={{ padding: "12px 16px" }}>
-            {!fav?.flagged.length ? (
-              <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.88rem", textAlign: "center", padding: "16px 0" }}>
-                No flagged problems yet. Flag problems you want to revisit.
-              </p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {fav.flagged.map(id => {
-                  const p = PROBLEMS[id];
-                  if (!p) return null;
-                  const dc = DIFF_COLOR[p.difficulty] || {};
-                  return (
-                    <div key={id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: t.surfaceAlt, borderRadius: 10, border: `1.5px solid ${t.border}`, cursor: "pointer", transition: "transform 0.12s" }}
-                      onClick={() => onSelectProblem?.(id)}
-                      onMouseEnter={e => e.currentTarget.style.transform = "translateX(4px)"}
-                      onMouseLeave={e => e.currentTarget.style.transform = ""}>
-                      <span style={{ fontSize: "1.1rem", flexShrink: 0 }}>{CAT_ICON[p.category] || "📌"}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05rem", fontWeight: 700, color: t.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
-                        <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.78rem", color: t.inkMuted }}>{p.category}</span>
-                      </div>
-                      <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.72rem", fontWeight: 700, padding: "1px 8px", border: `1.5px solid ${t.border}`, borderRadius: 10, ...dc, flexShrink: 0 }}>{p.difficulty}</span>
-                      <button
-                        onClick={e => { e.stopPropagation(); fav.toggleFlagged(id); }}
-                        title="Remove flag"
+                        onClick={e => {
+                          e.stopPropagation();
+                          if (studyListTab === "favorites") fav.toggleFavorite(id);
+                          else fav.toggleFlagged(id);
+                        }}
+                        title={studyListTab === "favorites" ? "Remove from favorites" : "Remove flag"}
                         style={{ background: "none", border: "none", padding: 4, cursor: "pointer", color: t.inkMuted, display: "flex", borderRadius: 6, flexShrink: 0 }}
                       >
                         <XIcon size={16} />
@@ -315,56 +326,15 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
         </Card>
 
         <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button
-            onClick={() => onNavigate("billing")}
-            style={{
-              padding: "10px 20px",
-              fontFamily: "'Caveat',cursive",
-              fontSize: "1.05rem",
-              fontWeight: 700,
-              border: `2px solid ${t.border}`,
-              borderRadius: 8,
-              background: t.surface,
-              color: t.ink,
-              cursor: "pointer",
-              boxShadow: t.shadowSm,
-            }}
-          >
-            💳 Billing
-          </button>
-          <button
-            onClick={() => onNavigate("home")}
-            style={{
-              padding: "10px 20px",
-              fontFamily: "'Caveat',cursive",
-              fontSize: "1.05rem",
-              fontWeight: 700,
-              border: `2px solid ${t.border}`,
-              borderRadius: 8,
-              background: t.surface,
-              color: t.ink,
-              cursor: "pointer",
-              boxShadow: t.shadowSm,
-            }}
-          >
-            ← Back to Home
-          </button>
-          <button
-            onClick={onLogout}
-            style={{
-              padding: "10px 20px",
-              fontFamily: "'Caveat',cursive",
-              fontSize: "1.05rem",
-              fontWeight: 700,
-              border: `2px solid ${t.red}`,
-              borderRadius: 8,
-              background: "transparent",
-              color: t.red,
-              cursor: "pointer",
-            }}
-          >
+          <Button t={t} variant="secondary" onClick={() => onNavigate("problems")} style={{ borderRadius: 8 }}>
+            Browse problems
+          </Button>
+          <Button t={t} variant="secondary" onClick={() => onNavigate("home")} style={{ borderRadius: 8 }}>
+            Back to Home
+          </Button>
+          <Button t={t} variant="ghost" onClick={onLogout} style={{ borderRadius: 8, borderColor: t.red, color: t.red }}>
             Sign out
-          </button>
+          </Button>
         </div>
 
         {!user?.isGuest && onDeleteAccount && (
@@ -451,7 +421,7 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
             )}
           </div>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }
