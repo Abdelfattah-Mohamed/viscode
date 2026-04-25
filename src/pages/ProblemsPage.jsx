@@ -6,6 +6,21 @@ import PageContainer from "../components/ui/PageContainer";
 import Button from "../components/ui/Button";
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
+const FREE_CATEGORY = "Famous Algorithms";
+
+const PRO_VALUE_POINTS = [
+  "Unlock every category",
+  "Editable custom inputs",
+  "Save favorites and flags",
+  "Full visual practice library",
+];
+
+const STUDY_PATHS = [
+  { label: "Start free", detail: "Famous Algorithms", color: "green" },
+  { label: "Go deeper", detail: "Arrays, DP, Trees, Graphs", color: "blue" },
+  { label: "Practice smarter", detail: "Custom inputs + notes", color: "yellow" },
+];
+
 function problemsUrlParams(view, cat, q) {
   const params = new URLSearchParams();
   if (view && view !== "all") params.set("view", view);
@@ -69,13 +84,18 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
   });
   const list = filter === "All"
     ? [...filtered].sort((a, b) => {
-        const aFamous = a.category === "Famous Algorithms" ? 0 : 1;
-        const bFamous = b.category === "Famous Algorithms" ? 0 : 1;
+        const aFamous = a.category === FREE_CATEGORY ? 0 : 1;
+        const bFamous = b.category === FREE_CATEGORY ? 0 : 1;
         if (aFamous !== bFamous) return aFamous - bFamous;
         return a.title.localeCompare(b.title);
       })
     : filtered;
-  const isLocked = (p) => !isPro && p.category !== "Famous Algorithms";
+  const freeCount = PROB_LIST.filter((p) => p.category === FREE_CATEGORY).length;
+  const premiumCount = PROB_LIST.length - freeCount;
+  const categoryCount = categories.length;
+  const lockedCount = PROB_LIST.filter((p) => !isPro && p.category !== FREE_CATEGORY).length;
+  const visibleLockedCount = list.filter((p) => !isPro && p.category !== FREE_CATEGORY).length;
+  const isLocked = (p) => !isPro && p.category !== FREE_CATEGORY;
   const handleCardKeyDown = (e, action) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -102,48 +122,128 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
         }
       />
 
-      <PageContainer mobile={mobile} paddingMobile="24px 12px 40px" paddingDesktop="40px 24px 60px">
-        <SectionHeader
-          t={t}
-          title={<span>Problems <span style={{ color: t.blue }}>({PROB_LIST.length})</span></span>}
-          subtitle="Click any card to visualize it step-by-step."
-          style={{ marginBottom: 24 }}
-        />
+      <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="24px 12px 40px" paddingDesktop="40px 24px 60px">
+        <div
+          style={{
+            marginBottom: 24,
+            padding: mobile ? "22px 18px" : "28px 30px",
+            border: `1.75px solid ${t.border}`,
+            borderRadius: 16,
+            background: `linear-gradient(135deg, ${t.surface} 0%, ${t.surfaceAlt} 100%)`,
+            boxShadow: t.shadow,
+          }}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1.3fr 0.95fr", gap: mobile ? 22 : 32, alignItems: "center" }}>
+            <div>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 11px", borderRadius: 999, background: t.blue + "18", border: `1.25px solid ${t.blue}66`, color: t.blue, fontSize: "0.82rem", fontWeight: 800 }}>
+                {isPro ? "Pro library unlocked" : `${freeCount} free problems + ${premiumCount} Pro problems`}
+              </span>
+              <h1 style={{ fontFamily: "'Caveat',cursive", fontSize: mobile ? "2.25rem" : "3rem", lineHeight: 1, color: t.ink, margin: "14px 0 10px" }}>
+                Choose what to master next.
+              </h1>
+              <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.98rem", lineHeight: 1.65, maxWidth: 650 }}>
+                Browse step-by-step visual problems across interview topics. Famous Algorithms are free; Pro unlocks the complete practice library and editable input tools.
+              </p>
+              {!isPro && (
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
+                  <Button t={t} variant="primary" onClick={() => onNavigate("billing")} style={{ borderRadius: 10 }}>
+                    Unlock full library →
+                  </Button>
+                  <Button t={t} variant="secondary" onClick={() => setFilter(FREE_CATEGORY)} style={{ borderRadius: 10 }}>
+                    Try free algorithms
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              {[
+                { label: "Total problems", value: `${PROB_LIST.length}+` },
+                { label: "Topic categories", value: categoryCount },
+                { label: isPro ? "Unlocked problems" : "Premium previews", value: isPro ? PROB_LIST.length : lockedCount },
+              ].map((stat) => (
+                <div key={stat.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 14px", borderRadius: 12, border: `1.25px solid ${t.border}`, background: t.bg }}>
+                  <span style={{ color: t.inkMuted, fontSize: "0.86rem" }}>{stat.label}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", color: t.ink, fontWeight: 900 }}>{stat.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {!isPro && (
           <div
             style={{
-              marginBottom: 20,
+              marginBottom: 24,
               border: `1.5px solid ${t.border}`,
-              borderRadius: 10,
+              borderRadius: 14,
               background: t.surface,
-              padding: "12px 14px",
-              display: "flex",
-              flexWrap: "wrap",
+              padding: mobile ? "16px" : "18px 20px",
+              display: "grid",
+              gridTemplateColumns: mobile ? "1fr" : "1.1fr 1fr auto",
               alignItems: "center",
-              gap: 8,
+              gap: 16,
+              boxShadow: t.shadowSm,
             }}
           >
+            <div>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.35rem", fontWeight: 700, color: t.ink }}>
+                Upgrade when you are ready for serious practice.
+              </div>
+              <p style={{ margin: "4px 0 0", color: t.inkMuted, fontSize: "0.88rem", lineHeight: 1.55 }}>
+                Pro unlocks {premiumCount} premium problems, editable inputs, and the full set of visual practice categories.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+              {PRO_VALUE_POINTS.map((point) => (
+                <span key={point} style={{ fontSize: "0.78rem", fontWeight: 800, color: t.ink, background: t.surfaceAlt, border: `1.25px solid ${t.border}`, borderRadius: 999, padding: "5px 9px" }}>
+                  ✓ {point}
+                </span>
+              ))}
+            </div>
             <Button
               t={t}
               variant="primary"
               onClick={() => onNavigate("billing")}
-              style={{
-                marginLeft: "auto",
-                borderRadius: 8,
-              }}
+              style={{ borderRadius: 10, whiteSpace: "nowrap" }}
             >
-              Upgrade to unlock all →
+              View Pro plans
             </Button>
           </div>
         )}
 
+        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 24 }}>
+          {STUDY_PATHS.map((path) => {
+            const color = t[path.color] || t.blue;
+            return (
+              <div key={path.label} style={{ padding: "14px 15px", border: `1.25px solid ${t.border}`, borderRadius: 12, background: t.surface, boxShadow: t.shadowSm }}>
+                <div style={{ color, fontSize: "0.78rem", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 5 }}>
+                  {path.label}
+                </div>
+                <div style={{ color: t.ink, fontWeight: 800, fontSize: "0.95rem" }}>{path.detail}</div>
+              </div>
+            );
+          })}
+        </div>
+
         {/* Search + filter */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
+        <SectionHeader
+          t={t}
+          title="Browse the library"
+          subtitle={`${list.length} result${list.length === 1 ? "" : "s"}${!isPro && visibleLockedCount ? ` · ${visibleLockedCount} premium preview${visibleLockedCount === 1 ? "" : "s"}` : ""}`}
+          compact
+          style={{ marginBottom: 12 }}
+          action={!isPro ? (
+            <Button t={t} variant="ghost" size="sm" onClick={() => onNavigate("billing")} style={{ color: t.blue, borderColor: t.blue }}>
+              Unlock all
+            </Button>
+          ) : null}
+        />
+        <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap", padding: "14px", border: `1.25px solid ${t.border}`, borderRadius: 14, background: t.surface }}>
           <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
             <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: t.inkMuted, pointerEvents: "none" }}>🔍</span>
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search problems…"
+              placeholder="Search by problem, topic, or skill…"
               style={{ width: "100%", padding: "9px 14px 9px 36px", border: `1.5px solid ${t.border}`, borderRadius: 8, background: t.surface, color: t.ink, fontFamily: "'DM Sans',sans-serif", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", overflowX: mobile ? "auto" : "visible", paddingBottom: mobile ? 4 : 0 }}>
@@ -220,7 +320,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                     tabIndex={0}
                     aria-label={`${isLocked(p) ? "Locked problem: " : "Open problem: "}${p.title}`}
                     onKeyDown={(e) => handleCardKeyDown(e, () => onSelectProblem(p.id))}
-                    style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "16px 18px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", gap: 12, opacity: isLocked(p) ? 0.92 : 1 }}
+                    style={{ background: t.surface, border: `1.5px solid ${isLocked(p) ? t.blue + "99" : t.border}`, borderRadius: 12, padding: "16px 18px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", gap: 12, opacity: isLocked(p) ? 0.96 : 1, position: "relative" }}
                     onMouseEnter={e => { e.currentTarget.style.transform = "translate(-2px,-2px)"; e.currentTarget.style.boxShadow = t.shadow; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}
                     onFocus={e => { e.currentTarget.style.transform = "translate(-2px,-2px)"; e.currentTarget.style.boxShadow = `${t.shadow}, 0 0 0 2px ${t.blue}66`; }}
@@ -229,8 +329,8 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                       <span style={{ fontSize: "1.3rem" }}>{CAT_ICON[p.category] || "📌"}</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         {isLocked(p) && (
-                          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", border: `1.5px solid ${t.border}`, borderRadius: 10, color: t.red }}>
-                            🔒 Pro
+                          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", border: `1.5px solid ${t.blue}66`, borderRadius: 10, color: t.blue, background: t.blue + "14" }}>
+                            🔒 Pro preview
                           </span>
                         )}
                         <button
@@ -250,8 +350,39 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                         <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.75rem", fontWeight: 700, padding: "2px 9px", border: `1.5px solid ${t.border}`, borderRadius: 10, ...dc }}>{p.difficulty}</span>
                       </div>
                     </div>
-                    <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink, lineHeight: 1.3 }}>{p.title}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {isLocked(p) && (
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: "50%",
+                            background: t.red + "14",
+                            border: `1.5px solid ${t.red}66`,
+                            color: t.red,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "0.82rem",
+                            flexShrink: 0,
+                          }}
+                        >
+                          🔒
+                        </span>
+                      )}
+                      <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink, lineHeight: 1.3 }}>{p.title}</div>
+                    </div>
                     <div style={{ fontSize: "0.86rem", color: t.inkMuted, lineHeight: 1.6, flex: 1 }}>{p.desc}</div>
+                    {isLocked(p) ? (
+                      <div style={{ padding: "10px 11px", borderRadius: 10, border: `1.25px solid ${t.blue}55`, background: t.blue + "10", color: t.ink, fontSize: "0.8rem", lineHeight: 1.45 }}>
+                        <strong>Pro unlock:</strong> full visualization, custom editable inputs, and saved study flow for this topic.
+                      </div>
+                    ) : !isPro && p.category === FREE_CATEGORY ? (
+                      <div style={{ padding: "8px 10px", borderRadius: 10, border: `1.25px solid ${t.green}55`, background: t.green + "10", color: t.green, fontSize: "0.78rem", fontWeight: 800 }}>
+                        Free to visualize
+                      </div>
+                    ) : null}
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
                       {p.tags.slice(0, 2).map(tag => (
                         <span key={tag} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.69rem", padding: "2px 7px", border: `1.5px solid ${t.border}`, borderRadius: 20, background: t.surfaceAlt, color: t.inkMuted }}>{tag}</span>
@@ -260,7 +391,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.84rem", color: t.inkMuted }}>{p.category}</span>
                       <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9rem", fontWeight: 700, color: isLocked(p) ? t.red : t.blue }}>
-                        {isLocked(p) ? "Upgrade to view →" : "Visualize →"}
+                        {isLocked(p) ? "See Pro plans →" : "Visualize →"}
                       </span>
                     </div>
                   </div>
