@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ThemeToggle from "./ThemeToggle";
-import { getAvatarEmoji } from "../../data/avatars";
+import { getAvatarEmoji, isValidAvatarId } from "../../data/avatars";
 
 export default function AccountMenuChip({
   t,
@@ -13,7 +13,7 @@ export default function AccountMenuChip({
   onLogout,
 }) {
   const [open, setOpen] = useState(false);
-  const avatarId = user?.avatarId && user.avatarId >= 1 && user.avatarId <= 10 ? user.avatarId : 1;
+  const avatarId = isValidAvatarId(user?.avatarId) ? user.avatarId : 1;
   const hasExternalPicture = !!user?.picture && !user?.picture?.startsWith?.("avatar:");
 
   return (

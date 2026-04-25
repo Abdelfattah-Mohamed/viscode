@@ -5,7 +5,7 @@ import { Card } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import PageContainer from "../components/ui/PageContainer";
 import SectionHeader from "../components/ui/SectionHeader";
-import { AVATARS, getAvatarEmoji } from "../data/avatars";
+import { AVATARS, getAvatarEmoji, isValidAvatarId } from "../data/avatars";
 import { PROBLEMS, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
 const TrashIcon = ({ size = 18, color = "currentColor" }) => (
@@ -43,7 +43,7 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const [studyListTab, setStudyListTab] = useState("favorites");
-  const currentAvatarId = user?.avatarId && user.avatarId >= 1 && user.avatarId <= 10 ? user.avatarId : 1;
+  const currentAvatarId = isValidAvatarId(user?.avatarId) ? user.avatarId : 1;
   const hasExternalPicture = !!user?.picture && !user?.picture?.startsWith?.("avatar:") && !imageLoadFailed;
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })

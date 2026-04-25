@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getSupabase, PROFILES_TABLE } from "../utils/supabase";
 import { sendVerificationCode, verifyCodeWithApi, isDemoCode } from "../utils/verificationApi";
+import { isValidAvatarId } from "../data/avatars";
 
 const VERIFICATION_CODE_LENGTH = 6;
 const GOOGLE_SCRIPT_ID = "google-gsi-script";
@@ -48,7 +49,7 @@ async function hashPassword(password) {
 
 function profileToRow(profile, passwordHash) {
   const now = new Date().toISOString();
-  const hasAvatarId = Number.isInteger(profile.avatarId) && profile.avatarId >= 1 && profile.avatarId <= 10;
+  const hasAvatarId = isValidAvatarId(profile.avatarId);
   const avatarUrl = hasAvatarId ? `avatar:${profile.avatarId}` : (profile.picture || null);
   const row = {
     email: profile.email || null,
@@ -67,7 +68,7 @@ function rowToProfile(row) {
   const avatarUrl = row.avatar_url;
   const isAvatarId = typeof avatarUrl === "string" && avatarUrl.startsWith("avatar:");
   const parsedAvatarId = isAvatarId ? parseInt(avatarUrl.slice(7), 10) : undefined;
-  const validAvatarId = Number.isInteger(parsedAvatarId) && parsedAvatarId >= 1 && parsedAvatarId <= 10;
+  const validAvatarId = isValidAvatarId(parsedAvatarId);
   return {
     username: row.username,
     email: row.email ?? undefined,
