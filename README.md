@@ -16,6 +16,54 @@ You can change inputs, switch languages, adjust playback speed, and share a spec
 
 ---
 
+## Quick Start (Local Dev)
+
+### 1) Install dependencies
+
+```bash
+npm install
+```
+
+### 2) Create local env file
+
+Copy `.env.example` to `.env` and fill the values you plan to use:
+
+```bash
+cp .env.example .env
+```
+
+Minimum useful setup:
+
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (for cloud profile/favorites/flags/notes)
+- Optional: `VITE_EMAILJS_*` for email verification
+- Optional: `VITE_GOOGLE_CLIENT_ID` for Google sign-in
+
+If email provider variables are missing, verification uses the demo fallback code noted in `.env.example`.
+
+### 3) Run the app
+
+```bash
+npm run dev
+```
+
+Open the local URL shown by Vite (typically `http://localhost:5173`).
+
+### 4) Build for production (optional check)
+
+```bash
+npm run build
+npm run preview
+```
+
+### 5) Optional Supabase schema setup
+
+To fully enable cloud persistence and billing tables:
+
+- Run `supabase/schema.sql` in your Supabase SQL Editor.
+- For CLI tasks in this project, use `npx supabase ...` (see Supabase CLI note below).
+
+---
+
 ## Screenshots
 
 Add your own screenshots to `docs/screenshots/` and reference them below. Example filenames: `home.png`, `problems.png`, `visualizer.png`, `profile.png`.
@@ -42,7 +90,8 @@ Browse all problems with search, category filters, and **Favorites** / **Flagged
 
 ### Visualizer (App)
 
-The main learning view: **problem statement** (with favorite/flag and **share**), **code** (Solution / Explanation tabs, language selector, copy button), and **whiteboard** (custom input, step description, animation). Use **?** in the whiteboard header for keyboard shortcuts.
+The main learning view: **problem statement** (with favorite/flag and **share**), **code** (Solution / Explanation tabs, language selector, copy button), and **whiteboard** (step description + animation). Use **?** in the whiteboard header for keyboard shortcuts.  
+Pro users also get **editable custom inputs** and **personal notes** directly in the workspace.
 
 | Light | Dark |
 |-------|------|
@@ -52,7 +101,11 @@ The main learning view: **problem statement** (with favorite/flag and **share**)
 
 ### Profile
 
-User profile with **Favorites** and **Flagged** problem lists. Manage account and sign out.
+User profile with account summary, avatar picker, study lists (**Favorites** / **Flagged** tabs), and account actions.
+
+### Billing
+
+Dedicated billing page with current subscription state, plan comparison, feature highlights, and upgrade/cancel/resume actions.
 
 | Light | Dark |
 |-------|------|
@@ -64,15 +117,18 @@ User profile with **Favorites** and **Flagged** problem lists. Manage account an
 
 ## Features
 
-- **24 Blind 75–style problems** across Arrays, Sliding Window, Binary Search, DP, Trees, Two Pointers, Stack, and Linked Lists
+- **100+ visualized problems** across Arrays, Sliding Window, Binary Search, Dynamic Programming, Trees, Graphs, Linked Lists, Backtracking, and more
 - **4 languages** — C++, Java, JavaScript, Python — with syntax highlighting and per-step line mapping
 - **Step-by-step playback** — play/pause, speed control, next/previous, jump to start/end
-- **Custom inputs** — edit any input and re-run the visualization instantly
 - **Plain-English explanations** for each algorithm decision (Solution vs Explanation tab)
 - **Similar problems** — tag-based recommendations after each problem
 - **Share a visualization** — copy a URL with problem ID and custom input in query params so others open the same test case
 - **Recently visited** — last 5 problems stored in `localStorage`; quick-access on Home and Problems (fits on screen without scrolling on medium+)
 - **Favorites & Flagged** — per-user lists persisted in Supabase; visible on profile and filterable on Problems
+- **Access tiers**
+  - **Free:** Famous Algorithms category
+  - **Pro:** Full problem library + editable custom inputs + personal notes
+- **Billing system** — weekly/monthly/yearly/lifetime plans with hosted checkout and subscription management
 - **Auth** — sign up, log in, or continue as guest; **Sign in with Google** (optional); email verification (EmailJS); password reset; cross-device login via Supabase
 - **Themes** — Light / Dark / System (respects `prefers-color-scheme` on first visit)
 - **Keyboard shortcuts** — Space (play/pause), ←/→ or A/D (prev/next), Home/End, L (language), E (Solution/Explanation), ? (help); ? button in whiteboard header
@@ -80,34 +136,13 @@ User profile with **Favorites** and **Flagged** problem lists. Manage account an
 
 ---
 
-## Problems
+## Problem Coverage
 
-| Problem | Category | Difficulty |
-|---------|----------|------------|
-| Two Sum | Arrays | Easy |
-| Longest Consecutive Sequence | Arrays | Medium |
-| Contains Duplicate | Arrays | Easy |
-| Valid Anagram | Arrays | Easy |
-| Best Time to Buy & Sell Stock | Sliding Window | Easy |
-| Binary Search | Binary Search | Easy |
-| Climbing Stairs | Dynamic Programming | Easy |
-| Maximum Subarray (Kadane) | Arrays | Medium |
-| Subtree of Another Tree | Trees | Easy |
-| Valid Palindrome | Two Pointers | Easy |
-| Valid Parentheses | Stack | Easy |
-| Product of Array Except Self | Arrays | Medium |
-| Maximum Product Subarray | Dynamic Programming | Medium |
-| House Robber | Dynamic Programming | Medium |
-| Missing Number | Arrays | Easy |
-| Maximum Depth of Binary Tree | Trees | Easy |
-| Invert Binary Tree | Trees | Easy |
-| Same Tree | Trees | Easy |
-| Reverse Linked List | Linked Lists | Easy |
-| 3Sum | Two Pointers | Medium |
-| Container With Most Water | Two Pointers | Medium |
-| Merge Two Sorted Lists | Linked Lists | Easy |
-| Merge Intervals | Intervals | Medium |
-| Linked List Cycle | Linked Lists | Easy |
+The library includes classic interview problems plus advanced algorithm visualizations such as:
+
+- **Famous Algorithms:** Bellman-Ford, Floyd-Warshall, Kosaraju, Tarjan SCC, Kruskal, Prim, Dijkstra, A*, BFS/DFS, Union-Find, Fenwick Tree, Segment Tree, 0/1 Knapsack
+- **Core interview sets:** Blind 75-style problems and additional practice problems
+- **Categories:** Arrays, Strings, Trees, Graphs, Dynamic Programming, Backtracking, Heaps, Stacks, Intervals, Linked Lists, and more
 
 ---
 
