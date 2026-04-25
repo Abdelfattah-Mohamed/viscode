@@ -239,6 +239,7 @@ export default function App() {
       username={auth.user.username}
       fav={fav} mobile={mobile}
       sharedInput={sharedInput}
+      isPro={isPro}
     />
   );
 }

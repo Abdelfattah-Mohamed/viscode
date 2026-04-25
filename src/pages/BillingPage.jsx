@@ -48,6 +48,59 @@ const PLAN_ORDER = {
   lifetime: 4,
 };
 
+const SUBSCRIPTION_BENEFITS = [
+  {
+    title: "Unlock the full problem library",
+    text: "Practice arrays, trees, graphs, dynamic programming, sliding window, stacks, linked lists, and more beyond the free Famous Algorithms set.",
+  },
+  {
+    title: "Learn with synced code + visuals",
+    text: "Every step highlights the matching code line while the whiteboard shows how data changes, so users understand why the algorithm works.",
+  },
+  {
+    title: "Practice with custom inputs",
+    text: "Edit arrays, matrices, trees, graphs, strings, and weighted edges with guided input tools and live previews.",
+  },
+  {
+    title: "Build a personal study flow",
+    text: "Keep favorites, flagged problems, profile progress, and notes in one place for focused interview preparation.",
+  },
+];
+
+const TRUST_POINTS = [
+  "Secure hosted checkout",
+  "Cancel recurring plans anytime",
+  "Instant access after payment",
+];
+
+const PLAN_BADGES = {
+  pro: "Popular",
+  pro_yearly: "Best value",
+  lifetime: "Pay once",
+};
+
+const PLAN_VALUE_NOTES = {
+  pro_weekly: "Low commitment. Great when you only need a short practice sprint.",
+  pro: "A balanced plan for consistent weekly practice and interview preparation.",
+  pro_yearly: "Save compared with monthly billing and keep access for the full year.",
+  lifetime: "Best long-term option if you want permanent access with no renewals.",
+};
+
+const BILLING_FAQS = [
+  {
+    question: "What stays free?",
+    answer: "The Famous Algorithms category remains available on the free plan so learners can try the core experience first.",
+  },
+  {
+    question: "What happens after upgrading?",
+    answer: "After checkout, your account updates to Pro and premium problems become available.",
+  },
+  {
+    question: "Can users cancel?",
+    answer: "Recurring subscriptions can be canceled at period end. Access remains active until the paid period finishes.",
+  },
+];
+
 export default function BillingPage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, mobile }) {
   const {
     subscription,
@@ -116,7 +169,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
         return;
       }
       setCheckoutPlan(null);
-      setMessage({ type: "error", text: "No Stripe upgrade URL received. Please try again." });
+      setMessage({ type: "error", text: "No upgrade URL received. Please try again." });
       return;
     }
 
@@ -208,13 +261,37 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
         }
       />
 
-      <div style={{ flex: 1, maxWidth: 560, margin: "0 auto", padding: "32px 24px 56px", width: "100%" }}>
-        <h1 style={{ fontFamily: "'Caveat',cursive", fontSize: "1.8rem", fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-          Billing & subscription
-        </h1>
-        <p style={{ margin: 0, fontSize: "0.9rem", color: t.inkMuted, marginBottom: 24 }}>
-          Manage your plan and billing.
-        </p>
+      <div style={{ flex: 1, maxWidth: 1040, margin: "0 auto", padding: mobile ? "24px 16px 48px" : "36px 24px 64px", width: "100%" }}>
+        <Card
+          t={t}
+          style={{
+            marginBottom: 24,
+            padding: mobile ? "24px 20px" : "30px 34px",
+            background: `linear-gradient(135deg, ${t.surface} 0%, ${t.surfaceAlt} 100%)`,
+          }}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1.45fr 0.9fr", gap: mobile ? 22 : 34, alignItems: "center" }}>
+            <div>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 11px", borderRadius: 999, background: t.yellow + "33", border: `1.5px solid ${t.yellow}`, color: t.ink, fontSize: "0.82rem", fontWeight: 800 }}>
+                Pro learning workspace
+              </span>
+              <h1 style={{ fontFamily: "'Caveat',cursive", fontSize: mobile ? "2.2rem" : "2.8rem", lineHeight: 1, fontWeight: 700, color: t.ink, margin: "16px 0 10px" }}>
+                Upgrade from watching algorithms to mastering them.
+              </h1>
+              <p style={{ margin: 0, fontSize: "1rem", color: t.inkMuted, lineHeight: 1.65, maxWidth: 620 }}>
+                Pro unlocks the full VisCode problem library, richer visualizations, custom inputs, and a cleaner study flow for interview preparation.
+              </p>
+            </div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {TRUST_POINTS.map((point) => (
+                <div key={point} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 12, background: t.bg, border: `1.5px solid ${t.border}`, color: t.ink, fontSize: "0.9rem", fontWeight: 700 }}>
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: t.green + "22", color: t.green, border: `1px solid ${t.green}`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem" }}>✓</span>
+                  {point}
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
 
         {message && (
           <div
@@ -246,6 +323,37 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
           </div>
         )}
 
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, marginBottom: 14, flexWrap: "wrap" }}>
+            <div>
+              <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "1.65rem", margin: 0, color: t.ink }}>
+                What Pro unlocks
+              </h2>
+              <p style={{ margin: "4px 0 0", color: t.inkMuted, fontSize: "0.92rem", lineHeight: 1.5 }}>
+                Clear value for learners before they subscribe.
+              </p>
+            </div>
+            <span style={{ fontSize: "0.82rem", color: t.inkMuted, border: `1px solid ${t.border}`, borderRadius: 999, padding: "5px 10px", background: t.surface }}>
+              Famous Algorithms stay free
+            </span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(4, minmax(0, 1fr))", gap: 14 }}>
+            {SUBSCRIPTION_BENEFITS.map((benefit, index) => (
+              <Card key={benefit.title} t={t} density="compact" style={{ padding: "16px 15px", boxShadow: t.shadowSm }}>
+                <div style={{ width: 32, height: 32, borderRadius: 10, background: [t.blue, t.green, t.yellow, t.red][index] + "22", border: `1.5px solid ${[t.blue, t.green, t.yellow, t.red][index]}66`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, marginBottom: 10 }}>
+                  {index + 1}
+                </div>
+                <h3 style={{ margin: "0 0 7px", color: t.ink, fontSize: "0.98rem", lineHeight: 1.25 }}>
+                  {benefit.title}
+                </h3>
+                <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.84rem", lineHeight: 1.55 }}>
+                  {benefit.text}
+                </p>
+              </Card>
+            ))}
+          </div>
+        </div>
+
         {isGuest ? (
           <Card t={t}>
             <p style={{ margin: 0, padding: 20, color: t.inkMuted, textAlign: "center" }}>
@@ -263,10 +371,10 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
         ) : (
           <>
             <Card t={t} style={{ marginBottom: 24, overflow: "hidden" }}>
-              <div style={{ padding: "16px 20px", borderBottom: `1.5px solid ${t.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ padding: "16px 20px", borderBottom: `1.5px solid ${t.border}`, display: "flex", alignItems: "center", gap: 8, background: t.surfaceAlt }}>
                 <span style={{ fontSize: "1.2rem" }}>📋</span>
                 <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, color: t.ink }}>
-                  Current plan
+                  Your subscription
                 </span>
               </div>
               <div style={{ padding: "18px 20px" }}>
@@ -308,13 +416,23 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                     </span>
                   )}
                 </div>
-                {plan?.features && Array.isArray(plan.features) && plan.features.length > 0 && (
-                  <ul style={{ margin: "16px 0 0", paddingLeft: 20, fontSize: "0.88rem", color: t.inkMuted, lineHeight: 1.6 }}>
-                    {plan.features.map((f, i) => (
-                      <li key={i}>{f}</li>
-                    ))}
-                  </ul>
-                )}
+                <div style={{ marginTop: 18, padding: "14px 15px", borderRadius: 12, background: t.surfaceAlt, border: `1.25px solid ${t.border}` }}>
+                  <div style={{ fontSize: "0.86rem", fontWeight: 800, color: t.ink, marginBottom: 8 }}>
+                    Included in your current plan
+                  </div>
+                  {plan?.features && Array.isArray(plan.features) && plan.features.length > 0 ? (
+                    <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: "8px 14px" }}>
+                      {plan.features.map((f, i) => (
+                        <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: "0.86rem", color: t.inkMuted, lineHeight: 1.45 }}>
+                          <span style={{ color: t.green, fontWeight: 900 }}>✓</span>
+                          <span>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: "0.86rem", color: t.inkMuted }}>Plan details are loading.</p>
+                  )}
+                </div>
                 {!!subscription?.stripe_subscription_id && plan?.id !== "lifetime" && (
                   <div style={{ marginTop: 16 }}>
                     {subscription?.cancel_at_period_end ? (
@@ -363,59 +481,78 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
 
             {upgradePlans.length > 0 && (
               <Card t={t} style={{ overflow: "hidden" }}>
-                <div style={{ padding: "16px 20px", borderBottom: `1.5px solid ${t.border}`, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: "1.2rem" }}>⬆️</span>
-                  <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, color: t.ink }}>
-                    Upgrade
+                <div style={{ padding: "18px 20px", borderBottom: `1.5px solid ${t.border}`, display: "flex", alignItems: mobile ? "flex-start" : "center", justifyContent: "space-between", gap: 12, flexDirection: mobile ? "column" : "row", background: t.surfaceAlt }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: "1.2rem" }}>⬆️</span>
+                    <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.3rem", fontWeight: 700, color: t.ink }}>
+                      Choose your Pro plan
+                    </span>
+                  </div>
+                  <span style={{ fontSize: "0.84rem", color: t.inkMuted }}>
+                    All paid plans unlock the full VisCode learning experience.
                   </span>
                 </div>
-                <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ padding: "18px 20px", display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 16 }}>
                   {upgradePlans.map((p) => (
                     <div
                       key={p.id}
                       style={{
-                        padding: "16px 18px",
+                        padding: "18px",
                         background: t.surfaceAlt,
-                        borderRadius: 10,
-                        border: `1.5px solid ${t.border}`,
+                        borderRadius: 14,
+                        border: `1.75px solid ${PLAN_BADGES[p.id] ? t.blue : t.border}`,
                         display: "flex",
                         flexDirection: "column",
-                        gap: 12,
+                        gap: 14,
+                        position: "relative",
+                        boxShadow: PLAN_BADGES[p.id] ? t.shadowSm : "none",
                       }}
                     >
+                      {PLAN_BADGES[p.id] && (
+                        <span style={{ position: "absolute", top: 14, right: 14, padding: "4px 9px", borderRadius: 999, background: t.blue + "18", color: t.blue, border: `1px solid ${t.blue}66`, fontSize: "0.76rem", fontWeight: 800 }}>
+                          {PLAN_BADGES[p.id]}
+                        </span>
+                      )}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
-                        <div>
+                        <div style={{ paddingRight: PLAN_BADGES[p.id] ? 86 : 0 }}>
                           <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink }}>{p.name}</div>
                           {p.description && (
                             <div style={{ fontSize: "0.86rem", color: t.inkMuted, marginTop: 2 }}>{p.description}</div>
                           )}
                         </div>
-                        <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1rem", fontWeight: 700, color: t.ink }}>
+                        <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1.05rem", fontWeight: 800, color: t.ink }}>
                           <PriceWithDiscount plan={p} t={t} />
                         </div>
                       </div>
+                      {PLAN_VALUE_NOTES[p.id] && (
+                        <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.84rem", lineHeight: 1.5 }}>
+                          {PLAN_VALUE_NOTES[p.id]}
+                        </p>
+                      )}
                       {p.features && Array.isArray(p.features) && p.features.length > 0 && (
-                        <ul style={{ margin: 0, paddingLeft: 18, fontSize: "0.84rem", color: t.inkMuted, lineHeight: 1.5 }}>
+                        <div style={{ display: "grid", gap: 7 }}>
                           {p.features.slice(0, 4).map((f, i) => (
-                            <li key={i}>{f}</li>
+                            <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: "0.84rem", color: t.inkMuted, lineHeight: 1.45 }}>
+                              <span style={{ color: t.green, fontWeight: 900 }}>✓</span>
+                              <span>{f}</span>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       )}
                       <Button
                         t={t}
-                        variant="secondary"
+                        variant={PLAN_BADGES[p.id] ? "primary" : "secondary"}
                         onClick={() => handleUpgrade(p.id)}
                         disabled={!!checkoutPlan}
                         style={{
                           fontSize: "1rem",
                           fontWeight: 700,
                           borderRadius: 8,
-                          background: t.blue,
-                          color: "#fff",
                           cursor: checkoutPlan ? "wait" : "pointer",
                           opacity: checkoutPlan ? 0.8 : 1,
-                          alignSelf: "flex-start",
+                          alignSelf: "stretch",
                           boxShadow: t.shadowSm,
+                          marginTop: "auto",
                         }}
                       >
                         {checkoutPlan === p.id ? "Redirecting…" : `Upgrade to ${p.name}`}
@@ -431,34 +568,73 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
               </p>
             )}
 
-        <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <Button
-            t={t}
-            variant="secondary"
-            onClick={() => onNavigate("profile")}
-            style={{
-              fontSize: "1.05rem",
-              fontWeight: 700,
-              borderRadius: 8,
-              boxShadow: t.shadowSm,
-            }}
-          >
-            ← Profile
-          </Button>
-          <Button
-            t={t}
-            variant="secondary"
-            onClick={() => onNavigate("home")}
-            style={{
-              fontSize: "1.05rem",
-              fontWeight: 700,
-              borderRadius: 8,
-              boxShadow: t.shadowSm,
-            }}
-          >
-            Home
-          </Button>
-        </div>
+            <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+              <Card t={t} density="compact" style={{ padding: 18, boxShadow: t.shadowSm, background: t.surfaceAlt }}>
+                <h3 style={{ margin: "0 0 8px", fontFamily: "'Caveat',cursive", fontSize: "1.25rem", color: t.ink }}>
+                  Why learners upgrade
+                </h3>
+                <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.88rem", lineHeight: 1.6 }}>
+                  Free users can explore algorithm visuals. Pro users get the complete practice workspace: more problem types, richer examples, custom input tooling, and a smoother path from concept to interview-ready understanding.
+                </p>
+              </Card>
+              <Card t={t} density="compact" style={{ padding: 18, boxShadow: t.shadowSm }}>
+                <h3 style={{ margin: "0 0 8px", fontFamily: "'Caveat',cursive", fontSize: "1.25rem", color: t.ink }}>
+                  Secure hosted billing
+                </h3>
+                <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.88rem", lineHeight: 1.6 }}>
+                  Payment details are handled through a secure hosted checkout. VisCode stores subscription status only, so users can upgrade, cancel, or resume recurring access without exposing card details in the app.
+                </p>
+              </Card>
+            </div>
+
+            <Card t={t} style={{ marginTop: 24, overflow: "hidden" }}>
+              <div style={{ padding: "16px 20px", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt }}>
+                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.25rem", fontWeight: 700, color: t.ink }}>
+                  Common billing questions
+                </div>
+              </div>
+              <div style={{ padding: "18px 20px", display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 14 }}>
+                {BILLING_FAQS.map((item) => (
+                  <div key={item.question} style={{ padding: "14px 13px", borderRadius: 12, border: `1.25px solid ${t.border}`, background: t.surfaceAlt }}>
+                    <div style={{ fontSize: "0.9rem", fontWeight: 800, color: t.ink, marginBottom: 6 }}>
+                      {item.question}
+                    </div>
+                    <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.83rem", lineHeight: 1.55 }}>
+                      {item.answer}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Button
+                t={t}
+                variant="secondary"
+                onClick={() => onNavigate("profile")}
+                style={{
+                  fontSize: "1.05rem",
+                  fontWeight: 700,
+                  borderRadius: 8,
+                  boxShadow: t.shadowSm,
+                }}
+              >
+                ← Profile
+              </Button>
+              <Button
+                t={t}
+                variant="secondary"
+                onClick={() => onNavigate("home")}
+                style={{
+                  fontSize: "1.05rem",
+                  fontWeight: 700,
+                  borderRadius: 8,
+                  boxShadow: t.shadowSm,
+                }}
+              >
+                Home
+              </Button>
+            </div>
           </>
         )}
       </div>

@@ -50,11 +50,11 @@ export default function AppPage({
   selectedProblem, setSelectedProblem,
   t, themeMode, setThemeMode,
   onNavigate, onLogout, user, username, fav, mobile,
-  sharedInput,
+  sharedInput, isPro,
 }) {
   const [lang, setLang]              = useState("cpp");
   const [solutionTab, setSolTab]     = useState("Solution");
-  const [input, setInput]            = useState(() => sharedInput || PROBLEMS[selectedProblem].defaultInput);
+  const [input, setInput]            = useState(() => (isPro && sharedInput) || PROBLEMS[selectedProblem].defaultInput);
   const [whiteboardFontScale, setWhiteboardFontScale] = useState(1);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [shareMsg, setShareMsg]      = useState("");
@@ -108,6 +108,7 @@ export default function AppPage({
   }, [isDraggingGutter]);
 
   const problem = PROBLEMS[selectedProblem];
+  const canEditInputs = !!isPro;
   const notesData = useProblemNotes(user, selectedProblem);
   useEffect(() => {
     try {
@@ -151,13 +152,13 @@ export default function AppPage({
     mainScrollRef.current?.scrollTo?.(0, 0);
   }, [selectedProblem]);
 
-  useMemo(() => {
-    if (!sharedInput) setInput(PROBLEMS[selectedProblem].defaultInput);
-  }, [selectedProblem]);
+  useEffect(() => {
+    if (!sharedInput || !canEditInputs) setInput(PROBLEMS[selectedProblem].defaultInput);
+  }, [selectedProblem, sharedInput, canEditInputs]);
 
   useEffect(() => {
-    if (sharedInput) setInput(sharedInput);
-  }, [sharedInput]);
+    if (sharedInput && canEditInputs) setInput(sharedInput);
+  }, [sharedInput, canEditInputs]);
 
   const steps = useMemo(() => {
     const gen  = STEP_GENERATORS[selectedProblem];
@@ -613,7 +614,29 @@ export default function AppPage({
           <CardHeader icon="🎨" title="Whiteboard" t={t} density="compact"
             extra={
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <InputEditor input={input} fields={problem.inputFields} onChange={setInput} onReset={player.reset} t={t} problem={problem} />
+                {canEditInputs ? (
+                  <InputEditor input={input} fields={problem.inputFields} onChange={setInput} onReset={player.reset} t={t} problem={problem} />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate("billing")}
+                    title="Editable inputs are available with Pro"
+                    style={{
+                      fontFamily: "'Caveat',cursive",
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                      padding: "5px 10px",
+                      borderRadius: 8,
+                      border: `1.5px solid ${t.border}`,
+                      background: t.surfaceAlt,
+                      color: t.ink,
+                      cursor: "pointer",
+                      boxShadow: t.shadowSm,
+                    }}
+                  >
+                    🔒 Edit inputs
+                  </button>
+                )}
                 {!mobile && <div style={{ width: 1, height: 18, background: t.border, opacity: 0.6 }} />}
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <button onClick={() => setWhiteboardFontScale(s => Math.max(0.8, s - 0.1))}
