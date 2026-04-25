@@ -5,6 +5,7 @@ import AccountMenuChip from "../components/ui/AccountMenuChip";
 import PageContainer from "../components/ui/PageContainer";
 import Button from "../components/ui/Button";
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
+import { trackEvent } from "../utils/analytics";
 
 const FREE_CATEGORY = "Famous Algorithms";
 
@@ -102,6 +103,14 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
       action();
     }
   };
+  const openProblem = (problemId, source) => {
+    trackEvent("problem_opened", { problemId, source, fromPage: "problems" });
+    onSelectProblem(problemId);
+  };
+  const goBilling = (source) => {
+    trackEvent("landing_cta_click", { destination: "billing", source });
+    onNavigate("billing");
+  };
 
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
@@ -144,9 +153,12 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
               <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.98rem", lineHeight: 1.65, maxWidth: 650 }}>
                 Browse step-by-step visual problems across interview topics. Famous Algorithms are free; Pro unlocks the complete practice library and editable input tools.
               </p>
+              <div style={{ marginTop: 10, fontSize: "0.84rem", color: t.inkMuted }}>
+                Subscription plans are transparent and recurring plans can be canceled at period end.
+              </div>
               {!isPro && (
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
-                  <Button t={t} variant="primary" onClick={() => onNavigate("billing")} style={{ borderRadius: 10 }}>
+                  <Button t={t} variant="primary" onClick={() => goBilling("problems_hero")} style={{ borderRadius: 10 }}>
                     Unlock full library →
                   </Button>
                   <Button t={t} variant="secondary" onClick={() => setFilter(FREE_CATEGORY)} style={{ borderRadius: 10 }}>
@@ -204,7 +216,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
             <Button
               t={t}
               variant="primary"
-              onClick={() => onNavigate("billing")}
+              onClick={() => goBilling("upgrade_banner")}
               style={{ borderRadius: 10, whiteSpace: "nowrap" }}
             >
               View Pro plans
@@ -234,7 +246,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
           compact
           style={{ marginBottom: 12 }}
           action={!isPro ? (
-            <Button t={t} variant="ghost" size="sm" onClick={() => onNavigate("billing")} style={{ color: t.blue, borderColor: t.blue }}>
+            <Button t={t} variant="ghost" size="sm" onClick={() => goBilling("browse_header_unlock")} style={{ color: t.blue, borderColor: t.blue }}>
               Unlock all
             </Button>
           ) : null}
@@ -278,11 +290,11 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
                 if (!p) return null;
                 const dc = DIFF_COLOR[p.difficulty] || {};
                 return (
-                  <div key={id} onClick={() => onSelectProblem(id)}
+                  <div key={id} onClick={() => openProblem(id, "recent")}
                     role="button"
                     tabIndex={0}
                     aria-label={`Open ${p.title}`}
-                    onKeyDown={(e) => handleCardKeyDown(e, () => onSelectProblem(id))}
+                    onKeyDown={(e) => handleCardKeyDown(e, () => openProblem(id, "recent_keyboard"))}
                     style={{ flex: mobile ? "0 0 170px" : "1 1 0%", minWidth: 0, padding: "12px 14px", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
                     onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
                     onMouseLeave={e => e.currentTarget.style.transform = ""}
@@ -315,11 +327,11 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
               {list.map(p => {
                 const dc = DIFF_COLOR[p.difficulty] || {};
                 return (
-                  <div key={p.id} onClick={() => onSelectProblem(p.id)}
+                  <div key={p.id} onClick={() => openProblem(p.id, "grid")}
                     role="button"
                     tabIndex={0}
                     aria-label={`${isLocked(p) ? "Locked problem: " : "Open problem: "}${p.title}`}
-                    onKeyDown={(e) => handleCardKeyDown(e, () => onSelectProblem(p.id))}
+                    onKeyDown={(e) => handleCardKeyDown(e, () => openProblem(p.id, "grid_keyboard"))}
                     style={{ background: t.surface, border: `1.5px solid ${isLocked(p) ? t.blue + "99" : t.border}`, borderRadius: 12, padding: "16px 18px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", gap: 12, opacity: isLocked(p) ? 0.96 : 1, position: "relative" }}
                     onMouseEnter={e => { e.currentTarget.style.transform = "translate(-2px,-2px)"; e.currentTarget.style.boxShadow = t.shadow; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = t.shadowSm; }}

@@ -62,6 +62,14 @@ To fully enable cloud persistence and billing tables:
 - Run `supabase/schema.sql` in your Supabase SQL Editor.
 - For CLI tasks in this project, use `npx supabase ...` (see Supabase CLI note below).
 
+### Common setup issues
+
+- **Supabase not configured:** if the app shows fallback behavior, verify `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set and restart dev server.
+- **Google sign-in blocked:** ensure `http://localhost:5173` and your production domain are both in Google OAuth authorized JavaScript origins.
+- **EmailJS recipient empty:** put `{{to_email}}` in the template's top "To Email" field, not only inside email body.
+- **Billing function failures:** redeploy billing functions and verify all required Stripe price ID secrets are present in Supabase Edge Function secrets.
+- **Missing analytics/feedback delivery:** set `VITE_ANALYTICS_ENDPOINT` and/or `VITE_FEEDBACK_ENDPOINT` to an HTTP endpoint that accepts JSON POST.
+
 ---
 
 ## Screenshots
@@ -163,6 +171,23 @@ This repo does not pin the Supabase CLI as a local dependency. For Supabase CLI 
 - `npx supabase functions deploy <function-name>`
 
 You can also install Supabase CLI globally if you prefer, but `npx supabase ...` is the default in this project.
+
+## Optional Analytics And Feedback Endpoints
+
+The app can track launch events and in-app feedback without extra dependencies:
+
+- `VITE_ANALYTICS_ENDPOINT` (optional): receives event payloads (`checkout_started`, `problem_opened`, etc.)
+- `VITE_FEEDBACK_ENDPOINT` (optional): receives issue/helpfulness feedback payloads
+
+If these are not set, events and feedback are still stored locally in browser storage for debugging.
+
+## Launch And Operations Docs
+
+- [Release checklist](docs/RELEASE-CHECKLIST.md)
+- [Incident runbook](docs/INCIDENT-RUNBOOK.md)
+- [Soft beta operations](docs/BETA-OPS.md)
+- [Launch kit](docs/LAUNCH-KIT.md)
+- [KPI rhythm](docs/KPI-RHYTHM.md)
 
 ---
 

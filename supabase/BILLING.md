@@ -67,6 +67,12 @@ Use `npx supabase ...` for CLI operations in this project, for example:
 - **Stripe:** Store `stripe_customer_id` and `stripe_subscription_id` when you create a Stripe customer/subscription. Use webhooks to update `user_subscriptions` (status, period end) and to insert rows into `billing_invoices`.
 - **Gating features:** If `plan_id` is `free`, restrict access; allow full access for `pro_weekly`, `pro`, `pro_yearly`, or `lifetime`.
 
+## Operational notes
+
+- Keep a weekly check on checkout failures and webhook errors before shipping pricing/copy changes.
+- If a billing incident occurs, follow `docs/INCIDENT-RUNBOOK.md` and `docs/RELEASE-CHECKLIST.md` before reopening upgrades.
+- For beta launches, pair billing changes with tester communication in `docs/BETA-OPS.md`.
+
 ## RLS
 
 Policies are permissive (`using (true)`) to match the rest of the project. For production, restrict `user_subscriptions` and `billing_invoices` so users can only read/update their own row (e.g. `user_id = auth.uid()` or your app’s user id).

@@ -10,6 +10,7 @@ import {
   cancelSubscription,
   resumeSubscription,
 } from "../utils/billingApi";
+import { trackEvent } from "../utils/analytics";
 
 function formatPrice(cents, interval) {
   if (cents === 0) return "$0";
@@ -99,6 +100,10 @@ const BILLING_FAQS = [
     question: "Can users cancel?",
     answer: "Recurring subscriptions can be canceled at period end. Access remains active until the paid period finishes.",
   },
+  {
+    question: "How does renewal work?",
+    answer: "Weekly, monthly, and yearly plans renew automatically. Users can undo cancellation any time before period end.",
+  },
 ];
 
 export default function BillingPage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, mobile }) {
@@ -122,12 +127,15 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
+      trackEvent("checkout_succeeded", { source: "query_success" });
       setMessage({ type: "success", text: "Thank you! Your subscription is active." });
       window.history.replaceState({}, "", "/billing");
     } else if (params.get("upgraded") === "true") {
+      trackEvent("checkout_succeeded", { source: "query_upgraded" });
       setMessage({ type: "success", text: "Plan update completed." });
       window.history.replaceState({}, "", "/billing");
     } else if (params.get("canceled") === "true") {
+      trackEvent("checkout_canceled", { source: "query_canceled" });
       setMessage({ type: "info", text: "Checkout was canceled." });
       window.history.replaceState({}, "", "/billing");
     }
@@ -135,6 +143,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
 
   const handleUpgrade = async (planId) => {
     if (!user?.email || checkoutPlan) return;
+    trackEvent("checkout_started", { currentPlanId: plan?.id || "free", targetPlanId: planId });
     setCheckoutPlan(planId);
     setMessage(null);
     const canUseHostedUpgrade =
@@ -145,17 +154,20 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
     if (canUseHostedUpgrade) {
       const portalResult = await createUpgradePortalSession(user.email, plan?.id, planId);
       if (portalResult.error) {
+        trackEvent("checkout_failed", { currentPlanId: plan?.id || "free", targetPlanId: planId, reason: portalResult.error });
         if (
           portalResult.error.includes("No active recurring subscription found") ||
           portalResult.error.includes("Current plan is not upgradable")
         ) {
           const checkoutFallback = await createCheckoutSession(user.email, planId);
           if (checkoutFallback.error) {
+            trackEvent("checkout_failed", { currentPlanId: plan?.id || "free", targetPlanId: planId, reason: checkoutFallback.error });
             setCheckoutPlan(null);
             setMessage({ type: "error", text: checkoutFallback.error });
             return;
           }
           if (checkoutFallback.url) {
+            trackEvent("checkout_redirected", { currentPlanId: plan?.id || "free", targetPlanId: planId, flow: "fallback_checkout" });
             window.location.replace(checkoutFallback.url);
             return;
           }
@@ -165,6 +177,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
         return;
       }
       if (portalResult.url) {
+        trackEvent("checkout_redirected", { currentPlanId: plan?.id || "free", targetPlanId: planId, flow: "portal_upgrade" });
         window.location.replace(portalResult.url);
         return;
       }
@@ -175,11 +188,13 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
 
     const result = await createCheckoutSession(user.email, planId);
     if (result.error) {
+      trackEvent("checkout_failed", { currentPlanId: plan?.id || "free", targetPlanId: planId, reason: result.error });
       setCheckoutPlan(null);
       setMessage({ type: "error", text: result.error });
       return;
     }
     if (result.url) {
+      trackEvent("checkout_redirected", { currentPlanId: plan?.id || "free", targetPlanId: planId, flow: "new_checkout" });
       window.location.replace(result.url);
       return;
     }
@@ -191,28 +206,34 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
     if (!user?.email || canceling || resuming) return;
     const ok = window.confirm("Cancel your subscription at period end?");
     if (!ok) return;
+    trackEvent("subscription_cancel_started", { currentPlanId: plan?.id || "unknown" });
     setCanceling(true);
     setMessage(null);
     const result = await cancelSubscription(user.email);
     setCanceling(false);
     if (result.error) {
+      trackEvent("subscription_cancel_failed", { currentPlanId: plan?.id || "unknown", reason: result.error });
       setMessage({ type: "error", text: result.error });
       return;
     }
+    trackEvent("subscription_cancel_succeeded", { currentPlanId: plan?.id || "unknown" });
     setMessage({ type: "success", text: "Your subscription will cancel at the end of the current period." });
     refetch();
   };
 
   const handleResume = async () => {
     if (!user?.email || resuming || canceling) return;
+    trackEvent("subscription_resume_started", { currentPlanId: plan?.id || "unknown" });
     setResuming(true);
     setMessage(null);
     const result = await resumeSubscription(user.email);
     setResuming(false);
     if (result.error) {
+      trackEvent("subscription_resume_failed", { currentPlanId: plan?.id || "unknown", reason: result.error });
       setMessage({ type: "error", text: result.error });
       return;
     }
+    trackEvent("subscription_resume_succeeded", { currentPlanId: plan?.id || "unknown" });
     setMessage({ type: "success", text: "Cancellation removed. Your subscription will renew normally." });
     refetch();
   };

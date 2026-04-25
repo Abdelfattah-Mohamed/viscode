@@ -6,6 +6,7 @@ import { useIsMobile }        from "./hooks/useIsMobile";
 import { useRecentProblems }  from "./hooks/useRecentProblems";
 import { useSubscription }    from "./hooks/useSubscription";
 import { PROBLEMS }           from "./data/problems";
+import { trackEvent } from "./utils/analytics";
 import AuthScreen   from "./components/ui/AuthScreen";
 import HomePage     from "./pages/HomePage";
 import ProblemsPage from "./pages/ProblemsPage";
@@ -111,6 +112,7 @@ export default function App() {
 
   const promptPremium = (problemId) => {
     const title = PROBLEMS[problemId]?.title || "This problem";
+    trackEvent("paywall_shown", { problemId, title, sourcePage: page });
     window.alert(
       `${title} is a premium problem.\n\n` +
       "Famous Algorithms are free for all users.\n" +
@@ -131,6 +133,7 @@ export default function App() {
     setSelected(id);
     setSharedInput(null);
     setPage("app");
+    trackEvent("problem_opened", { problemId: id, category: PROBLEMS[id]?.category });
     track(id);
     window.history.pushState({}, "", pathFor("app", id));
   };
@@ -138,6 +141,7 @@ export default function App() {
   const navigate = (dest, search) => {
     const pageOnly = (typeof dest === "string" && dest.includes("?")) ? dest.split("?")[0] : dest;
     setPage(pageOnly);
+    trackEvent("navigation", { destination: pageOnly });
     const path = pathFor(pageOnly, pageOnly === "app" ? selectedProblem : null);
     window.history.pushState({}, "", path + (search ?? ""));
   };

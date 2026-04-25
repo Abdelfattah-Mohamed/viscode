@@ -4,6 +4,7 @@ import Button from "../components/ui/Button";
 import SectionHeader from "../components/ui/SectionHeader";
 import AccountMenuChip from "../components/ui/AccountMenuChip";
 import PageContainer from "../components/ui/PageContainer";
+import { trackEvent } from "../utils/analytics";
 
 import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
@@ -33,6 +34,14 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
       e.preventDefault();
       action();
     }
+  };
+  const goTo = (destination, source) => {
+    trackEvent("landing_cta_click", { destination, source });
+    onNavigate(destination);
+  };
+  const openProblemFromHome = (problemId, source) => {
+    trackEvent("problem_opened", { problemId, source });
+    onSelectProblem(problemId);
   };
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
@@ -79,16 +88,21 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
                 </div>
               ))}
             </div>
+            <div style={{ marginBottom: 22, display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 11px", borderRadius: 10, border: `1.25px solid ${t.border}`, background: t.surface }}>
+              <span style={{ fontSize: "0.83rem", color: t.inkMuted }}>
+                Soft beta is open. Early users help shape roadmap and get fast support turnarounds.
+              </span>
+            </div>
             <div style={{ display: "flex", gap: 12, justifyContent: mobile ? "center" : "flex-start", flexWrap: "wrap" }}>
-              <Button t={t} variant="primary" size="lg" onClick={() => onNavigate("problems")} style={{ borderWidth: 2 }}>
+              <Button t={t} variant="primary" size="lg" onClick={() => goTo("problems", "hero_primary")} style={{ borderWidth: 2 }}>
                 Explore problems →
               </Button>
               {!isPro ? (
-                <Button t={t} variant="secondary" size="lg" onClick={() => onNavigate("billing")} style={{ borderWidth: 2 }}>
+                <Button t={t} variant="secondary" size="lg" onClick={() => goTo("billing", "hero_secondary")} style={{ borderWidth: 2 }}>
                   View Pro options
                 </Button>
               ) : (
-                <Button t={t} variant="ghost" size="lg" onClick={() => onNavigate("problems")} style={{ borderWidth: 2, boxShadow: t.shadowSm }}>
+                <Button t={t} variant="ghost" size="lg" onClick={() => goTo("problems", "hero_pro_browse")} style={{ borderWidth: 2, boxShadow: t.shadowSm }}>
                   Browse full library
                 </Button>
               )}
@@ -154,7 +168,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
                   Famous Algorithms are available for everyone. Pro adds the full topic library, custom inputs, personal notes, and better tools for repeated interview practice.
                 </p>
               </div>
-              <Button t={t} variant="primary" onClick={() => onNavigate("billing")} style={{ borderRadius: 10, whiteSpace: "nowrap" }}>
+              <Button t={t} variant="primary" onClick={() => goTo("billing", "free_vs_pro_card")} style={{ borderRadius: 10, whiteSpace: "nowrap" }}>
                 Compare Pro plans →
               </Button>
             </div>
@@ -172,11 +186,11 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
               if (!p) return null;
               const dc = DIFF_COLOR[p.difficulty] || {};
               return (
-              <Card key={id} t={t} density="compact" onClick={() => onSelectProblem(id)}
+              <Card key={id} t={t} density="compact" onClick={() => openProblemFromHome(id, "recent")}
                   role="button"
                   tabIndex={0}
                   aria-label={`Open ${p.title}`}
-                  onKeyDown={(e) => handleCardKeyDown(e, () => onSelectProblem(id))}
+                  onKeyDown={(e) => handleCardKeyDown(e, () => openProblemFromHome(id, "recent_keyboard"))}
                   style={{ flex: mobile ? "0 0 180px" : "1 1 0%", minWidth: 0, padding: "14px 16px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
                   onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
                   onMouseLeave={e => e.currentTarget.style.transform = ""}
@@ -213,7 +227,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
           compact
           style={{ marginBottom: 20 }}
           action={!isPro ? (
-            <Button t={t} variant="ghost" size="sm" onClick={() => onNavigate("billing")} style={{ color: t.blue, borderColor: t.blue }}>
+            <Button t={t} variant="ghost" size="sm" onClick={() => goTo("billing", "famous_header")} style={{ color: t.blue, borderColor: t.blue }}>
               View full library
             </Button>
           ) : null}
@@ -222,11 +236,11 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
           {PROB_LIST.filter(p => p.category === "Famous Algorithms").slice(0, mobile ? 6 : 14).map(p => {
             const dc = DIFF_COLOR[p.difficulty] || {};
             return (
-              <Card key={p.id} t={t} density="compact" onClick={() => onSelectProblem(p.id)}
+              <Card key={p.id} t={t} density="compact" onClick={() => openProblemFromHome(p.id, "famous_strip")}
                 role="button"
                 tabIndex={0}
                 aria-label={`Open ${p.title}`}
-                onKeyDown={(e) => handleCardKeyDown(e, () => onSelectProblem(p.id))}
+                onKeyDown={(e) => handleCardKeyDown(e, () => openProblemFromHome(p.id, "famous_strip_keyboard"))}
                 style={{ flex: mobile ? "0 0 140px" : "1 1 120px", minWidth: 0, padding: "12px 14px", cursor: "pointer", boxShadow: t.shadowSm, transition: "transform 0.12s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = ""}
@@ -238,7 +252,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
             );
           })}
         </div>
-        <Button t={t} variant="ghost" onClick={() => onNavigate("problems", "?cat=Famous+Algorithms")}
+        <Button t={t} variant="ghost" onClick={() => { trackEvent("landing_cta_click", { destination: "problems", source: "view_all_famous" }); onNavigate("problems", "?cat=Famous+Algorithms"); }}
           style={{ marginTop: 16, borderRadius: 8, color: t.blue }}>
           View all Famous Algorithms →
         </Button>
@@ -254,7 +268,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
             compact
             style={{ marginBottom: 18 }}
             action={(
-              <Button t={t} variant="primary" size="sm" onClick={() => onNavigate("billing")}>
+              <Button t={t} variant="primary" size="sm" onClick={() => goTo("billing", "pro_benefits_header")}>
                 View plans
               </Button>
             )}
@@ -306,12 +320,12 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
           {isPro ? "Use the full workspace to keep building interview confidence." : "Start with free algorithms, then upgrade when you want the full library and advanced practice tools."}
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Button t={t} variant="primary" size="lg" onClick={() => onNavigate("problems")}
+          <Button t={t} variant="primary" size="lg" onClick={() => goTo("problems", "footer_primary")}
             style={{ padding: "14px 44px", borderWidth: 2 }}>
             Browse problems
           </Button>
           {!isPro && (
-            <Button t={t} variant="secondary" size="lg" onClick={() => onNavigate("billing")}
+            <Button t={t} variant="secondary" size="lg" onClick={() => goTo("billing", "footer_secondary")}
               style={{ padding: "14px 36px", borderWidth: 2 }}>
               View Pro plans
             </Button>

@@ -19,6 +19,7 @@ import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
 import { useStepPlayer } from "../hooks/useStepPlayer";
 import { useProblemNotes } from "../hooks/useProblemNotes";
+import { submitFeedback, trackEvent } from "../utils/analytics";
 
 const StarIcon = ({ filled, size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#f59e0b" : "none"} stroke={filled ? "#f59e0b" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -61,6 +62,10 @@ export default function AppPage({
   const [whiteboardMaximized, setWhiteboardMaximized] = useState(false);
   const [showWorkspaceTip, setShowWorkspaceTip] = useState(false);
   const [notesOpen, setNotesOpen] = useState(true);
+  const [feedbackChoice, setFeedbackChoice] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportText, setReportText] = useState("");
+  const [reportStatus, setReportStatus] = useState("");
   const [leftPanelPercent, setLeftPanelPercent] = useState(() => {
     try {
       const saved = localStorage.getItem("viscode-left-panel-percent");
@@ -158,6 +163,13 @@ export default function AppPage({
   }, [selectedProblem, sharedInput, canEditInputs]);
 
   useEffect(() => {
+    setFeedbackChoice(null);
+    setReportOpen(false);
+    setReportText("");
+    setReportStatus("");
+  }, [selectedProblem]);
+
+  useEffect(() => {
     if (sharedInput && canEditInputs) setInput(sharedInput);
   }, [sharedInput, canEditInputs]);
 
@@ -178,7 +190,7 @@ export default function AppPage({
   }, [selectedProblem, input]);
 
   const player = useStepPlayer(steps, 900);
-  const { currentStep } = player;
+  const { currentStep, stepIndex, totalSteps } = player;
 
   const langDef = problem.languages[lang];
   const codeLines = langDef?.code?.length ?? 0;
@@ -289,6 +301,50 @@ export default function AppPage({
       setTimeout(() => setShareMsg(""), 2000);
     });
   }, [selectedProblem, input]);
+
+  const handleHelpfulFeedback = async (helpful) => {
+    setFeedbackChoice(helpful ? "yes" : "no");
+    trackEvent("visualization_feedback_vote", {
+      problemId: selectedProblem,
+      helpful,
+      stepType: currentStep?.stepType || "none",
+      stepIndex,
+      totalSteps,
+    });
+    await submitFeedback({
+      kind: "helpfulness",
+      problemId: selectedProblem,
+      helpful,
+      stepType: currentStep?.stepType || "none",
+      stepIndex,
+      totalSteps,
+    });
+  };
+
+  const handleIssueSubmit = async () => {
+    const detail = reportText.trim();
+    if (!detail) return;
+    setReportStatus("sending");
+    trackEvent("report_issue_submitted", { problemId: selectedProblem });
+    const result = await submitFeedback({
+      kind: "issue",
+      problemId: selectedProblem,
+      title: problem?.title || "",
+      detail,
+      input,
+      stepType: currentStep?.stepType || "none",
+      stepIndex,
+      totalSteps,
+    });
+    setReportStatus(result.ok ? "sent" : "failed");
+    if (result.ok) {
+      setReportText("");
+      setTimeout(() => {
+        setReportOpen(false);
+        setReportStatus("");
+      }, 1200);
+    }
+  };
 
   /* ── Keyboard shortcuts ── */
   useEffect(() => {
@@ -733,6 +789,104 @@ export default function AppPage({
             {problem.visualizer === "groupanagrams" && <GroupAnagramsViz strs={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
           </div>
           <StepControls {...player} t={t} mobile={mobile} />
+          <div style={{ borderTop: `1.5px solid ${t.border}`, padding: "10px 12px", background: t.surfaceAlt + "66" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ fontSize: "0.8rem", color: t.inkMuted }}>
+                Was this visualization helpful for understanding the algorithm?
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => handleHelpfulFeedback(true)}
+                  style={{
+                    border: `1.5px solid ${feedbackChoice === "yes" ? t.green : t.border}`,
+                    background: feedbackChoice === "yes" ? t.green + "1a" : t.surface,
+                    color: feedbackChoice === "yes" ? t.green : t.ink,
+                    borderRadius: 8,
+                    padding: "4px 8px",
+                    fontSize: "0.78rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleHelpfulFeedback(false)}
+                  style={{
+                    border: `1.5px solid ${feedbackChoice === "no" ? t.red : t.border}`,
+                    background: feedbackChoice === "no" ? t.red + "14" : t.surface,
+                    color: feedbackChoice === "no" ? t.red : t.ink,
+                    borderRadius: 8,
+                    padding: "4px 8px",
+                    fontSize: "0.78rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  Not yet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReportOpen((s) => !s)}
+                  style={{
+                    border: `1.5px solid ${t.blue}`,
+                    background: t.blue + "14",
+                    color: t.blue,
+                    borderRadius: 8,
+                    padding: "4px 8px",
+                    fontSize: "0.78rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  Report issue
+                </button>
+              </div>
+            </div>
+            {reportOpen && (
+              <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                <textarea
+                  value={reportText}
+                  onChange={(e) => setReportText(e.target.value)}
+                  placeholder="Describe what looked wrong (step, input, or mismatch)."
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    border: `1.5px solid ${t.border}`,
+                    background: t.surface,
+                    color: t.ink,
+                    fontSize: "0.8rem",
+                    fontFamily: "'DM Sans',sans-serif",
+                    resize: "vertical",
+                  }}
+                />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                  <span style={{ fontSize: "0.75rem", color: t.inkMuted }}>
+                    Includes current problem, step, and input snapshot.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleIssueSubmit}
+                    disabled={reportStatus === "sending" || !reportText.trim()}
+                    style={{
+                      border: `1.5px solid ${t.blue}`,
+                      background: t.blue,
+                      color: "#fff",
+                      borderRadius: 8,
+                      padding: "5px 10px",
+                      fontSize: "0.78rem",
+                      cursor: reportStatus === "sending" ? "wait" : "pointer",
+                      opacity: reportStatus === "sending" || !reportText.trim() ? 0.7 : 1,
+                    }}
+                  >
+                    {reportStatus === "sending" ? "Sending..." : reportStatus === "sent" ? "Sent" : "Send report"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           {/* Personal notes (under whiteboard) */}
           {canUseNotes && notesData ? (
             <div style={{ borderTop: `1.5px solid ${t.border}`, padding: "10px 12px 12px", background: t.surfaceAlt + "80" }}>
