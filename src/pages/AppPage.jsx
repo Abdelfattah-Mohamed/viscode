@@ -109,7 +109,8 @@ export default function AppPage({
 
   const problem = PROBLEMS[selectedProblem];
   const canEditInputs = !!isPro;
-  const notesData = useProblemNotes(user, selectedProblem);
+  const canUseNotes = !!isPro;
+  const notesData = useProblemNotes(canUseNotes ? user : null, selectedProblem);
   useEffect(() => {
     try {
       if (!localStorage.getItem("viscode-workspace-tip-dismissed")) {
@@ -733,7 +734,7 @@ export default function AppPage({
           </div>
           <StepControls {...player} t={t} mobile={mobile} />
           {/* Personal notes (under whiteboard) */}
-          {notesData && (
+          {canUseNotes && notesData ? (
             <div style={{ borderTop: `1.5px solid ${t.border}`, padding: "10px 12px 12px", background: t.surfaceAlt + "80" }}>
               <button onClick={() => setNotesOpen((s) => !s)} style={{ width: "100%", border: "none", background: "transparent", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, color: t.ink, marginBottom: notesOpen ? 8 : 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span>📝 Personal notes</span>
@@ -764,6 +765,34 @@ export default function AppPage({
                   }}
                 />
               )}
+            </div>
+          ) : (
+            <div style={{ borderTop: `1.5px solid ${t.border}`, padding: "12px", background: t.surfaceAlt + "80", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700, color: t.ink }}>
+                  🔒 Personal notes
+                </div>
+                <div style={{ fontSize: "0.8rem", color: t.inkMuted, marginTop: 2 }}>
+                  Save hints, edge cases, and observations with Pro.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate("billing")}
+                style={{
+                  fontFamily: "'Caveat',cursive",
+                  fontSize: "0.86rem",
+                  fontWeight: 700,
+                  padding: "5px 10px",
+                  borderRadius: 8,
+                  border: `1.5px solid ${t.blue}`,
+                  background: t.blue + "14",
+                  color: t.blue,
+                  cursor: "pointer",
+                }}
+              >
+                Unlock notes
+              </button>
             </div>
           )}
         </Card>
