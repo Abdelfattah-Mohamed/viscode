@@ -1425,6 +1425,33 @@ PROBLEMS["unique-paths"].examples[1] = {
   values: { nums: [3, 2] },
 };
 
+PROBLEMS["binary-search"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "nums = [-4,-1,0,3,7,12], target = 7",
+  output: "4",
+  note: "Array remains sorted; target 7 is found at index 4.",
+  values: { nums: [-4, -1, 0, 3, 7, 12], target: 7 },
+};
+
+PROBLEMS["search-rotated-sorted"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "nums = [6,7,8,1,2,3,4,5], target = 3",
+  output: "5",
+  note: "Valid rotated sorted array; target 3 is at index 5.",
+  values: { nums: [6, 7, 8, 1, 2, 3, 4, 5], target: 3 },
+};
+
+PROBLEMS["min-rotated-sorted"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "nums = [8,9,10,2,3,4,5,6,7]",
+  output: "2",
+  note: "Valid rotated sorted array; minimum element is 2.",
+  values: { nums: [8, 9, 10, 2, 3, 4, 5, 6, 7] },
+};
+
 // ── Blind 75 order (LeetCode) from https://dev.to/jaiminbariya/leetcode-blind-75-49mp ──
 const BLIND_75_ORDER = [
   "two-sum", "best-time-stock", "contains-duplicate", "product-except-self", "max-subarray", "max-product-subarray",

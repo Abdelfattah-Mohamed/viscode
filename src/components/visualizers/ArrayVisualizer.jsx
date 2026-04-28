@@ -1,4 +1,4 @@
-export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel }) {
+export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel, problemId }) {
   const {
     highlight = [],
     found = false,
@@ -20,12 +20,16 @@ export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel })
     prevIdx = -1,
     inf,
     result,
+    left = -1,
+    right = -1,
+    mid = -1,
   } = stepState;
   const isKadane = maxSum !== undefined;
   const label = arrayLabel ?? "nums";
   const isKnapsack = label === "dp" && Array.isArray(weights) && weights.length > 0;
   const isCoinChange = label === "dp" && Array.isArray(coins) && coins.length > 0;
-  const arrayTopPadding = isKnapsack ? 20 : isCoinChange ? 36 : 64;
+  const isFindMinRotated = problemId === "min-rotated-sorted";
+  const arrayTopPadding = isKnapsack ? 20 : isCoinChange ? 36 : isFindMinRotated ? 52 : 64;
   const showTarget = !arrayLabel && !isKadane;
   const showHashMap = !isKadane && arrayLabel !== "dp" && arrayLabel !== "ans";
   const activeCoin = isCoinChange && coinIdx >= 0 && coinIdx < coins.length ? coins[coinIdx] : null;
@@ -42,6 +46,13 @@ export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel })
     if (isCoinChange) {
       if (idx === ci) return t.blue + "16";
       if (highlight.includes(idx)) return t.yellow + "22";
+      return t.surface;
+    }
+    if (isFindMinRotated) {
+      if (done && idx === left) return t.green + "22";
+      if (idx === mid) return t.yellow + "22";
+      if (idx === left || idx === right) return t.blue + "14";
+      if (idx >= left && idx <= right) return t.surfaceAlt;
       return t.surface;
     }
     return found && highlight.includes(idx) ? t.green : highlight.includes(idx) ? t.yellow : t.surface;
@@ -168,6 +179,21 @@ export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel })
               <div style={{ position: "absolute", bottom: "100%", marginBottom: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}>
                 {!isKadane && idx === ci && !found && <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1em", fontWeight: 700, color: t.blue }}>i={idx}</span>}
                 {!isKadane && complement !== undefined && !found && idx === ci && <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.92em", color: t.purple }}>need {complement}</span>}
+                {isFindMinRotated && idx === left && (
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68em", fontWeight: 800, color: done ? t.green : t.blue }}>
+                    {done ? "MIN" : "L"}
+                  </span>
+                )}
+                {isFindMinRotated && idx === mid && !done && (
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68em", fontWeight: 800, color: t.yellow }}>
+                    M
+                  </span>
+                )}
+                {isFindMinRotated && idx === right && !done && (
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68em", fontWeight: 800, color: t.blue }}>
+                    R
+                  </span>
+                )}
                 {isCoinChange && idx === ci && (
                   <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68em", fontWeight: 800, color: t.blue }}>i={idx}</span>
                 )}
@@ -183,8 +209,8 @@ export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel })
                 {!isKadane && found && highlight.includes(idx) && <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.1em", color: t.green, fontWeight: 700 }}>✓</span>}
                 {isKadane && idx === ci && <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1em", fontWeight: 700, color: t.blue }}>i={idx}</span>}
               </div>
-              <div style={{ width: 54, height: 54, border: `2.5px solid ${isCoinChange && idx === ci ? t.blue : t.border}`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: isCoinChange ? "'JetBrains Mono',monospace" : "'Caveat',cursive", fontSize: isCoinChange ? "1.05em" : "1.4em", fontWeight: 800, background: cellBg(idx), color: t.ink, transform: highlight.includes(idx) ? "translateY(-8px) scale(1.1)" : "scale(1)", boxShadow: highlight.includes(idx) ? t.shadowSm : "none", transition: "all 0.35s cubic-bezier(0.34,1.56,0.64,1)" }}>{formatCoinValue(val)}</div>
-              <span style={{ fontFamily: isCoinChange ? "'JetBrains Mono',monospace" : "'Caveat',cursive", fontSize: "0.72em", color: t.inkMuted }}>{idx}</span>
+              <div style={{ width: 54, height: 54, border: `2.5px solid ${isCoinChange && idx === ci ? t.blue : isFindMinRotated && idx === mid ? t.yellow : isFindMinRotated && (idx === left || idx === right) ? (done && idx === left ? t.green : t.blue) : t.border}`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: isCoinChange || isFindMinRotated ? "'JetBrains Mono',monospace" : "'Caveat',cursive", fontSize: isCoinChange || isFindMinRotated ? "1.05em" : "1.4em", fontWeight: 800, background: cellBg(idx), color: t.ink, transform: highlight.includes(idx) ? "translateY(-8px) scale(1.1)" : "scale(1)", boxShadow: highlight.includes(idx) ? t.shadowSm : "none", transition: "all 0.35s cubic-bezier(0.34,1.56,0.64,1)" }}>{formatCoinValue(val)}</div>
+              <span style={{ fontFamily: isCoinChange || isFindMinRotated ? "'JetBrains Mono',monospace" : "'Caveat',cursive", fontSize: "0.72em", color: t.inkMuted }}>{idx}</span>
             </div>
           ))}
         </div>
@@ -240,6 +266,20 @@ export default function ArrayVisualizer({ nums, stepState = {}, t, arrayLabel })
           {done && (
             <div style={{ padding: "8px 11px", border: `2px solid ${result === -1 ? t.red : t.green}`, borderRadius: 10, background: result === -1 ? t.red + "14" : t.green + "14", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72em", color: result === -1 ? t.red : t.green, fontWeight: 800 }}>
               result = {result === -1 ? "-1" : result}
+            </div>
+          )}
+        </div>
+      ) : isFindMinRotated ? (
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ padding: "8px 11px", border: `2px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72em", color: t.inkMuted }}>
+            window: [{left >= 0 ? left : "-"}, {right >= 0 ? right : "-"}]
+          </div>
+          <div style={{ padding: "8px 11px", border: `2px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72em", color: t.inkMuted }}>
+            mid: {mid >= 0 ? mid : "-"}
+          </div>
+          {done && (
+            <div style={{ padding: "8px 11px", border: `2px solid ${t.green}`, borderRadius: 10, background: t.green + "14", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72em", color: t.green, fontWeight: 800 }}>
+              minimum = {result}
             </div>
           )}
         </div>
