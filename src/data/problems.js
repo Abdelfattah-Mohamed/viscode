@@ -1470,6 +1470,24 @@ PROBLEMS["eval-rpn"].examples[1] = {
   values: { s: "3,4,+,2,*" },
 };
 
+PROBLEMS["subsets"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: "nums = [0,2]",
+  output: "[[],[0],[2],[0,2]]",
+  note: "Smaller two-element case to step through include/exclude decisions clearly.",
+  values: { nums: [0, 2] },
+};
+
+PROBLEMS["permutations"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: "nums = [1,2]",
+  output: "[[1,2],[2,1]]",
+  note: "Minimal distinct case showing all permutations of two elements.",
+  values: { nums: [1, 2] },
+};
+
 PROBLEMS["number-of-1-bits"].examples[1] = {
   id: "example-2",
   label: "Example 2",
