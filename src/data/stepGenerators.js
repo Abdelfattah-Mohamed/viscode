@@ -2321,7 +2321,15 @@ export function generateCopyListRandomSteps(input) {
       ? input.random
       : (typeof input.random === "string" ? input.random.split(",").map(s => s.trim()) : []);
     if (raw.length === n) {
-      random = raw.map(r => Math.max(0, Math.min(n - 1, Number(r) || 0)));
+      random = raw.map((r) => {
+        const token = String(r ?? "").trim().toLowerCase();
+        if (token === "" || token === "null" || token === "none" || token === "-1") return -1;
+        const parsed = Number(token);
+        if (!Number.isFinite(parsed)) return -1;
+        const idx = Math.trunc(parsed);
+        if (idx < 0 || idx >= n) return -1;
+        return idx;
+      });
     }
   }
   const steps = [];
@@ -2329,7 +2337,7 @@ export function generateCopyListRandomSteps(input) {
     steps.push({ stepType: "base", description: "Empty list → return null", state: { head: [], phase: 0, pIdx: -1, done: true } });
     return steps;
   }
-  const randomDesc = random.map((r, i) => `node ${head[i]}→${head[r]}`).join(", ");
+  const randomDesc = random.map((r, i) => `node ${head[i]}→${r >= 0 ? head[r] : "null"}`).join(", ");
   steps.push({
     stepType: "init",
     description: `Original list: values [${head.join(", ")}]. Random pointers: ${randomDesc}. We'll interweave a copy after each node so we can set random in O(1).`,
@@ -3129,29 +3137,211 @@ export function generateReorderListSteps(input) {
   }
   const steps = [];
   let slow = 0, fast = 0;
-  steps.push({ stepType: "init", description: "Find middle with slow/fast pointers", state: { head: [...head], prevIdx: -1, currIdx: 0, nextIdx: 0, reversed: 0, phase: "find_mid", done: false } });
+  steps.push({
+    stepType: "init",
+    description: "Initialize slow/fast pointers to find the middle",
+    state: {
+      head: [...head],
+      prevIdx: -1,
+      currIdx: 0,
+      nextIdx: 0,
+      reversed: 0,
+      phase: "find_mid",
+      firstHalf: [],
+      secondHalf: [],
+      reversedSecond: [],
+      merged: [],
+      done: false,
+    },
+  });
   while (fast + 2 < head.length) {
     slow++;
     fast += 2;
-    steps.push({ stepType: "find_mid", description: `slow=${slow}, fast=${fast}`, state: { head: [...head], prevIdx: -1, currIdx: slow, nextIdx: Math.min(fast, head.length - 1), reversed: 0, phase: "find_mid", done: false } });
+    steps.push({
+      stepType: "find_mid",
+      description: `Move slow by 1 and fast by 2 → slow=${slow}, fast=${fast}`,
+      state: {
+        head: [...head],
+        prevIdx: -1,
+        currIdx: slow,
+        nextIdx: Math.min(fast, head.length - 1),
+        reversed: 0,
+        phase: "find_mid",
+        firstHalf: [],
+        secondHalf: [],
+        reversedSecond: [],
+        merged: [],
+        done: false,
+      },
+    });
   }
   const midIdx = slow;
   const firstHalf = head.slice(0, midIdx + 1);
   const secondHalf = head.slice(midIdx + 1);
-  steps.push({ stepType: "split", description: `Split: first=[${firstHalf.join(",")}], second=[${secondHalf.join(",")}]`, state: { head: [...head], firstHalf: [...firstHalf], secondHalf: [...secondHalf], phase: "split", done: false } });
+  steps.push({
+    stepType: "split",
+    description: `Split at middle index ${midIdx}: first=[${firstHalf.join(",")}], second=[${secondHalf.join(",")}]`,
+    state: {
+      head: [...head],
+      firstHalf: [...firstHalf],
+      secondHalf: [...secondHalf],
+      reversedSecond: [],
+      merged: [],
+      phase: "split",
+      done: false,
+    },
+  });
   const reversedSecond = [...secondHalf].reverse();
-  steps.push({ stepType: "reverse_start", description: "Reverse second half", state: { head: reversedSecond, prevIdx: -1, currIdx: 0, nextIdx: 1, reversed: 0, phase: "reverse", done: false } });
+  steps.push({
+    stepType: "reverse",
+    description: `Start reversing second half [${secondHalf.join(",")}]`,
+    state: {
+      head: [...secondHalf],
+      prevIdx: -1,
+      currIdx: 0,
+      nextIdx: secondHalf.length > 1 ? 1 : -1,
+      reversed: 0,
+      firstHalf: [...firstHalf],
+      secondHalf: [...secondHalf],
+      reversedSecond: [],
+      merged: [],
+      phase: "reverse",
+      done: false,
+    },
+  });
   for (let r = 0; r < reversedSecond.length; r++) {
-    steps.push({ stepType: "reverse_step", description: `Reverse step ${r + 1}/${reversedSecond.length}`, state: { head: reversedSecond, prevIdx: r - 1, currIdx: r, nextIdx: r + 1 < reversedSecond.length ? r + 1 : -1, reversed: r, phase: "reverse", done: false } });
+    const built = reversedSecond.slice(0, r + 1);
+    const remaining = secondHalf.slice(0, Math.max(0, secondHalf.length - (r + 1)));
+    steps.push({
+      stepType: "reverse",
+      description: `Reverse step ${r + 1}/${reversedSecond.length}: moved ${reversedSecond[r]} to front`,
+      state: {
+        head: [...reversedSecond],
+        prevIdx: r - 1,
+        currIdx: r,
+        nextIdx: r + 1 < reversedSecond.length ? r + 1 : -1,
+        reversed: r + 1,
+        firstHalf: [...firstHalf],
+        secondHalf: [...remaining],
+        reversedSecond: [...built],
+        merged: [],
+        phase: "reverse",
+        done: false,
+      },
+    });
   }
-  steps.push({ stepType: "reverse_done", description: "Second half reversed", state: { head: reversedSecond, prevIdx: reversedSecond.length - 1, currIdx: -1, nextIdx: -1, reversed: reversedSecond.length, phase: "reverse", done: false } });
+  steps.push({
+    stepType: "reverse",
+    description: `Second half reversed: [${reversedSecond.join(",")}]`,
+    state: {
+      head: [...reversedSecond],
+      prevIdx: reversedSecond.length - 1,
+      currIdx: -1,
+      nextIdx: -1,
+      reversed: reversedSecond.length,
+      firstHalf: [...firstHalf],
+      secondHalf: [],
+      reversedSecond: [...reversedSecond],
+      merged: [],
+      phase: "reverse",
+      done: false,
+    },
+  });
   const merged = [];
   let i = 0, j = 0;
+  steps.push({
+    stepType: "merge",
+    description: "Start alternating merge: firstHalf and reversedSecond",
+    state: {
+      head: [...head],
+      firstHalf: [...firstHalf],
+      secondHalf: [],
+      reversedSecond: [...reversedSecond],
+      merged: [],
+      mergeI: 0,
+      mergeJ: 0,
+      phase: "merge",
+      done: false,
+    },
+  });
   while (i < firstHalf.length || j < reversedSecond.length) {
-    if (i < firstHalf.length) { merged.push(firstHalf[i]); i++; }
-    if (j < reversedSecond.length) { merged.push(reversedSecond[j]); j++; }
+    if (i < firstHalf.length) {
+      const picked = firstHalf[i];
+      merged.push(picked);
+      i++;
+      steps.push({
+        stepType: "merge",
+        description: `Take ${picked} from first half`,
+        state: {
+          head: [...merged, ...firstHalf.slice(i), ...reversedSecond.slice(j)],
+          firstHalf: [...firstHalf],
+          secondHalf: [],
+          reversedSecond: [...reversedSecond],
+          merged: [...merged],
+          mergeI: i,
+          mergeJ: j,
+          pickedFrom: "first",
+          phase: "merge",
+          done: false,
+        },
+      });
+    }
+    if (j < reversedSecond.length) {
+      const picked = reversedSecond[j];
+      merged.push(picked);
+      j++;
+      steps.push({
+        stepType: "merge",
+        description: `Take ${picked} from reversed second half`,
+        state: {
+          head: [...merged, ...firstHalf.slice(i), ...reversedSecond.slice(j)],
+          firstHalf: [...firstHalf],
+          secondHalf: [],
+          reversedSecond: [...reversedSecond],
+          merged: [...merged],
+          mergeI: i,
+          mergeJ: j,
+          pickedFrom: "second",
+          phase: "merge",
+          done: false,
+        },
+      });
+    }
   }
-  steps.push({ stepType: "merge", description: `Merge: [${merged.join(",")}]`, state: { head: [...merged], prevIdx: -1, currIdx: -1, nextIdx: -1, reversed: 0, phase: "merge", done: true } });
+  steps.push({
+    stepType: "merge",
+    description: `Merged result: [${merged.join(",")}]`,
+    state: {
+      head: [...merged],
+      prevIdx: -1,
+      currIdx: -1,
+      nextIdx: -1,
+      reversed: 0,
+      firstHalf: [...firstHalf],
+      secondHalf: [],
+      reversedSecond: [...reversedSecond],
+      merged: [...merged],
+      phase: "merge",
+      done: false,
+    },
+  });
+  steps.push({
+    stepType: "done",
+    description: `✅ Reordered list: [${merged.join(",")}]`,
+    state: {
+      head: [...merged],
+      prevIdx: -1,
+      currIdx: -1,
+      nextIdx: -1,
+      reversed: 0,
+      firstHalf: [...firstHalf],
+      secondHalf: [],
+      reversedSecond: [...reversedSecond],
+      merged: [...merged],
+      phase: "done",
+      done: true,
+    },
+  });
   return steps;
 }
 

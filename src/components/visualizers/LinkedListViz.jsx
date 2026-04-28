@@ -133,9 +133,14 @@ function CopyListRandomViz({ stepState, interweaved, copyHead, copyRandom, head,
         : phase === 3
           ? "Move copy nodes into the result list and restore the original list's next pointers."
           : "The copy list has the same structure as the original and is independent in memory.";
+  const activeIdx = (pIdx != null && pIdx >= 0 && pIdx < n) ? pIdx : -1;
+  const renderNodeRef = (idx) => {
+    if (idx == null || idx < 0 || idx >= n) return "null";
+    return `#${idx}:${head[idx]}`;
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", maxWidth: 520 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", maxWidth: 640 }}>
       <div style={{ padding: "10px 16px", borderRadius: 12, background: isDark ? "rgba(31,41,55,0.6)" : "rgba(249,250,251,0.95)", border: `2px solid ${t.border}40`, fontFamily: "'Caveat',cursive", fontSize: "1.1rem", fontWeight: 700, color: t.ink }}>
         {phaseLabel}
       </div>
@@ -152,6 +157,66 @@ function CopyListRandomViz({ stepState, interweaved, copyHead, copyRandom, head,
       <p style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", color: t.inkMuted, textAlign: "center", margin: 0, maxWidth: 440 }}>
         {phaseTip}
       </p>
+      <div style={{
+        width: "100%",
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+        gap: 8,
+      }}>
+        {Array.from({ length: n }).map((_, i) => {
+          const r = rand?.[i] ?? -1;
+          const isActive = i === activeIdx;
+          return (
+            <div key={`map-${i}`} style={{
+              border: `1px solid ${isActive ? `${t.yellow}88` : `${t.border}35`}`,
+              borderRadius: 10,
+              background: isActive ? `${t.yellow}14` : t.surface,
+              padding: "8px 10px",
+            }}>
+              <div style={{ fontSize: "0.72rem", letterSpacing: "0.04em", textTransform: "uppercase", color: t.inkMuted, marginBottom: 4 }}>
+                Node #{i}
+              </div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", color: t.ink }}>
+                orig: {renderNodeRef(i)}
+              </div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", color: t.purple }}>
+                random: {renderNodeRef(r)}
+              </div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", color: t.green }}>
+                copy.random: {phase >= 2 ? renderNodeRef(r) : "pending"}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {(phase === 1 || phase === 2) && interweaved.length > 0 && (
+        <div style={{
+          width: "100%",
+          border: `1px solid ${t.border}35`,
+          borderRadius: 10,
+          background: t.surface,
+          padding: "8px 10px",
+        }}>
+          <div style={{ fontSize: "0.72rem", letterSpacing: "0.04em", textTransform: "uppercase", color: t.inkMuted, marginBottom: 6 }}>
+            Memory Layout (Interweaved)
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {interweaved.map((node, i) => (
+              <span key={`iw-${i}`} style={{
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "0.78rem",
+                color: t.ink,
+                borderRadius: 999,
+                border: `1px solid ${(node?.isCopy ? t.green : t.blue)}55`,
+                background: `${(node?.isCopy ? t.green : t.blue)}16`,
+                padding: "2px 8px",
+              }}>
+                {node?.isCopy ? "C" : "O"}#{node?.origIdx}:{String(node?.val)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={{ position: "relative", width, height: totalH + 60, borderRadius: 16, overflow: "visible", background: isDark ? "#1e293b" : "#f1f5f9", border: `1px solid ${t.border}30` }}>
         <svg width={width} height={totalH + 60} style={{ display: "block", overflow: "visible" }}>
           <g ref={roughRef} transform="translate(0, 36)" />
@@ -175,7 +240,16 @@ function CopyListRandomViz({ stepState, interweaved, copyHead, copyRandom, head,
           {rand && rand.length === n && (showOriginalOnly || showTwoRows) && (
             <g transform="translate(0, 36)">
               {rand.map((r, i) => {
-                if (r === i || r < 0 || r >= n) return null;
+                if (r < 0 || r >= n) {
+                  const x1 = 40 + i * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
+                  const yLabel = showOriginalOnly ? yOrig + 32 : (yOrig + yCopy) / 2 - 6;
+                  return (
+                    <text key={`l-null-${i}`} x={x1} y={yLabel} textAnchor="middle" style={{ fontFamily: "'Caveat',cursive", fontSize: 12, fontWeight: 700, fill: t.purple }}>
+                      →null
+                    </text>
+                  );
+                }
+                if (r === i) return null;
                 const x1 = 40 + i * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
                 const x2 = 40 + r * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
                 const midX = (x1 + x2) / 2;
@@ -212,14 +286,59 @@ function CopyListRandomViz({ stepState, interweaved, copyHead, copyRandom, head,
 
 
 export default function LinkedListViz({ head = [], stepState = {}, problemId, input = {}, t }) {
-  const { prevIdx, currIdx, nextIdx, reversed = [], done, slowIdx, fastIdx, toRemoveIdx, phase, pIdx, interweaved = [], copyHead = [], copyRandom = [], head: stateHead, random: stateRandom } = stepState;
-  const rawNodes = Array.isArray(stateHead ?? head) ? (stateHead ?? head) : [];
-  const nodes = rawNodes.filter(v => v != null && v !== "");
+  const { prevIdx, currIdx, nextIdx, reversed = [], done, slowIdx, fastIdx, toRemoveIdx, phase, pIdx, interweaved = [], copyHead = [], copyRandom = [], head: stateHead, random: stateRandom, firstHalf = [], reversedSecond = [], merged = [], mergeI, mergeJ, pickedFrom } = stepState;
   const roughRef = useRef(null);
   const copyListRoughRef = useRef(null);
   const isDark = t._resolved === "dark";
   const isRemoveNth = problemId === "remove-nth-node";
   const isCopyListRandom = problemId === "copy-list-random-pointer";
+  const isReorderList = problemId === "reorder-list";
+  const reorderBaseHead = Array.isArray(input?.head) ? input.head : (Array.isArray(head) ? head : []);
+  const useStepHeadForReorder = phase === "merge" || phase === "done";
+  const rawNodes = (() => {
+    if (isReorderList) {
+      const src = useStepHeadForReorder ? (Array.isArray(stateHead) ? stateHead : reorderBaseHead) : reorderBaseHead;
+      return Array.isArray(src) ? src : [];
+    }
+    const src = stateHead ?? head;
+    return Array.isArray(src) ? src : [];
+  })();
+  const nodes = rawNodes.filter(v => v != null && v !== "");
+  const renderReorderLane = (label, values, accent) => (
+    <div style={{
+      border: `1px solid ${t.border}35`,
+      borderRadius: 10,
+      background: t.surface,
+      padding: "8px 10px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 6,
+    }}>
+      <div style={{ fontSize: "0.72rem", letterSpacing: "0.04em", textTransform: "uppercase", color: t.inkMuted }}>
+        {label}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", minHeight: 24 }}>
+        {(values?.length ? values : ["empty"]).map((val, idx) => (
+          <span key={`${label}-${idx}`} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span style={{
+              fontFamily: "'JetBrains Mono',monospace",
+              fontSize: "0.78rem",
+              color: t.ink,
+              border: `1px solid ${accent}55`,
+              background: `${accent}18`,
+              borderRadius: 999,
+              padding: "2px 8px",
+            }}>
+              {String(val)}
+            </span>
+            {idx < (values?.length ?? 0) - 1 && (
+              <span style={{ color: accent, fontWeight: 700, fontSize: "0.82rem" }}>→</span>
+            )}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 
   const splitPoint = reversed.length;
   const showSlowFast = isRemoveNth && (slowIdx !== undefined || fastIdx !== undefined);
@@ -390,6 +509,39 @@ export default function LinkedListViz({ head = [], stepState = {}, problemId, in
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {isReorderList && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: 10,
+          }}>
+            <div style={{ border: `1px solid ${t.border}35`, borderRadius: 10, background: t.surface, padding: "8px 10px" }}>
+              <div style={{ fontSize: "0.72rem", letterSpacing: "0.04em", textTransform: "uppercase", color: t.inkMuted }}>Phase</div>
+              <div style={{ fontFamily: "'Caveat',cursive", fontWeight: 700, color: t.ink, fontSize: "1.02rem" }}>{phase || "init"}</div>
+            </div>
+            {(phase === "merge") && (
+              <div style={{ border: `1px solid ${t.border}35`, borderRadius: 10, background: t.surface, padding: "8px 10px" }}>
+                <div style={{ fontSize: "0.72rem", letterSpacing: "0.04em", textTransform: "uppercase", color: t.inkMuted }}>Merge Pointers</div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", color: t.ink, fontSize: "0.82rem" }}>
+                  i={mergeI ?? 0}, j={mergeJ ?? 0}{pickedFrom ? `, picked=${pickedFrom}` : ""}
+                </div>
+              </div>
+            )}
+          </div>
+          <div style={{ border: `1px solid ${t.border}35`, borderRadius: 10, background: t.surface, padding: "8px 10px" }}>
+            <div style={{ fontSize: "0.72rem", letterSpacing: "0.04em", textTransform: "uppercase", color: t.inkMuted, marginBottom: 8 }}>
+              Reorder Transformation
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 8 }}>
+              {renderReorderLane("First Half", firstHalf, t.blue)}
+              {renderReorderLane("Reversed Second", reversedSecond, t.purple)}
+              {renderReorderLane("Merged So Far", merged, t.green)}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{
         display: "flex",
         alignItems: "center",
