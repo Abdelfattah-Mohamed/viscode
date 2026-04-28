@@ -60,12 +60,14 @@ function parseEdgeLines(raw, tupleSize = 2) {
   return edges;
 }
 
-function toGridModel(input) {
-  const flat = Array.isArray(input.grid) ? input.grid.map((x) => Number(x) || 0) : [];
+function toGridModel(input, field = "grid") {
+  const raw = field === "board"
+    ? String(input.board || "").split(",").map((x) => x.trim()).filter(Boolean)
+    : Array.isArray(input.grid) ? input.grid.map((x) => Number(x) || 0) : [];
   const rows = Math.max(1, Number(input.rows) || 1);
-  const cols = Math.max(1, Math.ceil(flat.length / rows) || 1);
+  const cols = Math.max(1, Math.ceil(raw.length / rows) || 1);
   const cells = Array.from({ length: rows }, (_, r) =>
-    Array.from({ length: cols }, (_, c) => String(flat[r * cols + c] ?? 0))
+    Array.from({ length: cols }, (_, c) => String(raw[r * cols + c] ?? (field === "board" ? "" : 0)))
   );
   return { rows, cols, cells };
 }
@@ -228,6 +230,7 @@ function isWeightedGraphProblem(problem, visualizer) {
 
 function inferFieldKind(field, input, fields, visualizer) {
   if (field === "grid" && fields.includes("rows")) return "matrix";
+  if (field === "board" && fields.includes("rows")) return "matrix";
   if (visualizer === "graph" && field === "nums" && fields.includes("n")) return "graph";
   if (field === "intervals") return "pairs";
   if (TREE_FIELDS.has(field)) return "tree";
@@ -259,7 +262,7 @@ function buildInitialDraft(input, fields, visualizer, weightedGraphInput = false
       continue;
     }
     if (kind === "matrix") {
-      draft[f] = toGridModel(input);
+      draft[f] = toGridModel(input, f);
       continue;
     }
     if (kind === "graph") {
@@ -296,6 +299,8 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
   const paperAlt = t._resolved === "dark" ? "#2a2b31" : "#fff7ed";
   const ink = t._resolved === "dark" ? "#f3f4f6" : "#1f2937";
   const sketchFont = "'Caveat', 'Comic Sans MS', cursive";
+  const sansFont = "'DM Sans',sans-serif";
+  const monoFont = "'JetBrains Mono',monospace";
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(() => buildInitialDraft(input, fields, visualizer, weightedGraphInput));
   const [error, setError] = useState(null);
@@ -323,19 +328,44 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
       })),
     [fields, input, visualizer]
   );
+  const hasMatrixEditor = schema.some(({ kind }) => kind === "matrix");
+  const visibleSchema = schema.filter(({ field }) => !(hasMatrixEditor && (field === "rows" || field === "cols")));
 
   const pill = (extra = {}) => ({
-    fontFamily: sketchFont,
-    fontSize: "0.8rem",
-    padding: "5px 11px",
-    border: `2px solid ${sketchBorder}`,
-    borderRadius: 8,
+    fontFamily: sansFont,
+    fontSize: "0.78rem",
+    fontWeight: 800,
+    padding: "7px 11px",
+    border: `1.5px solid ${sketchBorder}`,
+    borderRadius: 10,
     background: paper,
     color: ink,
     cursor: "pointer",
-    boxShadow: "2px 2px 0 rgba(0,0,0,0.25)",
+    boxShadow: t.shadowSm,
+    transition: "transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease",
     ...extra,
   });
+
+  const controlStyle = {
+    width: "100%",
+    fontFamily: monoFont,
+    fontSize: "0.82rem",
+    border: `1.5px solid ${t.border}`,
+    borderRadius: 10,
+    background: paper,
+    color: ink,
+    padding: "10px 11px",
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
+  const fieldCardStyle = {
+    border: `1.5px solid ${t.border}`,
+    borderRadius: 14,
+    padding: 14,
+    background: t.surface,
+    boxShadow: t.shadowSm,
+  };
 
   const setField = (field, value) => {
     setDraft((prev) => ({ ...prev, [field]: value }));
@@ -353,6 +383,9 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
     const next = {};
     try {
       for (const { field, kind } of schema) {
+        if (hasMatrixEditor && (field === "rows" || field === "cols")) {
+          continue;
+        }
         if (kind === "int") {
           const n = Number(draft[field]);
           next[field] = Number.isNaN(n) ? 0 : n;
@@ -366,11 +399,19 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
           const flat = [];
           for (let r = 0; r < rows; r += 1) {
             for (let c = 0; c < cols; c += 1) {
-              const val = Number(cells[r]?.[c] ?? 0);
-              flat.push(Number.isNaN(val) ? 0 : val);
+              if (field === "board") {
+                flat.push(String(cells[r]?.[c] ?? "").trim().slice(0, 1).toUpperCase() || "A");
+              } else {
+                const val = Number(cells[r]?.[c] ?? 0);
+                flat.push(Number.isNaN(val) ? 0 : val);
+              }
             }
           }
-          next.grid = flat;
+          if (field === "board") {
+            next.board = flat.join(",");
+          } else {
+            next.grid = flat;
+          }
           if (fields.includes("rows")) next.rows = rows;
           if (fields.includes("cols")) next.cols = cols;
         } else if (kind === "graph") {
@@ -431,8 +472,9 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
 
   return (
     <>
-      <button onClick={() => setOpen(true)} style={{ ...pill(), marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
-        ✏️ Edit Input
+      <button onClick={() => setOpen(true)} style={{ ...pill(), marginLeft: "auto", display: "flex", alignItems: "center", gap: 7, background: t.surfaceAlt }}>
+        <span aria-hidden="true">Edit</span>
+        <span>Input</span>
       </button>
 
       {open && (
@@ -454,42 +496,49 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
             style={{
               width: "min(900px, 95vw)",
               maxHeight: "90vh",
-              overflow: "auto",
-              background: paper,
-              border: `2px solid ${sketchBorder}`,
-              borderRadius: 14,
-              boxShadow: "6px 6px 0 rgba(0,0,0,0.28)",
+              overflow: "hidden",
+              background: `linear-gradient(180deg, ${t.surface} 0%, ${paper} 100%)`,
+              border: `1.5px solid ${sketchBorder}`,
+              borderRadius: 18,
+              boxShadow: t._resolved === "dark" ? "0 24px 80px rgba(0,0,0,0.55)" : "0 24px 80px rgba(28,28,46,0.22)",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            <div style={{ padding: "14px 18px", borderBottom: `2px solid ${sketchBorder}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <div>
-                <div style={{ fontFamily: sketchFont, fontSize: "1.45rem", fontWeight: 700, color: ink }}>Input Editor</div>
-                <div style={{ fontSize: "0.8rem", color: t.inkMuted }}>
-                  {problem?.title || "Problem"}
+            <div style={{ padding: "18px 20px", borderBottom: `1.5px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, background: t.surfaceAlt, flexShrink: 0 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
+                  <div style={{ fontFamily: sketchFont, fontSize: "1.55rem", lineHeight: 1, fontWeight: 800, color: ink }}>Input Editor</div>
+                  <span style={{ fontFamily: sansFont, fontSize: "0.72rem", fontWeight: 900, letterSpacing: "0.04em", textTransform: "uppercase", color: t.blue, background: t.blue + "18", border: `1px solid ${t.blue}55`, borderRadius: 999, padding: "3px 8px" }}>
+                    Pro tool
+                  </span>
+                </div>
+                <div style={{ marginTop: 5, fontFamily: sansFont, fontSize: "0.84rem", color: t.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {problem?.title || "Problem"} · edit the structured input used by the visualizer
                 </div>
               </div>
-              <button onClick={() => setOpen(false)} style={pill()}>
-                ✕ Close
+              <button onClick={() => setOpen(false)} style={pill({ background: t.surface, flexShrink: 0 })}>
+                Close
               </button>
             </div>
 
-            <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14, overflow: "auto" }}>
               {showInputHint && (
-                <div style={{ border: `2px solid ${sketchBorder}`, borderRadius: 10, background: paper, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <div style={{ fontSize: "0.78rem", color: t.inkMuted }}>
+                <div style={{ border: `1.5px solid ${t.blue}66`, borderRadius: 12, background: t.blue + "12", padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                  <div style={{ fontFamily: sansFont, fontSize: "0.82rem", color: t.inkMuted, lineHeight: 1.5 }}>
                     Onboarding tip: start with one small change, click <strong>Apply input</strong>, then use playback controls to see exactly what changed.
                   </div>
-                  <button onClick={dismissInputHint} style={{ border: "none", background: "transparent", color: t.inkMuted, cursor: "pointer", fontSize: "0.78rem", padding: 0 }}>
+                  <button onClick={dismissInputHint} style={{ border: "none", background: "transparent", color: t.blue, cursor: "pointer", fontSize: "0.78rem", fontWeight: 800, padding: 0, fontFamily: sansFont }}>
                     Dismiss
                   </button>
                 </div>
               )}
-              <div style={{ border: `2px dashed ${sketchBorder}`, borderRadius: 10, background: paperAlt, padding: "10px 12px" }}>
-                <div style={{ fontFamily: sketchFont, fontSize: "1rem", fontWeight: 700, color: ink, marginBottom: 4 }}>
+              <div style={{ border: `1.5px solid ${t.border}`, borderRadius: 14, background: paperAlt, padding: "12px 14px", boxShadow: t.shadowSm }}>
+                <div style={{ fontFamily: sketchFont, fontSize: "1.08rem", fontWeight: 800, color: ink, marginBottom: 6 }}>
                   Input format quick help
                 </div>
-                <div style={{ display: "grid", gap: 4, fontSize: "0.78rem", color: t.inkMuted }}>
-                  {Array.from(new Set(schema.map((x) => x.kind))).map((k) => (
+                <div style={{ display: "grid", gap: 6, fontFamily: sansFont, fontSize: "0.8rem", color: t.inkMuted }}>
+                  {Array.from(new Set(visibleSchema.map((x) => x.kind))).map((k) => (
                     <div key={`help-${k}`}>
                       <strong style={{ color: ink }}>{k}:</strong> {kindHelp(k, weightedGraphInput)}
                     </div>
@@ -497,11 +546,14 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
                 </div>
               </div>
 
-              {schema.map(({ field, kind }) => (
-                <div key={field} style={{ border: `2px solid ${sketchBorder}`, borderRadius: 10, padding: 12, background: paperAlt }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-                    <div style={{ fontFamily: sketchFont, fontSize: "1.1rem", fontWeight: 700, color: ink }}>{displayFieldName(field)}</div>
-                    <div style={{ fontSize: "0.72rem", color: t.inkMuted, textTransform: "uppercase" }}>{kind}</div>
+              {visibleSchema.map(({ field, kind }) => (
+                <div key={field} style={fieldCardStyle}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontFamily: sketchFont, fontSize: "1.18rem", lineHeight: 1, fontWeight: 800, color: ink }}>{displayFieldName(field)}</div>
+                      <div style={{ marginTop: 4, fontFamily: sansFont, fontSize: "0.76rem", color: t.inkMuted }}>{kindHelp(kind, weightedGraphInput)}</div>
+                    </div>
+                    <div style={{ fontFamily: sansFont, fontSize: "0.68rem", color: t.inkMuted, textTransform: "uppercase", fontWeight: 900, letterSpacing: "0.04em", border: `1px solid ${t.border}`, borderRadius: 999, padding: "3px 8px", background: t.surfaceAlt }}>{kind}</div>
                   </div>
 
                   {(kind === "string" || kind === "graph" || kind === "tree" || kind === "pairs") && (
@@ -527,14 +579,7 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
                                 : "Type value..."
                         }
                         style={{
-                          width: "100%",
-                          fontFamily: "'JetBrains Mono',monospace",
-                          fontSize: "0.8rem",
-                          border: `2px solid ${sketchBorder}`,
-                          borderRadius: 8,
-                          background: paper,
-                          color: ink,
-                          padding: "10px 11px",
+                          ...controlStyle,
                           resize: "vertical",
                           minHeight: 72,
                         }}
@@ -569,14 +614,8 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
                       value={draft[field] ?? ""}
                       onChange={(e) => setField(field, e.target.value)}
                       style={{
+                        ...controlStyle,
                         width: 130,
-                        fontFamily: "'JetBrains Mono',monospace",
-                        fontSize: "0.82rem",
-                        border: `2px solid ${sketchBorder}`,
-                        borderRadius: 8,
-                        background: paper,
-                        color: ink,
-                        padding: "8px 10px",
                       }}
                     />
                   )}
@@ -588,14 +627,7 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
                       rows={3}
                       placeholder="Comma or new-line separated numbers"
                       style={{
-                        width: "100%",
-                        fontFamily: "'JetBrains Mono',monospace",
-                        fontSize: "0.8rem",
-                        border: `2px solid ${sketchBorder}`,
-                        borderRadius: 8,
-                        background: paper,
-                        color: ink,
-                        padding: "10px 11px",
+                        ...controlStyle,
                         resize: "vertical",
                         minHeight: 72,
                       }}
@@ -605,47 +637,66 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
                   {kind === "matrix" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                        <label style={{ fontSize: "0.8rem", color: t.inkMuted }}>
+                        <label style={{ fontFamily: sansFont, fontSize: "0.8rem", color: t.inkMuted, fontWeight: 700 }}>
                           Rows{" "}
                           <input
                             type="number"
                             min={1}
                             value={draft[field]?.rows ?? 1}
                             onChange={(e) => updateGridMeta(field, "rows", e.target.value)}
-                            style={{ width: 70, marginLeft: 4, padding: "5px 6px", borderRadius: 6, border: `2px solid ${sketchBorder}`, background: paper, color: ink }}
+                            style={{ width: 78, marginLeft: 4, padding: "7px 8px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: paper, color: ink, fontFamily: monoFont }}
                           />
                         </label>
-                        <label style={{ fontSize: "0.8rem", color: t.inkMuted }}>
+                        <label style={{ fontFamily: sansFont, fontSize: "0.8rem", color: t.inkMuted, fontWeight: 700 }}>
                           Cols{" "}
                           <input
                             type="number"
                             min={1}
                             value={draft[field]?.cols ?? 1}
                             onChange={(e) => updateGridMeta(field, "cols", e.target.value)}
-                            style={{ width: 70, marginLeft: 4, padding: "5px 6px", borderRadius: 6, border: `2px solid ${sketchBorder}`, background: paper, color: ink }}
+                            style={{ width: 78, marginLeft: 4, padding: "7px 8px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: paper, color: ink, fontFamily: monoFont }}
                           />
                         </label>
                       </div>
-                      <div style={{ overflowX: "auto", border: `1px solid ${t.border}`, borderRadius: 8 }}>
-                        <table style={{ borderCollapse: "collapse", width: "100%" }}>
+                      <div style={{ overflowX: "auto", border: `1.5px solid ${t.border}`, borderRadius: 16, background: t.surface, boxShadow: t.shadowSm, padding: 12, width: "fit-content", maxWidth: "100%" }}>
+                        <table style={{ borderCollapse: "separate", borderSpacing: 4 }}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: 28 }} />
+                              {Array.from({ length: draft[field]?.cols || 0 }, (_, c) => (
+                                <th key={`col-${c}`} style={{ width: 54, height: 22, textAlign: "center", fontFamily: monoFont, fontSize: "0.68rem", color: t.inkMuted, fontWeight: 900 }}>
+                                  c{c}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
                           <tbody>
                             {(draft[field]?.cells || []).map((row, r) => (
                               <tr key={r}>
+                                <th style={{ width: 28, textAlign: "center", fontFamily: monoFont, fontSize: "0.68rem", color: t.inkMuted, fontWeight: 900 }}>
+                                  r{r}
+                                </th>
                                 {row.map((cell, c) => (
-                                  <td key={`${r}-${c}`} style={{ border: `1px solid ${t.border}`, padding: 0 }}>
+                                  <td key={`${r}-${c}`} style={{ padding: 0 }}>
                                     <input
                                       value={cell}
                                       onChange={(e) => updateGridCell(field, r, c, e.target.value)}
                                       style={{
-                                        width: "100%",
-                                        minWidth: 70,
-                                        padding: "8px 7px",
-                                        border: "none",
+                                        width: 54,
+                                        height: 54,
+                                        textAlign: "center",
+                                        border: `2px solid ${cell === "0" || Number(cell) === 0 ? t.red + "88" : "transparent"}`,
+                                        borderRadius: 10,
                                         outline: "none",
-                                        background: paper,
-                                        color: ink,
-                                        fontFamily: "'JetBrains Mono',monospace",
-                                        fontSize: "0.78rem",
+                                        background: cell === "0" || Number(cell) === 0
+                                          ? t.red + "18"
+                                          : t.surfaceAlt,
+                                        color: cell === "0" || Number(cell) === 0 ? t.red : ink,
+                                        fontFamily: monoFont,
+                                        fontSize: "0.9rem",
+                                        fontWeight: 900,
+                                        boxShadow: "none",
+                                        transition: "all 0.18s ease",
                                       }}
                                     />
                                   </td>
@@ -661,21 +712,21 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
               ))}
 
               {error && (
-                <div style={{ color: t.red, fontSize: "0.82rem", background: `${t.red}1f`, border: `1px solid ${t.red}`, padding: "8px 10px", borderRadius: 8 }}>
+                <div style={{ color: t.red, fontFamily: sansFont, fontSize: "0.84rem", fontWeight: 700, background: `${t.red}1f`, border: `1px solid ${t.red}`, padding: "9px 11px", borderRadius: 10 }}>
                   {error}
                 </div>
               )}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "12px 16px", borderTop: `2px solid ${sketchBorder}` }}>
-              <button onClick={resetDraft} style={pill()}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "14px 18px", borderTop: `1.5px solid ${t.border}`, background: t.surfaceAlt, flexShrink: 0 }}>
+              <button onClick={resetDraft} style={pill({ background: t.surface })}>
                 Reset edits
               </button>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => setOpen(false)} style={pill()}>
+                <button onClick={() => setOpen(false)} style={pill({ background: t.surface })}>
                   Cancel
                 </button>
-                <button onClick={apply} style={pill({ background: "#9fe870", color: "#0f172a", border: `2px solid ${sketchBorder}` })}>
+                <button onClick={apply} style={pill({ background: t.ink, color: t.yellow, border: `1.5px solid ${t.border}` })}>
                   Apply input
                 </button>
               </div>

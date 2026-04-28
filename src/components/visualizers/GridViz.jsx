@@ -1,6 +1,11 @@
 export default function GridViz({ stepState = {}, input, problemId, t }) {
-  const { grid = [], visited = [], current = null, highlighted = [], islandCount, maxArea, currentArea, done, pacific = [], atlantic = [], result = [], phase, word = "", matched = "", res = [] } = stepState;
+  const { grid = [], visited = [], current = null, highlighted = [], islandCount, maxArea, currentArea, done, pacific = [], atlantic = [], result = [], phase, word = "", matched = "", res = [], markerCells = [], activeMarkers = [] } = stepState;
   const isPacificAtlantic = problemId === "pacific-atlantic" && (pacific.length > 0 || atlantic.length > 0);
+  const isSetMatrixZeroes = problemId === "set-matrix-zeroes";
+  const isSpiralMatrix = problemId === "spiral-matrix";
+  const isRotateImage = problemId === "rotate-image";
+  const isWordSearch = problemId === "word-search";
+  const isPolishedMatrix = isSetMatrixZeroes || isSpiralMatrix || isRotateImage || isWordSearch;
   const isDark = t._resolved === "dark";
   const water = isDark ? "#1e3a5f" : "#bae6fd";
   const land = isDark ? "#374151" : "#d1d5db";
@@ -24,6 +29,19 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
   const C = grid[0].length;
   const isResultCell = (r, c) => result.some(([a, b]) => a === r && b === c);
   const isHighlighted = (r, c) => highlighted.some(([a, b]) => a === r && b === c);
+  const isMarkerCell = (r, c) => markerCells.some(([a, b]) => a === r && b === c);
+  const isActiveMarker = (r, c) => activeMarkers.some(([a, b]) => a === r && b === c);
+  const phaseLabel = phase === "mark" ? "Mark zeros" : phase === "scan" ? "Scan matrix" : phase === "sweep" ? "Apply markers" : phase === "zero_col0" ? "Zero first column" : phase === "zero_row0" ? "Zero first row" : done ? "Complete" : "Initialize markers";
+  const spiralPhaseLabel = phase === "go_right" ? "Move right" : phase === "go_down" ? "Move down" : phase === "go_left" ? "Move left" : phase === "go_up" ? "Move up" : done ? "Complete" : "Initialize bounds";
+  const rotatePhaseLabel = phase === "transpose" ? "Transpose" : phase === "reverse" ? "Reverse rows" : done ? "Complete" : "Prepare rotation";
+  const wordPhaseLabel = done ? "Complete" : matched ? `Matched ${matched.length}/${word.length}` : "Find start";
+
+  const markerBadge = (label, color, bg) => (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", fontWeight: 800, color: t.inkMuted }}>
+      <span style={{ width: 10, height: 10, borderRadius: 3, background: bg, border: `1.5px solid ${color}` }} />
+      {label}
+    </span>
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -41,48 +59,201 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
           {currentArea != null && currentArea > 0 && <span><strong>Current area:</strong> {currentArea}</span>}
         </div>
       )}
-      {problemId === "rotate-image" && phase && phase !== "init" && (
-        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", color: t.inkMuted }}>
-          Phase: <strong>{phase === "transpose" ? "Transpose" : phase === "reverse" ? "Reverse rows" : ""}</strong>
+      {isRotateImage && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", border: `1.5px solid ${t.border}`, borderRadius: 14, background: t.surfaceAlt }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.18rem", fontWeight: 800, color: t.ink, lineHeight: 1 }}>
+                Rotation workspace
+              </div>
+              <div style={{ marginTop: 4, fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", color: t.inkMuted }}>
+                Rotate 90 degrees clockwise by transposing, then reversing each row.
+              </div>
+            </div>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: done ? t.green : t.blue, background: (done ? t.green : t.blue) + "18", border: `1.25px solid ${(done ? t.green : t.blue)}66`, borderRadius: 999, padding: "5px 10px" }}>
+              {rotatePhaseLabel}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {markerBadge("swap cells", t.yellow, t.yellow + "24")}
+            {markerBadge("current phase", t.blue, t.blue + "18")}
+            {done && markerBadge("rotated", t.green, t.green + "22")}
+          </div>
         </div>
       )}
-      {problemId === "set-matrix-zeroes" && phase && phase !== "init" && (
-        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", color: t.inkMuted }}>
-          Phase: <strong>{phase === "mark" ? "Mark zeros" : phase === "scan" ? "Scan" : phase === "sweep" ? "Sweep" : phase === "zero_col0" ? "Zero col 0" : phase === "zero_row0" ? "Zero row 0" : ""}</strong>
+      {isSetMatrixZeroes && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", border: `1.5px solid ${t.border}`, borderRadius: 14, background: t.surfaceAlt }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.18rem", fontWeight: 800, color: t.ink, lineHeight: 1 }}>
+                Matrix state
+              </div>
+              <div style={{ marginTop: 4, fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", color: t.inkMuted }}>
+                First row and first column are reused as in-place markers.
+              </div>
+            </div>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: done ? t.green : t.blue, background: (done ? t.green : t.blue) + "18", border: `1.25px solid ${(done ? t.green : t.blue)}66`, borderRadius: 999, padding: "5px 10px" }}>
+              {phaseLabel}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {markerBadge("marker row", t.blue, t.blue + "20")}
+            {markerBadge("marker column", t.purple, t.purple + "20")}
+            {markerBadge("updated marker", t.green, t.green + "22")}
+            {markerBadge("current cell", currentBorder, currentBorder + "22")}
+            {markerBadge("zero", t.red, t.red + "18")}
+          </div>
         </div>
       )}
-      {problemId === "word-search" && word && (
-        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", color: t.inkMuted }}>
-          Word: <strong>{word}</strong>
-          {matched && <span style={{ marginLeft: 8, color: t.green }}>Matched: {matched}</span>}
+      {isWordSearch && word && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", border: `1.5px solid ${t.border}`, borderRadius: 14, background: t.surfaceAlt }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.18rem", fontWeight: 800, color: t.ink, lineHeight: 1 }}>
+                Word search board
+              </div>
+              <div style={{ marginTop: 4, fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", color: t.inkMuted }}>
+                DFS tries each cell, marks the current path, then backtracks.
+              </div>
+            </div>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: done ? t.green : t.blue, background: (done ? t.green : t.blue) + "18", border: `1.25px solid ${(done ? t.green : t.blue)}66`, borderRadius: 999, padding: "5px 10px" }}>
+              {wordPhaseLabel}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: t.ink, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 999, padding: "3px 8px" }}>
+              word: {word}
+            </span>
+            {matched && (
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: t.green, background: t.green + "18", border: `1px solid ${t.green}66`, borderRadius: 999, padding: "3px 8px" }}>
+                matched: {matched}
+              </span>
+            )}
+            {markerBadge("path", t.green, t.green + "22")}
+            {markerBadge("current cell", currentBorder, currentBorder + "22")}
+          </div>
         </div>
       )}
-      {problemId === "spiral-matrix" && (phase || res?.length > 0) && (
-        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", color: t.inkMuted }}>
-          {phase && phase !== "init" && <span style={{ marginRight: 12 }}>Phase: <strong>{phase === "go_right" ? "Right" : phase === "go_down" ? "Down" : phase === "go_left" ? "Left" : phase === "go_up" ? "Up" : ""}</strong></span>}
-          {res?.length > 0 && <span>res: <strong>[{res.join(",")}]</strong></span>}
+      {isSpiralMatrix && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", border: `1.5px solid ${t.border}`, borderRadius: 14, background: t.surfaceAlt }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.18rem", fontWeight: 800, color: t.ink, lineHeight: 1 }}>
+                Spiral traversal
+              </div>
+              <div style={{ marginTop: 4, fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", color: t.inkMuted }}>
+                The path moves around the current boundary and then tightens inward.
+              </div>
+            </div>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: done ? t.green : t.blue, background: (done ? t.green : t.blue) + "18", border: `1.25px solid ${(done ? t.green : t.blue)}66`, borderRadius: 999, padding: "5px 10px" }}>
+              {spiralPhaseLabel}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {markerBadge("visited path", t.green, t.green + "22")}
+            {markerBadge("current cell", currentBorder, currentBorder + "22")}
+            {res?.length > 0 && (
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 800, color: t.ink, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 999, padding: "3px 8px" }}>
+                res[{res.length}]
+              </span>
+            )}
+          </div>
+          {res?.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", fontWeight: 800, color: t.inkMuted }}>
+                Output array
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {res.map((value, idx) => {
+                  const latest = idx === res.length - 1 && !done;
+                  return (
+                    <div
+                      key={`${idx}-${value}`}
+                      style={{
+                        minWidth: 34,
+                        padding: "6px 9px",
+                        borderRadius: 10,
+                        border: `1.5px solid ${latest ? currentBorder : t.border}`,
+                        background: latest ? currentBorder + "22" : t.surface,
+                        color: latest ? currentBorder : t.ink,
+                        fontFamily: "'JetBrains Mono',monospace",
+                        fontSize: "0.82rem",
+                        fontWeight: 900,
+                        textAlign: "center",
+                        boxShadow: latest ? t.shadowSm : "none",
+                      }}
+                      title={`res[${idx}]`}
+                    >
+                      {value}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
       <div
         style={{
           display: "inline-grid",
-          gridTemplateColumns: `repeat(${C}, ${cellSize}px)`,
+          gridTemplateColumns: isPolishedMatrix ? `28px repeat(${C}, ${cellSize}px)` : `repeat(${C}, ${cellSize}px)`,
           gap,
-          padding: 8,
-          background: isDark ? "#111827" : "#f3f4f6",
-          borderRadius: 8,
+          padding: isPolishedMatrix ? 12 : 8,
+          background: isPolishedMatrix ? t.surface : isDark ? "#111827" : "#f3f4f6",
+          border: isPolishedMatrix ? `1.5px solid ${t.border}` : "none",
+          borderRadius: isPolishedMatrix ? 16 : 8,
+          boxShadow: isPolishedMatrix ? t.shadowSm : "none",
+          width: "fit-content",
+          maxWidth: "100%",
+          overflowX: "auto",
         }}
       >
+        {isPolishedMatrix && (
+          <>
+            <div />
+            {Array.from({ length: C }, (_, c) => (
+              <div key={`col-${c}`} style={{ height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68rem", fontWeight: 900, color: isSetMatrixZeroes && c === 0 ? t.purple : t.inkMuted }}>
+                c{c}
+              </div>
+            ))}
+          </>
+        )}
         {grid.map((row, r) =>
-          row.map((val, c) => {
+          [
+            ...(isPolishedMatrix ? [
+              <div key={`row-${r}`} style={{ width: 24, height: cellSize, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68rem", fontWeight: 900, color: isSetMatrixZeroes && r === 0 ? t.blue : t.inkMuted }}>
+                r{r}
+              </div>,
+            ] : []),
+            ...row.map((val, c) => {
             const isVisited = !isPacificAtlantic && problemId !== "rotate-image" && problemId !== "set-matrix-zeroes" && visited[r] && visited[r][c];
             const isCurrent = current && current[0] === r && current[1] === c;
             const isRotateHighlight = problemId === "rotate-image" && isHighlighted(r, c);
+            const isMarkerRow = isSetMatrixZeroes && r === 0;
+            const isMarkerCol = isSetMatrixZeroes && c === 0;
+            const markerCell = isSetMatrixZeroes && isMarkerCell(r, c);
+            const activeMarker = isSetMatrixZeroes && isActiveMarker(r, c);
+            const isSpiralVisited = isSpiralMatrix && visited[r] && visited[r][c];
+            const isWordVisited = isWordSearch && visited[r] && visited[r][c];
             const toBoth = isPacificAtlantic && isResultCell(r, c);
             const toPac = isPacificAtlantic && pacific[r] && pacific[r][c];
             const toAtl = isPacificAtlantic && atlantic[r] && atlantic[r][c];
             let bg = land;
-            if (val === 0 && !isPacificAtlantic) bg = water;
+            if (isSetMatrixZeroes) {
+              bg = val === 0 ? t.red + "18" : t.surfaceAlt;
+              if (isMarkerRow && isMarkerCol) bg = `linear-gradient(135deg, ${t.blue}24 0%, ${t.blue}24 50%, ${t.purple}24 50%, ${t.purple}24 100%)`;
+              else if (isMarkerRow) bg = t.blue + "18";
+              else if (isMarkerCol) bg = t.purple + "18";
+              if (markerCell) bg = t.green + "22";
+              if (activeMarker) bg = t.green + "35";
+              if (isCurrent) bg = currentBorder + "24";
+            } else if (isSpiralMatrix) {
+              bg = isCurrent ? currentBorder + "24" : isSpiralVisited ? t.green + "22" : t.surfaceAlt;
+            } else if (isRotateImage) {
+              bg = isRotateHighlight ? t.yellow + "30" : done ? t.green + "14" : t.surfaceAlt;
+            } else if (isWordSearch) {
+              bg = isCurrent ? currentBorder + "24" : isWordVisited ? t.green + "22" : t.surfaceAlt;
+            } else if (val === 0 && !isPacificAtlantic) bg = water;
             else if (isPacificAtlantic) {
               if (toBoth) bg = bothColor;
               else if (toPac && toAtl) bg = bothColor;
@@ -96,20 +267,25 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
                   width: cellSize,
                   height: cellSize,
                   background: bg,
-                  border: `2px solid ${(isCurrent || isRotateHighlight) ? currentBorder : "transparent"}`,
-                  borderRadius: 4,
+                  border: `2px solid ${isCurrent ? currentBorder : activeMarker ? t.green : markerCell ? t.green + "aa" : isWordVisited ? t.green + "88" : isSpiralVisited ? t.green + "88" : isRotateHighlight ? t.yellow : isSetMatrixZeroes && val === 0 ? t.red + "88" : isSetMatrixZeroes && (isMarkerRow || isMarkerCol) ? t.border : "transparent"}`,
+                  borderRadius: isPolishedMatrix ? 10 : 4,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  color: val === 0 && !isPacificAtlantic ? (isDark ? "#93c5fd" : "#0369a1") : (isDark ? "#d1d5db" : "#1f2937"),
+                  fontFamily: isPolishedMatrix ? "'JetBrains Mono',monospace" : undefined,
+                  fontSize: isPolishedMatrix ? "0.9rem" : "0.75rem",
+                  fontWeight: isPolishedMatrix ? 900 : 600,
+                  color: isWordVisited ? t.green : isRotateHighlight ? t.ink : isSpiralVisited ? t.green : activeMarker || markerCell ? t.green : isSetMatrixZeroes && val === 0 ? t.red : val === 0 && !isPacificAtlantic ? (isDark ? "#93c5fd" : "#0369a1") : (isDark ? "#d1d5db" : "#1f2937"),
+                  boxShadow: isCurrent ? `0 0 0 3px ${currentBorder}22, ${t.shadowSm}` : isRotateHighlight ? t.shadowSm : isSetMatrixZeroes && (isMarkerRow || isMarkerCol) ? t.shadowSm : "none",
+                  transform: isCurrent || isRotateHighlight ? "translateY(-2px)" : "none",
+                  transition: "all 0.18s ease",
                 }}
               >
                 {problemId === "word-search" ? (val === 35 ? "#" : (typeof val === "number" && val >= 65 && val <= 122 ? String.fromCharCode(val) : (typeof val === "number" && val >= 97 && val <= 122 ? String.fromCharCode(val) : val))) : val}
               </div>
             );
-          })
+          }),
+          ]
         )}
       </div>
       {isPacificAtlantic && result && result.length > 0 && (

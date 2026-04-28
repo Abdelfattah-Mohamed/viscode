@@ -1529,27 +1529,39 @@ export function generateSetMatrixZeroesSteps(input) {
   const C = grid[0].length;
   const steps = [];
   const m = grid.map(row => row.map(v => Number(v)));
+  const markerCells = [];
   let row0 = false;
+  const snapshot = (extra = {}) => ({
+    grid: m.map(row => row.map(v => v)),
+    markerCells: markerCells.map(cell => [...cell]),
+    ...extra,
+  });
 
-  steps.push({ stepType: "init", description: `R=${R}, C=${C}; use first row/col as markers`, state: { grid: m.map(r => [...r]), current: null, phase: "init" } });
+  steps.push({ stepType: "init", description: `R=${R}, C=${C}; use first row/col as markers`, state: snapshot({ current: null, phase: "init" }) });
 
   for (let r = 0; r < R; r++) {
     for (let c = 0; c < C; c++) {
       if (m[r][c] === 0) {
         m[0][c] = 0;
         m[r][0] = 0;
-        if (r === 0) row0 = true;
-        if (c === 0) m[0][0] = 0;
+        markerCells.push([0, c], [r, 0]);
+        if (r === 0) {
+          row0 = true;
+        }
+        if (c === 0) {
+          m[0][0] = 0;
+          markerCells.push([0, 0]);
+        }
         steps.push({
           stepType: "mark_zero",
           description: `m[${r}][${c}]=0 → set m[0][${c}]=0, m[${r}][0]=0`,
-          state: { grid: m.map(row => row.map(v => v)), current: [r, c], phase: "mark" },
+          state: snapshot({ current: [r, c], phase: "mark", activeMarkers: [[0, c], [r, 0]] }),
         });
       } else {
         steps.push({
           stepType: "scan",
           description: `Scan (${r},${c})=${m[r][c]} — no change`,
-          state: { grid: m.map(row => row.map(v => v)), current: [r, c], phase: "scan" },
+          state: snapshot({ current: [r, c], phase: "scan" }),
         });
       }
     }
@@ -1562,13 +1574,13 @@ export function generateSetMatrixZeroesSteps(input) {
         steps.push({
           stepType: "sweep",
           description: `m[${r}][0]=0 or m[0][${c}]=0 → set m[${r}][${c}]=0`,
-          state: { grid: m.map(row => row.map(v => v)), current: [r, c], phase: "sweep" },
+          state: snapshot({ current: [r, c], phase: "sweep", activeMarkers: [[r, 0], [0, c]] }),
         });
       } else {
         steps.push({
           stepType: "sweep",
           description: `Check (${r},${c}) — keep ${m[r][c]}`,
-          state: { grid: m.map(row => row.map(v => v)), current: [r, c], phase: "sweep" },
+          state: snapshot({ current: [r, c], phase: "sweep", activeMarkers: [[r, 0], [0, c]] }),
         });
       }
     }
@@ -1580,7 +1592,7 @@ export function generateSetMatrixZeroesSteps(input) {
       steps.push({
         stepType: "zero_col0",
         description: `m[0][0]=0 → zero col 0: m[${r}][0]=0`,
-        state: { grid: m.map(row => row.map(v => v)), current: [r, 0], phase: "zero_col0" },
+        state: snapshot({ current: [r, 0], phase: "zero_col0", activeMarkers: [[0, 0], [r, 0]] }),
       });
     }
   }
@@ -1591,12 +1603,12 @@ export function generateSetMatrixZeroesSteps(input) {
       steps.push({
         stepType: "zero_row0",
         description: `row0=true → zero row 0: m[0][${c}]=0`,
-        state: { grid: m.map(row => row.map(v => v)), current: [0, c], phase: "zero_row0" },
+        state: snapshot({ current: [0, c], phase: "zero_row0", activeMarkers: [[0, c]] }),
       });
     }
   }
 
-  steps.push({ stepType: "done", description: "✓ Matrix zeroes set", state: { grid: m.map(row => row.map(v => v)), current: null, phase: null, done: true } });
+  steps.push({ stepType: "done", description: "✓ Matrix zeroes set", state: snapshot({ current: null, phase: null, done: true }) });
   return steps;
 }
 

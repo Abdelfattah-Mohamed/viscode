@@ -1302,6 +1302,11 @@ function makeSmallCase(problem) {
 
 function makeAlternateCase(problem) {
   const values = withFields(problem.defaultInput || {}, problem.inputFields || []);
+  if (problem.title === "Set Matrix Zeroes") {
+    values.grid = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    values.rows = 3;
+    return values;
+  }
   for (const field of problem.inputFields || []) {
     const value = values[field];
     if (Array.isArray(value)) {
