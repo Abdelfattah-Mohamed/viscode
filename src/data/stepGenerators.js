@@ -1074,8 +1074,10 @@ export function generateSumTwoIntegersSteps(input) {
 }
 
 export function generateHammingWeightSteps(input) {
-  const nums = Array.isArray(input?.nums) ? input.nums : [];
-  let n = Number(nums[0]);
+  let n = Number(input?.n);
+  if (Number.isNaN(n) && Array.isArray(input?.nums) && input.nums.length) {
+    n = Number(input.nums[0]);
+  }
   if (Number.isNaN(n) || n < 0) n = 0;
   n = n >>> 0; // 32-bit unsigned
   let count = 0;
@@ -1109,8 +1111,10 @@ export function generateCountingBitsSteps(input) {
 }
 
 export function generateReverseBitsSteps(input) {
-  const nums = Array.isArray(input?.nums) ? input.nums : [];
-  let n = Number(nums[0]);
+  let n = Number(input?.n);
+  if (Number.isNaN(n) && Array.isArray(input?.nums) && input.nums.length) {
+    n = Number(input.nums[0]);
+  }
   if (Number.isNaN(n) || n < 0) n = 0;
   n = n >>> 0;
   let res = 0;
@@ -2907,9 +2911,16 @@ export function generateHouseRobberIISteps(input) {
 }
 
 export function generateUniquePathsSteps(input) {
-  const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : [];
-  const m = Math.max(0, nums[0] ?? 0);
-  const n = Math.max(0, nums[1] ?? 0);
+  let m = 0;
+  let n = 0;
+  if (Array.isArray(input?.nums) && input.nums.length >= 2) {
+    const nums = input.nums.map(Number);
+    m = Math.max(0, nums[0] ?? 0);
+    n = Math.max(0, nums[1] ?? 0);
+  } else {
+    m = Math.max(0, Number(input?.m) ?? 0);
+    n = Math.max(0, Number(input?.n) ?? 0);
+  }
   const steps = [];
   const snapshot = (matrix) => matrix.map((row) => [...row]);
   if (m === 0 || n === 0) {
@@ -3571,7 +3582,10 @@ export function generateFindMedianSteps(input) {
 }
 
 export function generateTrappingRainWaterSteps(input) {
-  const height = input?.nums || [];
+  const height =
+    Array.isArray(input?.heights) && input.heights.length ? input.heights.map(Number) :
+    Array.isArray(input?.nums) ? input.nums.map(Number) :
+    [];
   const n = height.length;
   const waterAt = Array(n).fill(0);
   const steps = [

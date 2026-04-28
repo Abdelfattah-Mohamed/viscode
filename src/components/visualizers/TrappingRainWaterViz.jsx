@@ -1,8 +1,9 @@
-export default function TrappingRainWaterViz({ nums = [], stepState = {}, t = {} }) {
-  const height = Array.isArray(nums)
-    ? nums.map((v) => Number(v)).filter((v) => !Number.isNaN(v))
-    : typeof nums === "string"
-      ? nums.split(",").map((v) => Number(v.trim())).filter((v) => !Number.isNaN(v))
+export default function TrappingRainWaterViz({ heights, nums = [], stepState = {}, t = {} }) {
+  const raw = heights != null ? heights : nums;
+  const height = Array.isArray(raw)
+    ? raw.map((v) => Number(v)).filter((v) => !Number.isNaN(v))
+    : typeof raw === "string"
+      ? raw.split(",").map((v) => Number(v.trim())).filter((v) => !Number.isNaN(v))
       : [];
 
   const n = height.length;

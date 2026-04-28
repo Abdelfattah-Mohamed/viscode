@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { leetcodeToComplete, completeToLeetcode } from "../../utils/treeFormat";
 
 const TREE_FIELDS = new Set(["root", "subRoot", "p", "q"]);
-const INT_FIELDS = new Set(["target", "n", "pos", "rows", "cols", "k", "amount"]);
+const INT_FIELDS = new Set(["target", "n", "m", "pos", "rows", "cols", "k", "amount"]);
 const STRING_FIELDS = new Set(["s", "t", "dict", "words", "word", "board", "preorder", "inorder"]);
 
 function stripBrackets(s) {
