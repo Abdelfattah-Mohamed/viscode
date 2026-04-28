@@ -2701,6 +2701,28 @@ export function generateLongestIncreasingSubsequenceSteps(input) {
   const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : (input?.nums != null ? [Number(input.nums)] : []);
   const steps = [];
   const tails = [];
+  const buildOneLisSequence = (arr) => {
+    const n = arr.length;
+    if (n === 0) return [];
+    const dp = Array(n).fill(1);
+    const prev = Array(n).fill(-1);
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < i; j++) {
+        if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
+          dp[i] = dp[j] + 1;
+          prev[i] = j;
+        }
+      }
+    }
+    let bestIdx = 0;
+    for (let i = 1; i < n; i++) {
+      if (dp[i] > dp[bestIdx]) bestIdx = i;
+    }
+    const seq = [];
+    for (let at = bestIdx; at !== -1; at = prev[at]) seq.push(arr[at]);
+    seq.reverse();
+    return seq;
+  };
   steps.push({
     stepType: "init",
     description: "tails = [] (smallest tail for each IS length)",
@@ -2741,10 +2763,11 @@ export function generateLongestIncreasingSubsequenceSteps(input) {
       });
     }
   }
+  const lisSeq = buildOneLisSequence(nums);
   steps.push({
     stepType: "done",
     description: `return tails.size() = ${tails.length}`,
-    state: { nums: [...nums], tails: [...tails], i: nums.length - 1, pos: -1, extend: false, replace: false, done: true },
+    state: { nums: [...nums], tails: [...tails], lisSeq, i: nums.length - 1, pos: -1, extend: false, replace: false, done: true },
   });
   return steps;
 }

@@ -291,6 +291,23 @@ function buildInitialDraft(input, fields, visualizer, weightedGraphInput = false
   return draft;
 }
 
+function buildLcsMatrixPreview(text1, text2) {
+  const a = String(text1 ?? "");
+  const b = String(text2 ?? "");
+  const t1 = a.split("");
+  const t2 = b.split("");
+  const rows = t1.length + 1;
+  const cols = t2.length + 1;
+  const dp = Array.from({ length: rows }, () => Array(cols).fill(0));
+  for (let i = 1; i < rows; i += 1) {
+    for (let j = 1; j < cols; j += 1) {
+      if (t1[i - 1] === t2[j - 1]) dp[i][j] = dp[i - 1][j - 1] + 1;
+      else dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return { t1, t2, dp };
+}
+
 export default function InputEditor({ input, fields, onChange, onReset, t, problem }) {
   const visualizer = problem?.visualizer || "";
   const weightedGraphInput = useMemo(() => isWeightedGraphProblem(problem, visualizer), [problem, visualizer]);
@@ -330,6 +347,10 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
   );
   const hasMatrixEditor = schema.some(({ kind }) => kind === "matrix");
   const visibleSchema = schema.filter(({ field }) => !(hasMatrixEditor && (field === "rows" || field === "cols")));
+  const lcsPreview = useMemo(() => {
+    if (visualizer !== "lcs") return null;
+    return buildLcsMatrixPreview(draft.s, draft.t);
+  }, [visualizer, draft.s, draft.t]);
 
   const pill = (extra = {}) => ({
     fontFamily: sansFont,
@@ -605,6 +626,55 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
                           </div>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {visualizer === "lcs" && field === "t" && lcsPreview && (
+                    <div style={{ marginTop: 10, border: `1.5px solid ${t.border}`, borderRadius: 12, background: t.surface, boxShadow: t.shadowSm, padding: 10, overflowX: "auto" }}>
+                      <div style={{ marginBottom: 8, fontFamily: monoFont, fontSize: "0.72rem", color: t.inkMuted }}>
+                        LCS matrix preview (auto-updates with text1/text2)
+                      </div>
+                      <table style={{ borderCollapse: "separate", borderSpacing: 4 }}>
+                        <thead>
+                          <tr>
+                            <th style={{ width: 34 }} />
+                            <th style={{ width: 38, textAlign: "center", fontFamily: monoFont, fontSize: "0.7rem", color: t.inkMuted, fontWeight: 800 }}>∅</th>
+                            {lcsPreview.t2.map((ch, idx) => (
+                              <th key={`lcs-c-${idx}`} style={{ width: 38, textAlign: "center", fontFamily: monoFont, fontSize: "0.7rem", color: t.ink, fontWeight: 800 }}>
+                                {ch}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {lcsPreview.dp.map((row, r) => (
+                            <tr key={`lcs-r-${r}`}>
+                              <th style={{ width: 34, textAlign: "center", fontFamily: monoFont, fontSize: "0.7rem", color: t.ink, fontWeight: 800 }}>
+                                {r === 0 ? "∅" : lcsPreview.t1[r - 1]}
+                              </th>
+                              {row.map((val, c) => (
+                                <td
+                                  key={`lcs-cell-${r}-${c}`}
+                                  style={{
+                                    width: 38,
+                                    height: 34,
+                                    textAlign: "center",
+                                    border: `1.5px solid ${r === 0 || c === 0 ? t.border + "88" : t.border + "66"}`,
+                                    borderRadius: 8,
+                                    background: r === 0 || c === 0 ? t.surfaceAlt : paper,
+                                    color: t.ink,
+                                    fontFamily: monoFont,
+                                    fontSize: "0.78rem",
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  {val}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
 
