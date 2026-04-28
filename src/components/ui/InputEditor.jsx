@@ -310,6 +310,7 @@ function buildLcsMatrixPreview(text1, text2) {
 
 export default function InputEditor({ input, fields, onChange, onReset, t, problem }) {
   const visualizer = problem?.visualizer || "";
+  const isRealtimePreview = visualizer === "container" || visualizer === "trapping";
   const weightedGraphInput = useMemo(() => isWeightedGraphProblem(problem, visualizer), [problem, visualizer]);
   const sketchBorder = t._resolved === "dark" ? "#8a8f98" : "#1f2937";
   const paper = t._resolved === "dark" ? "#222328" : "#fffdf8";
@@ -400,64 +401,80 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
     } catch (_) {}
   };
 
-  const apply = () => {
+  const buildNextInputFromDraft = (sourceDraft) => {
     const next = {};
-    try {
-      for (const { field, kind } of schema) {
-        if (hasMatrixEditor && (field === "rows" || field === "cols")) {
-          continue;
-        }
-        if (kind === "int") {
-          const n = Number(draft[field]);
-          next[field] = Number.isNaN(n) ? 0 : n;
-        } else if (kind === "tree") {
-          next[field] = leetcodeToComplete(trimTrailingNulls(parseTreeTokens(draft[field])));
-        } else if (kind === "matrix") {
-          const gridModel = draft[field];
-          const rows = Math.max(1, Number(gridModel?.rows) || 1);
-          const cols = Math.max(1, Number(gridModel?.cols) || 1);
-          const cells = Array.isArray(gridModel?.cells) ? gridModel.cells : [];
-          const flat = [];
-          for (let r = 0; r < rows; r += 1) {
-            for (let c = 0; c < cols; c += 1) {
-              if (field === "board") {
-                flat.push(String(cells[r]?.[c] ?? "").trim().slice(0, 1).toUpperCase() || "A");
-              } else {
-                const val = Number(cells[r]?.[c] ?? 0);
-                flat.push(Number.isNaN(val) ? 0 : val);
-              }
+    for (const { field, kind } of schema) {
+      if (hasMatrixEditor && (field === "rows" || field === "cols")) {
+        continue;
+      }
+      if (kind === "int") {
+        const n = Number(sourceDraft[field]);
+        next[field] = Number.isNaN(n) ? 0 : n;
+      } else if (kind === "tree") {
+        next[field] = leetcodeToComplete(trimTrailingNulls(parseTreeTokens(sourceDraft[field])));
+      } else if (kind === "matrix") {
+        const gridModel = sourceDraft[field];
+        const rows = Math.max(1, Number(gridModel?.rows) || 1);
+        const cols = Math.max(1, Number(gridModel?.cols) || 1);
+        const cells = Array.isArray(gridModel?.cells) ? gridModel.cells : [];
+        const flat = [];
+        for (let r = 0; r < rows; r += 1) {
+          for (let c = 0; c < cols; c += 1) {
+            if (field === "board") {
+              flat.push(String(cells[r]?.[c] ?? "").trim().slice(0, 1).toUpperCase() || "A");
+            } else {
+              const val = Number(cells[r]?.[c] ?? 0);
+              flat.push(Number.isNaN(val) ? 0 : val);
             }
           }
-          if (field === "board") {
-            next.board = flat.join(",");
-          } else {
-            next.grid = flat;
-          }
-          if (fields.includes("rows")) next.rows = rows;
-          if (fields.includes("cols")) next.cols = cols;
-        } else if (kind === "graph") {
-          const edges = parseEdgeLines(draft[field], weightedGraphInput ? 3 : 2);
-          next[field] = edges.flat();
-        } else if (kind === "pairs") {
-          next[field] = parseEdgeLines(draft[field]).flat();
-        } else if (kind === "array") {
-          next[field] = parseNumberList(draft[field]);
-        } else {
-          next[field] = String(draft[field] ?? "");
         }
+        if (field === "board") {
+          next.board = flat.join(",");
+        } else {
+          next.grid = flat;
+        }
+        if (fields.includes("rows")) next.rows = rows;
+        if (fields.includes("cols")) next.cols = cols;
+      } else if (kind === "graph") {
+        const edges = parseEdgeLines(sourceDraft[field], weightedGraphInput ? 3 : 2);
+        next[field] = edges.flat();
+      } else if (kind === "pairs") {
+        next[field] = parseEdgeLines(sourceDraft[field]).flat();
+      } else if (kind === "array") {
+        next[field] = parseNumberList(sourceDraft[field]);
+      } else {
+        next[field] = String(sourceDraft[field] ?? "");
       }
-      if (fields.includes("n") && visualizer === "graph") {
-        const n = Number(draft.n);
-        if (!Number.isNaN(n)) next.n = n;
-      }
+    }
+    if (fields.includes("n") && visualizer === "graph") {
+      const n = Number(sourceDraft.n);
+      if (!Number.isNaN(n)) next.n = n;
+    }
+    return next;
+  };
+
+  useEffect(() => {
+    if (!open || !isRealtimePreview) return;
+    try {
+      const next = buildNextInputFromDraft(draft);
+      onChange(next);
+      onReset();
+      setError(null);
     } catch (e) {
       setError(e?.message || "Invalid input");
-      return;
     }
-    setError(null);
-    onChange(next);
-    onReset();
-    setOpen(false);
+  }, [draft, open, isRealtimePreview]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const apply = () => {
+    try {
+      const next = buildNextInputFromDraft(draft);
+      setError(null);
+      onChange(next);
+      onReset();
+      setOpen(false);
+    } catch (e) {
+      setError(e?.message || "Invalid input");
+    }
   };
 
   const resetDraft = () => {
@@ -547,7 +564,9 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
               {showInputHint && (
                 <div style={{ border: `1.5px solid ${t.blue}66`, borderRadius: 12, background: t.blue + "12", padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                   <div style={{ fontFamily: sansFont, fontSize: "0.82rem", color: t.inkMuted, lineHeight: 1.5 }}>
-                    Onboarding tip: start with one small change, click <strong>Apply input</strong>, then use playback controls to see exactly what changed.
+                    {(isRealtimePreview
+                      ? <>For this problem, edits sync to the main visualization while the editor is open. You can still use <strong>Apply input</strong> to dismiss and persist.</>
+                      : <>Onboarding tip: start with one small change, click <strong>Apply input</strong>, then use playback controls to see exactly what changed.</>)}
                   </div>
                   <button onClick={dismissInputHint} style={{ border: "none", background: "transparent", color: t.blue, cursor: "pointer", fontSize: "0.78rem", fontWeight: 800, padding: 0, fontFamily: sansFont }}>
                     Dismiss

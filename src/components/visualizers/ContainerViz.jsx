@@ -3,12 +3,13 @@ export default function ContainerViz({ heights = [], stepState = {}, t }) {
   const arr = heights && heights.length > 0 ? heights : [];
   const maxH = Math.max(...arr, 1);
   const n = arr.length;
+  const isDark = t._resolved === "dark";
 
-  const chartHeight = 200;
-  const barWidth = 10;
-  const gap = 20;
+  const chartHeight = 210;
+  const barWidth = 12;
+  const gap = 22;
   const cellWidth = barWidth + gap;
-  const marginLeft = 36;
+  const marginLeft = 38;
   const marginBottom = 24;
   const scale = (chartHeight - marginBottom) / maxH;
   const waterLevel = n >= 2 ? Math.min(arr[left] ?? 0, arr[right] ?? 0) : 0;
@@ -28,8 +29,21 @@ export default function ContainerViz({ heights = [], stepState = {}, t }) {
   const pointerLabelY = chartHeight - marginBottom + 28;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.95em", fontWeight: 600, color: t.inkMuted, marginBottom: 8 }}>heights</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ padding: "8px 11px", border: `1.5px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", color: t.inkMuted }}>
+          pointers: L={left >= 0 ? left : "-"}, R={right >= 0 ? right : "-"}
+        </div>
+        <div style={{ padding: "8px 11px", border: `1.5px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", color: t.inkMuted }}>
+          width={right > left ? right - left : 0}, water height={waterLevel}
+        </div>
+        <div style={{ padding: "8px 11px", border: `1.5px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", color: t.inkMuted }}>
+          current area={currentArea ?? 0}
+        </div>
+      </div>
+
+      <div style={{ border: `1.5px solid ${t.border}`, borderRadius: 14, background: t.surface, boxShadow: t.shadowSm, padding: 12, width: "fit-content", maxWidth: "100%", overflowX: "auto" }}>
+      <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.02em", color: t.inkMuted, fontWeight: 900, marginBottom: 8 }}>Heights & Water Container</div>
       <svg width={totalWidth} height={chartHeight + 42} style={{ display: "block" }} aria-hidden>
         {/* Y-axis */}
         <line x1={marginLeft - 4} y1={0} x2={marginLeft - 4} y2={chartHeight - marginBottom} stroke={t.border} strokeWidth="1.5" />
@@ -47,8 +61,8 @@ export default function ContainerViz({ heights = [], stepState = {}, t }) {
             y={waterY}
             width={waterW}
             height={waterHeightPx}
-            fill="#93c5fd"
-            opacity={0.85}
+            fill={t.blue}
+            opacity={0.45}
             rx={0}
           />
         )}
@@ -59,8 +73,8 @@ export default function ContainerViz({ heights = [], stepState = {}, t }) {
           const heightPx = h * scale;
           const x = xForIndex(idx);
           const y = chartHeight - marginBottom - heightPx;
-          const fill = isBoundary ? "#dc2626" : (t._resolved === "dark" ? "#374151" : "#1f2937");
-          const stroke = isBoundary ? "#b91c1c" : t.border;
+          const fill = isBoundary ? t.red : (isDark ? "#374151" : "#1f2937");
+          const stroke = isBoundary ? t.red : t.border;
           return (
             <g key={idx}>
               <rect
@@ -73,6 +87,17 @@ export default function ContainerViz({ heights = [], stepState = {}, t }) {
                 strokeWidth={isBoundary ? 2 : 1}
                 rx={2}
               />
+              <text
+                x={x + barWidth / 2}
+                y={y - 6}
+                textAnchor="middle"
+                fill={isBoundary ? t.red : t.inkMuted}
+                fontFamily="'JetBrains Mono',monospace"
+                fontSize="10"
+                fontWeight="700"
+              >
+                {h}
+              </text>
             </g>
           );
         })}
@@ -102,25 +127,31 @@ export default function ContainerViz({ heights = [], stepState = {}, t }) {
             x={xForIndex(idx) + barWidth / 2}
             y={pointerLabelY}
             textAnchor="middle"
-            fill={idx === left || idx === right ? "#dc2626" : "transparent"}
-            fontFamily="'Caveat',cursive"
-            fontSize="13"
-            fontWeight="700"
+            fill={idx === left || idx === right ? t.red : "transparent"}
+            fontFamily="'JetBrains Mono',monospace"
+            fontSize="11"
+            fontWeight="800"
           >
             {idx === left ? "L" : idx === right ? "R" : ""}
           </text>
         ))}
       </svg>
+      </div>
 
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
-        <div style={{ padding: "8px 14px", border: `2px solid ${t.border}`, borderRadius: 8, background: t.surfaceAlt, fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700 }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 2 }}>
+        <div style={{ padding: "8px 12px", border: `1.5px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 800 }}>
           <span style={{ color: t.inkMuted }}>maxArea </span>
           <span style={{ color: t.green }}>{maxArea}</span>
         </div>
         {currentArea != null && !done && (
-          <div style={{ padding: "8px 14px", border: `2px solid ${t.border}`, borderRadius: 8, background: t.surfaceAlt, fontFamily: "'Caveat',cursive", fontSize: "1rem", fontWeight: 700 }}>
+          <div style={{ padding: "8px 12px", border: `1.5px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 800 }}>
             <span style={{ color: t.inkMuted }}>current </span>
             <span style={{ color: t.blue }}>{currentArea}</span>
+          </div>
+        )}
+        {bestLeft >= 0 && bestRight >= 0 && (
+          <div style={{ padding: "8px 12px", border: `1.5px solid ${t.green}`, borderRadius: 10, background: t.green + "14", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 800, color: t.green }}>
+            best pair: ({bestLeft}, {bestRight})
           </div>
         )}
       </div>

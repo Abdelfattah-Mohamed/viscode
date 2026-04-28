@@ -1,17 +1,20 @@
 export default function TrappingRainWaterViz({ nums = [], stepState = {}, t = {} }) {
-  let height = [];
-  if (Array.isArray(nums)) {
-    height = nums.map((v) => Number(v)).filter((v) => !isNaN(v));
-  } else if (typeof nums === "string") {
-    height = nums.split(",").map((v) => Number(v.trim())).filter((v) => !isNaN(v));
-  }
-  const n = height.length;
-  const maxH = n ? Math.max(1, ...height) : 1;
+  const height = Array.isArray(nums)
+    ? nums.map((v) => Number(v)).filter((v) => !Number.isNaN(v))
+    : typeof nums === "string"
+      ? nums.split(",").map((v) => Number(v.trim())).filter((v) => !Number.isNaN(v))
+      : [];
 
-  // Use waterAt from stepState — only show water at cells that have been calculated
-  const { l = 0, r = Math.max(0, n - 1), water: waterState, waterAt = [], done } = stepState;
+  const n = height.length;
+  const { l = 0, r = Math.max(0, n - 1), leftMax = 0, rightMax = 0, water: waterState, waterAt = [], done } = stepState;
   const water = Array.isArray(waterAt) && waterAt.length >= n ? waterAt : Array(n).fill(0);
+  const totalWater = Number.isFinite(Number(waterState)) ? Number(waterState) : water.reduce((acc, val) => acc + (Number(val) || 0), 0);
+
   const isDark = t._resolved === "dark";
+  const maxGround = n ? Math.max(1, ...height) : 1;
+  const maxWaterColumn = n ? Math.max(0, ...water.map((v) => Number(v) || 0)) : 0;
+  const maxBars = Math.max(3, maxGround + maxWaterColumn);
+  const cellSize = 22;
 
   if (n === 0) {
     return (
@@ -20,100 +23,107 @@ export default function TrappingRainWaterViz({ nums = [], stepState = {}, t = {}
       </div>
     );
   }
-  const groundColor = isDark ? "#1f2937" : "#1e1e1e";
-  const waterColor = isDark ? "#0ea5e9" : "#38bdf8";
-  const cellSize = 28;
-  const maxBars = Math.max(maxH, 3);
+
+  const groundColor = isDark ? "#374151" : "#1f2937";
+  const waterColor = t.blue;
+  const pointerBorder = t.yellow;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div>
-        <div style={{ fontFamily: "'Caveat',cursive", fontSize: "0.95em", fontWeight: 600, color: t.inkMuted, marginBottom: 10 }}>
-          <span style={{ color: groundColor, fontWeight: 700 }}>■</span> ground &nbsp; <span style={{ color: waterColor, fontWeight: 700 }}>■</span> water
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ padding: "8px 11px", border: `1.5px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", color: t.inkMuted }}>
+          l={l}, r={r}
         </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, paddingLeft: 28 }}>
-          {/* Y-axis */}
-          <div style={{ display: "flex", flexDirection: "column-reverse", justifyContent: "space-between", height: maxBars * cellSize + 24, marginRight: 8, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7rem", color: t.inkMuted }}>
-            {Array.from({ length: maxBars + 1 }, (_, i) => maxBars - i).map((v) => (
-              <span key={v}>{v}</span>
-            ))}
-          </div>
-          {/* Bars */}
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 4, flex: 1, flexWrap: "wrap" }}>
-            {height.map((h, idx) => {
-              const w = water[idx] || 0;
-              const isL = idx === l && !done;
-              const isR = idx === r && !done;
-              return (
-                <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                  <div style={{ display: "flex", flexDirection: "column-reverse", height: maxBars * cellSize, width: cellSize }}>
-                    {/* Ground blocks (black) at bottom */}
-                    {Array.from({ length: h }, (_, k) => (
-                      <div
-                        key={`g-${k}`}
-                        style={{
-                          width: cellSize - 2,
-                          height: cellSize - 2,
-                          background: groundColor,
-                          border: `1px solid ${isDark ? "#374151" : "#111"}`,
-                          borderRadius: 2,
-                          flexShrink: 0,
-                        }}
-                      />
-                    ))}
-                    {/* Water blocks (blue) above ground */}
-                    {Array.from({ length: w }, (_, k) => (
-                      <div
-                        key={`w-${k}`}
-                        style={{
-                          width: cellSize - 2,
-                          height: cellSize - 2,
-                          background: waterColor,
-                          border: `1px solid ${isDark ? "#0284c7" : "#0ea5e9"}`,
-                          borderRadius: 2,
-                          flexShrink: 0,
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'Caveat',cursive",
-                      fontSize: "0.75em",
-                      color: isL ? t.blue : isR ? t.purple : t.inkMuted,
-                      fontWeight: isL || isR ? 700 : 400,
-                    }}
-                  >
-                    {idx}
-                    {isL && " l"}
-                    {isR && " r"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <div style={{ padding: "8px 11px", border: `1.5px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", color: t.inkMuted }}>
+          leftMax={leftMax}, rightMax={rightMax}
+        </div>
+        <div style={{ padding: "8px 11px", border: `1.5px solid ${t.green}`, borderRadius: 10, background: t.green + "14", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", color: t.green, fontWeight: 800 }}>
+          trapped water={totalWater}
         </div>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", border: `2px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt }}>
-          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9em", color: t.inkMuted }}>l</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1.1em", fontWeight: 700, color: t.blue }}>{l}</span>
+      <div style={{ border: `1.5px solid ${t.border}`, borderRadius: 14, background: t.surface, boxShadow: t.shadowSm, padding: 12, overflowX: "auto" }}>
+        <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.02em", color: t.inkMuted, fontWeight: 900, marginBottom: 8 }}>
+          Ground & Trapped Water by Index
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", border: `2px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt }}>
-          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9em", color: t.inkMuted }}>r</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1.1em", fontWeight: 700, color: t.purple }}>{r}</span>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, paddingLeft: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column-reverse", justifyContent: "space-between", height: maxBars * cellSize + 18, marginRight: 8, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68rem", color: t.inkMuted }}>
+            {Array.from({ length: maxBars + 1 }, (_, i) => maxBars - i).map((v) => <span key={v}>{v}</span>)}
+          </div>
+          {height.map((h, idx) => {
+            const w = Number(water[idx]) || 0;
+            const isL = idx === l && !done;
+            const isR = idx === r && !done;
+            const isActive = isL || isR;
+            return (
+              <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateRows: `repeat(${maxBars}, ${cellSize - 2}px)`,
+                    gap: 1,
+                    padding: 2,
+                    border: `2px solid ${isActive ? pointerBorder : "transparent"}`,
+                    borderRadius: 8,
+                    background: isActive ? pointerBorder + "14" : "transparent",
+                  }}
+                >
+                  {Array.from({ length: maxBars }, (_, rowIdx) => {
+                    const level = maxBars - rowIdx;
+                    const isGround = level <= h;
+                    const isWater = !isGround && level <= h + w;
+                    return (
+                      <div
+                        key={`${idx}-${rowIdx}`}
+                        style={{
+                          width: cellSize - 2,
+                          height: cellSize - 2,
+                          borderRadius: 2,
+                          border: `1px solid ${isGround ? t.border : isWater ? waterColor + "99" : "transparent"}`,
+                          background: isGround ? groundColor : isWater ? waterColor + "99" : "transparent",
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7rem", color: isL ? t.blue : isR ? t.purple : t.inkMuted, fontWeight: isActive ? 800 : 600 }}>
+                  {idx}{isL ? " L" : isR ? " R" : ""}
+                </div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", color: t.inkMuted }}>
+                  h={h}
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", border: `2px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt }}>
-          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.9em", color: t.inkMuted }}>water</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1.1em", fontWeight: 700, color: t.green }}>{waterState ?? water.reduce((a, b) => a + b, 0)}</span>
-        </div>
-        {done && (
-          <span style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", fontWeight: 700, color: t.green }}>
-            ✅ Answer: {waterState ?? water.reduce((a, b) => a + b, 0)}
-          </span>
-        )}
       </div>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 999, border: `1.5px solid ${t.border}`, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68rem", color: t.inkMuted }}>
+          <span style={{ width: 10, height: 10, borderRadius: 99, background: groundColor, border: `1px solid ${groundColor}` }} />
+          ground height
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 999, border: `1.5px solid ${t.border}`, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68rem", color: t.inkMuted }}>
+          <span style={{ width: 10, height: 10, borderRadius: 99, background: waterColor, border: `1px solid ${waterColor}` }} />
+          trapped water
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 999, border: `1.5px solid ${t.border}`, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68rem", color: t.inkMuted }}>
+          <span style={{ width: 10, height: 10, borderRadius: 99, background: pointerBorder, border: `1px solid ${pointerBorder}` }} />
+          active pointer
+        </div>
+      </div>
+
+      {done && (
+        <div style={{ padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${t.green}`, background: t.green + "14", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.8rem", fontWeight: 800, color: t.green }}>
+          Final trapped water = {totalWater}
+        </div>
+      )}
+
+      {!done && (
+        <div style={{ padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${t.border}`, background: t.surfaceAlt, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", color: t.inkMuted }}>
+          At each step, we move the pointer on the smaller side and use its max boundary (`leftMax` / `rightMax`) to compute trapped water.
+        </div>
+      )}
     </div>
   );
 }
