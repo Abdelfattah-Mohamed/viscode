@@ -254,7 +254,7 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
             ✓ Answer: {count}
           </span>
         )}
-        {isValidTree && validTree !== undefined && (
+        {isValidTree && typeof validTree === "boolean" && (
           <span style={{
             fontFamily: "'JetBrains Mono',monospace",
             fontSize: "1.05rem",
