@@ -3031,29 +3031,86 @@ export function generateParenthesesSteps(input) {
 }
 
 export function generateMinStackSteps(input) {
-  const nums = input?.nums ?? [];
+  const parseMinStackOps = (raw) => {
+    if (typeof raw !== "string" || !raw.trim()) {
+      return [];
+    }
+    return raw
+      .split(/[,\n;]/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const normalized = part.replace(/\s+/g, " ").trim();
+        const pushParen = normalized.match(/^push\s*\(\s*(-?\d+)\s*\)$/i);
+        if (pushParen) {
+          return { op: "push", val: Number(pushParen[1]), raw: normalized };
+        }
+        const pushSpace = normalized.match(/^push\s+(-?\d+)$/i);
+        if (pushSpace) {
+          return { op: "push", val: Number(pushSpace[1]), raw: normalized };
+        }
+
+        const command = normalized
+          .toLowerCase()
+          .replace(/\(\s*\)/g, "")
+          .replace(/[\s-]/g, "_");
+
+        if (command === "pop") {
+          return { op: "pop", raw: normalized };
+        }
+        if (command === "top") {
+          return { op: "top", raw: normalized };
+        }
+        if (command === "get_min" || command === "getmin" || command === "min") {
+          return { op: "getMin", raw: normalized };
+        }
+
+        return { op: "unknown", raw: normalized };
+      });
+  };
+
+  const opsFromString = parseMinStackOps(input?.s);
+  const ops = opsFromString.length
+    ? opsFromString
+    : (input?.nums ?? []).map((x) => ({ op: "push", val: Number(x), raw: `push ${Number(x)}` }));
+
   const steps = [];
   let st = [];
   let minSt = [];
   steps.push({ stepType: "init", description: "MinStack: two stacks (st, minSt)", state: { st: [], minSt: [], op: null, opVal: null, result: null } });
-  for (let i = 0; i < nums.length; i++) {
-    const val = Number(nums[i]);
-    st = [...st, val];
-    minSt = [...minSt, minSt.length === 0 ? val : Math.min(minSt[minSt.length - 1], val)];
-    steps.push({ stepType: "push", description: `push(${val}) → st=[${st.join(", ")}], minSt=[${minSt.join(", ")}]`, state: { st: [...st], minSt: [...minSt], op: "push", opVal: val, result: null } });
-  }
-  if (st.length > 0) {
-    const minVal = minSt[minSt.length - 1];
-    steps.push({ stepType: "getMin", description: `getMin() → ${minVal}`, state: { st: [...st], minSt: [...minSt], op: "getMin", opVal: null, result: minVal } });
-    st = st.slice(0, -1);
-    minSt = minSt.slice(0, -1);
-    steps.push({ stepType: "pop", description: `pop() → st=[${st.join(", ") || "empty"}], minSt=[${minSt.join(", ") || "empty"}]`, state: { st: [...st], minSt: [...minSt], op: "pop", opVal: null, result: null } });
-    if (st.length > 0) {
-      const topVal = st[st.length - 1];
-      steps.push({ stepType: "top", description: `top() → ${topVal}`, state: { st: [...st], minSt: [...minSt], op: "top", opVal: null, result: topVal } });
-      const minVal2 = minSt[minSt.length - 1];
-      steps.push({ stepType: "getMin", description: `getMin() → ${minVal2}`, state: { st: [...st], minSt: [...minSt], op: "getMin", opVal: null, result: minVal2 } });
+  for (const command of ops) {
+    if (command.op === "push") {
+      const val = Number(command.val);
+      st = [...st, val];
+      minSt = [...minSt, minSt.length === 0 ? val : Math.min(minSt[minSt.length - 1], val)];
+      steps.push({ stepType: "push", description: `push(${val}) → st=[${st.join(", ")}], minSt=[${minSt.join(", ")}]`, state: { st: [...st], minSt: [...minSt], op: "push", opVal: val, result: null } });
+      continue;
     }
+
+    if (command.op === "pop") {
+      if (st.length === 0) {
+        steps.push({ stepType: "pop", description: "pop() on empty stack → ignored", state: { st: [...st], minSt: [...minSt], op: "pop", opVal: null, result: null } });
+      } else {
+        st = st.slice(0, -1);
+        minSt = minSt.slice(0, -1);
+        steps.push({ stepType: "pop", description: `pop() → st=[${st.join(", ") || "empty"}], minSt=[${minSt.join(", ") || "empty"}]`, state: { st: [...st], minSt: [...minSt], op: "pop", opVal: null, result: null } });
+      }
+      continue;
+    }
+
+    if (command.op === "top") {
+      const topVal = st.length ? st[st.length - 1] : null;
+      steps.push({ stepType: "top", description: topVal === null ? "top() on empty stack" : `top() → ${topVal}`, state: { st: [...st], minSt: [...minSt], op: "top", opVal: null, result: topVal } });
+      continue;
+    }
+
+    if (command.op === "getMin") {
+      const minVal = minSt.length ? minSt[minSt.length - 1] : null;
+      steps.push({ stepType: "getMin", description: minVal === null ? "getMin() on empty stack" : `getMin() → ${minVal}`, state: { st: [...st], minSt: [...minSt], op: "getMin", opVal: null, result: minVal } });
+      continue;
+    }
+
+    steps.push({ stepType: "init", description: `Ignored command: ${command.raw}`, state: { st: [...st], minSt: [...minSt], op: null, opVal: null, result: null } });
   }
   steps.push({ stepType: "done", description: "Done", state: { st: [...st], minSt: [...minSt], op: null, opVal: null, result: null, done: true } });
   return steps;
