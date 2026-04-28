@@ -5,7 +5,7 @@ import { EXCALIDRAW_TREE } from "./treeExcalidrawTheme";
 const NODE_R = 22;
 const ARROW_GAP = 28;
 const CELL = NODE_R * 2 + ARROW_GAP;
-const CURVE_H = 56;
+const CURVE_H = 44;
 const SVG_PAD = 48;
 
 export default function CycleViz({ head = [], stepState = {}, t }) {
@@ -18,8 +18,8 @@ export default function CycleViz({ head = [], stepState = {}, t }) {
 
   const svgWidth = Math.max(n * CELL + SVG_PAD * 2, 120);
   const nodeRowY = 44;
-  const curveY = nodeRowY + NODE_R + 20;
-  const svgHeight = showCycle && n > 0 && pos >= 0 && pos < n - 1 ? curveY + CURVE_H + 24 : 100;
+  const curveY = nodeRowY + NODE_R + 14;
+  const svgHeight = showCycle && n > 0 && pos >= 0 && pos < n - 1 ? curveY + CURVE_H + 16 : 100;
 
   useEffect(() => {
     const g = roughRef.current;
@@ -43,17 +43,37 @@ export default function CycleViz({ head = [], stepState = {}, t }) {
     };
 
     const cx = (i) => SVG_PAD + i * CELL + NODE_R;
+    const drawArrowLine = (x1, y1, x2, y2, stroke) => {
+      const headSize = 8;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len;
+      const uy = dy / len;
+      const tipX = x2;
+      const tipY = y2;
+      const baseX = tipX - ux * headSize;
+      const baseY = tipY - uy * headSize;
+      const line = rc.line(x1, y1, baseX, baseY, {
+        stroke,
+        strokeWidth: EXCALIDRAW_TREE.strokeWidth,
+      });
+      g.appendChild(line);
+      const perpX = -uy * (headSize * 0.6);
+      const perpY = ux * (headSize * 0.6);
+      const arrowHead = rc.polygon(
+        [[tipX, tipY], [baseX + perpX, baseY + perpY], [baseX - perpX, baseY - perpY]],
+        { stroke, fill: stroke, fillStyle: "solid", strokeWidth: 1, roughness: 0.8 }
+      );
+      g.appendChild(arrowHead);
+    };
 
     // Edges (arrows between consecutive nodes)
     for (let i = 0; i < n - 1; i++) {
       const x1 = cx(i) + NODE_R;
       const x2 = cx(i + 1) - NODE_R;
       const stroke = isDark ? EXCALIDRAW_TREE.strokeMuted : EXCALIDRAW_TREE.stroke;
-      const line = rc.line(x1, nodeRowY, x2, nodeRowY, {
-        stroke,
-        strokeWidth: EXCALIDRAW_TREE.strokeWidth,
-      });
-      g.appendChild(line);
+      drawArrowLine(x1, nodeRowY, x2, nodeRowY, stroke);
     }
 
     // Node circles (hand-drawn)
@@ -71,23 +91,42 @@ export default function CycleViz({ head = [], stepState = {}, t }) {
       g.appendChild(circle);
     });
 
-    // Cycle back-edge (dashed path, Excalidraw-style color)
+    // Cycle back-edge (curved reverse arrow)
     const startX = cx(n - 1);
     const endX = cx(pos);
     const sameNode = startX === endX;
     if (showCycle && n > 0 && !sameNode) {
       const midX = (startX + endX) / 2;
-      const yStart = nodeRowY + NODE_R;
-      const yEnd = nodeRowY - NODE_R;
+      const yStart = nodeRowY + NODE_R - 1;
+      const yEnd = nodeRowY + NODE_R - 2;
       const cpy = curveY + CURVE_H;
+      const stroke = isDark ? EXCALIDRAW_TREE.strokeMuted : EXCALIDRAW_TREE.stroke;
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", `M ${startX} ${yStart} Q ${midX} ${cpy} ${endX} ${yEnd}`);
       path.setAttribute("fill", "none");
-      path.setAttribute("stroke", EXCALIDRAW_TREE.current);
-      path.setAttribute("stroke-width", "2.5");
-      path.setAttribute("stroke-dasharray", "5 4");
+      path.setAttribute("stroke", stroke);
+      path.setAttribute("stroke-width", String(EXCALIDRAW_TREE.strokeWidth));
       path.setAttribute("stroke-linecap", "round");
       g.appendChild(path);
+
+      const tArrow = 0.94;
+      const dx = 2 * (1 - tArrow) * (midX - startX) + 2 * tArrow * (endX - midX);
+      const dy = 2 * (1 - tArrow) * (cpy - yStart) + 2 * tArrow * (yEnd - cpy);
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len;
+      const uy = dy / len;
+      const headSize = 8;
+      const tipX = endX - 1;
+      const tipY = yEnd;
+      const baseX = tipX - ux * headSize;
+      const baseY = tipY - uy * headSize;
+      const perpX = -uy * (headSize * 0.6);
+      const perpY = ux * (headSize * 0.6);
+      const arrowHead = rc.polygon(
+        [[tipX, tipY], [baseX + perpX, baseY + perpY], [baseX - perpX, baseY - perpY]],
+        { stroke, fill: stroke, fillStyle: "solid", strokeWidth: 1, roughness: 0.8 }
+      );
+      g.appendChild(arrowHead);
     }
   }, [nodes, slow, fast, pos, showCycle, n, isDark]);
 

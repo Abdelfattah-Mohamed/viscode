@@ -827,15 +827,19 @@ export function generateLinkedListCycleSteps({ head, pos }) {
 
     const nextSlow = nextIndex(slow, n, cyclePos);
     const midFast = nextIndex(fast, n, cyclePos);
-    const nextFast = midFast >= 0 ? nextIndex(midFast, n, cyclePos) : -1;
+    if (nextSlow < 0 || midFast < 0) {
+      steps.push({ stepType: "done", description: "Reached end → no cycle", state: { slow, fast, hasCycle: false, pos: cyclePos, done: true } });
+      return steps;
+    }
+    const nextFast = nextIndex(midFast, n, cyclePos);
 
-    if (nextSlow < 0 && nextFast < 0) {
+    if (nextFast < 0) {
       steps.push({ stepType: "done", description: "Reached end → no cycle", state: { slow, fast, hasCycle: false, pos: cyclePos, done: true } });
       return steps;
     }
 
-    slow = nextSlow >= 0 ? nextSlow : slow;
-    fast = nextFast >= 0 ? nextFast : fast;
+    slow = nextSlow;
+    fast = nextFast;
 
     if (slow === fast && step > 0) {
       steps.push({ stepType: "found", description: "slow == fast → cycle detected!", state: { slow, fast, hasCycle: true, pos: cyclePos, done: true } });
