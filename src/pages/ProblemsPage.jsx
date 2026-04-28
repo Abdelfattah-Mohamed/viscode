@@ -271,12 +271,35 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
             ))}
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: mobile ? "nowrap" : "wrap", overflowX: mobile ? "auto" : "visible", paddingBottom: 4 }}>
-            {cats.map(cat => (
-              <Button key={cat} t={t} variant="ghost" pill size={mobile ? "sm" : "md"} onClick={() => setFilter(cat)}
-                style={{ background: filter === cat ? t.ink : "transparent", color: filter === cat ? t.yellow : t.ink }}>
-                {cat}
-              </Button>
-            ))}
+            {cats.map(cat => {
+              const active = filter === cat;
+              const freeCategory = cat === FREE_CATEGORY;
+              return (
+                <Button key={cat} t={t} variant="ghost" pill size={mobile ? "sm" : "md"} onClick={() => setFilter(cat)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    whiteSpace: "nowrap",
+                    borderColor: freeCategory ? t.yellow : t.border,
+                    background: active ? (freeCategory ? t.yellow : t.ink) : freeCategory ? t.yellow + "26" : "transparent",
+                    color: active ? (freeCategory ? t.ink : t.yellow) : freeCategory ? t.ink : t.ink,
+                    boxShadow: freeCategory ? t.shadowSm : "none",
+                  }}>
+                  {freeCategory ? (
+                    <>
+                      <span aria-hidden="true">{CAT_ICON[FREE_CATEGORY]}</span>
+                      <span>{cat}</span>
+                      {!isPro && (
+                        <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "0.66rem", fontWeight: 900, letterSpacing: "0.04em", padding: "2px 6px", borderRadius: 999, background: active ? t.ink : t.green + "22", color: active ? t.yellow : t.green, border: `1px solid ${active ? t.ink : t.green + "66"}` }}>
+                          FREE
+                        </span>
+                      )}
+                    </>
+                  ) : cat}
+                </Button>
+              );
+            })}
           </div>
         </div>
 
