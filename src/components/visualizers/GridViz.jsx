@@ -5,7 +5,10 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
   const isSpiralMatrix = problemId === "spiral-matrix";
   const isRotateImage = problemId === "rotate-image";
   const isWordSearch = problemId === "word-search";
-  const isPolishedMatrix = isSetMatrixZeroes || isSpiralMatrix || isRotateImage || isWordSearch;
+  const isNumberOfIslands = problemId === "number-of-islands";
+  const isMaxAreaOfIsland = problemId === "max-area-of-island";
+  const isIslandFamily = isNumberOfIslands || isMaxAreaOfIsland;
+  const isPolishedMatrix = isSetMatrixZeroes || isSpiralMatrix || isRotateImage || isWordSearch || isPacificAtlantic || isIslandFamily;
   const isDark = t._resolved === "dark";
   const water = isDark ? "#1e3a5f" : "#bae6fd";
   const land = isDark ? "#374151" : "#d1d5db";
@@ -16,6 +19,7 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
   const pacificColor = isDark ? "rgba(59, 130, 246, 0.5)" : "rgba(96, 165, 250, 0.45)";
   const atlanticColor = isDark ? "rgba(249, 115, 22, 0.5)" : "rgba(251, 146, 60, 0.5)";
   const bothColor = isDark ? "#059669" : "#10b981";
+  const pacificPhaseLabel = phase === "pacific" ? "Pacific BFS" : phase === "atlantic" ? "Atlantic BFS" : phase === "done" || done ? "Complete" : "Initialize";
 
   if (!grid.length || !grid[0].length) {
     return (
@@ -35,6 +39,7 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
   const spiralPhaseLabel = phase === "go_right" ? "Move right" : phase === "go_down" ? "Move down" : phase === "go_left" ? "Move left" : phase === "go_up" ? "Move up" : done ? "Complete" : "Initialize bounds";
   const rotatePhaseLabel = phase === "transpose" ? "Transpose" : phase === "reverse" ? "Reverse rows" : done ? "Complete" : "Prepare rotation";
   const wordPhaseLabel = done ? "Complete" : matched ? `Matched ${matched.length}/${word.length}` : "Find start";
+  const islandPhaseLabel = done ? "Complete" : (current ? "Scanning / DFS" : "Initialize");
 
   const markerBadge = (label, color, bg) => (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", fontWeight: 800, color: t.inkMuted }}>
@@ -46,10 +51,25 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {isPacificAtlantic && (
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontFamily: "'Caveat',cursive", fontSize: "0.95em", color: t.inkMuted }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 14, height: 14, borderRadius: 3, background: pacificColor, border: "1px solid #3b82f6" }} /> Pacific</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 14, height: 14, borderRadius: 3, background: atlanticColor, border: "1px solid #f97316" }} /> Atlantic</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 14, height: 14, borderRadius: 3, background: bothColor }} /> Both ({result?.length ?? 0})</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", border: `1.5px solid ${t.border}`, borderRadius: 14, background: t.surfaceAlt }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.18rem", fontWeight: 800, color: t.ink, lineHeight: 1 }}>
+                Pacific Atlantic reachability
+              </div>
+              <div style={{ marginTop: 4, fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", color: t.inkMuted }}>
+                Reverse BFS from both ocean borders; highlighted cells can flow to the corresponding ocean.
+              </div>
+            </div>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: done ? t.green : t.blue, background: (done ? t.green : t.blue) + "18", border: `1.25px solid ${(done ? t.green : t.blue)}66`, borderRadius: 999, padding: "5px 10px" }}>
+              {pacificPhaseLabel}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {markerBadge("Pacific reachable", "#3b82f6", pacificColor)}
+            {markerBadge("Atlantic reachable", "#f97316", atlanticColor)}
+            {markerBadge(`Both oceans (${result?.length ?? 0})`, bothColor, bothColor + "22")}
+          </div>
         </div>
       )}
       {(islandCount != null || maxArea != null) && !isPacificAtlantic && problemId !== "rotate-image" && problemId !== "set-matrix-zeroes" && problemId !== "spiral-matrix" && (
@@ -57,6 +77,48 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
           {islandCount != null && <span><strong>Islands:</strong> {islandCount}</span>}
           {maxArea != null && <span><strong>Max area:</strong> {maxArea}</span>}
           {currentArea != null && currentArea > 0 && <span><strong>Current area:</strong> {currentArea}</span>}
+        </div>
+      )}
+      {isIslandFamily && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", border: `1.5px solid ${t.border}`, borderRadius: 14, background: t.surfaceAlt }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.18rem", fontWeight: 800, color: t.ink, lineHeight: 1 }}>
+                {isNumberOfIslands ? "Island scanning workspace" : "Max-area island workspace"}
+              </div>
+              <div style={{ marginTop: 4, fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", color: t.inkMuted }}>
+                {isNumberOfIslands
+                  ? "Scan each cell, run DFS/BFS on unvisited land, and count connected components."
+                  : "Scan each island by DFS/BFS and keep the largest area found so far."}
+              </div>
+            </div>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: done ? t.green : t.blue, background: (done ? t.green : t.blue) + "18", border: `1.25px solid ${(done ? t.green : t.blue)}66`, borderRadius: 999, padding: "5px 10px" }}>
+              {islandPhaseLabel}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {islandCount != null && (
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.76rem", fontWeight: 800, color: t.blue, background: t.blue + "16", border: `1px solid ${t.blue}66`, borderRadius: 999, padding: "4px 9px" }}>
+                islands: {islandCount}
+              </span>
+            )}
+            {maxArea != null && (
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.76rem", fontWeight: 800, color: t.green, background: t.green + "16", border: `1px solid ${t.green}66`, borderRadius: 999, padding: "4px 9px" }}>
+                max area: {maxArea}
+              </span>
+            )}
+            {currentArea != null && currentArea > 0 && (
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.76rem", fontWeight: 800, color: t.yellow, background: t.yellow + "16", border: `1px solid ${t.yellow}66`, borderRadius: 999, padding: "4px 9px" }}>
+                current area: {currentArea}
+              </span>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {markerBadge("water (0)", isDark ? "#1d4ed8" : "#3b82f6", isDark ? "#1e3a8a66" : "#dbeafe")}
+            {markerBadge("land (1)", isDark ? "#6b7280" : "#4b5563", isDark ? "#374151" : "#e5e7eb")}
+            {markerBadge("visited land", t.green, t.green + "22")}
+            {markerBadge("current cell", currentBorder, currentBorder + "22")}
+          </div>
         </div>
       )}
       {isRotateImage && (
@@ -193,21 +255,122 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
           )}
         </div>
       )}
-      <div
-        style={{
-          display: "inline-grid",
-          gridTemplateColumns: isPolishedMatrix ? `28px repeat(${C}, ${cellSize}px)` : `repeat(${C}, ${cellSize}px)`,
-          gap,
-          padding: isPolishedMatrix ? 12 : 8,
-          background: isPolishedMatrix ? t.surface : isDark ? "#111827" : "#f3f4f6",
-          border: isPolishedMatrix ? `1.5px solid ${t.border}` : "none",
-          borderRadius: isPolishedMatrix ? 16 : 8,
-          boxShadow: isPolishedMatrix ? t.shadowSm : "none",
-          width: "fit-content",
-          maxWidth: "100%",
-          overflowX: "auto",
-        }}
-      >
+      <div style={{ position: "relative", width: "fit-content", maxWidth: "100%" }}>
+        {isPacificAtlantic && (
+          <>
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 28,
+                right: 0,
+                height: 8,
+                borderTopLeftRadius: 10,
+                borderTopRightRadius: 10,
+                background: "linear-gradient(90deg, rgba(59,130,246,0.75), rgba(96,165,250,0.45))",
+                zIndex: 1,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: 8,
+                left: 0,
+                bottom: 28,
+                width: 8,
+                borderTopLeftRadius: 10,
+                borderBottomLeftRadius: 10,
+                background: "linear-gradient(180deg, rgba(59,130,246,0.75), rgba(96,165,250,0.45))",
+                zIndex: 1,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: 28,
+                right: 0,
+                bottom: 0,
+                height: 8,
+                borderBottomLeftRadius: 10,
+                borderBottomRightRadius: 10,
+                background: "linear-gradient(90deg, rgba(251,146,60,0.45), rgba(249,115,22,0.75))",
+                zIndex: 1,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 0,
+                bottom: 28,
+                width: 8,
+                borderTopRightRadius: 10,
+                borderBottomRightRadius: 10,
+                background: "linear-gradient(180deg, rgba(251,146,60,0.45), rgba(249,115,22,0.75))",
+                zIndex: 1,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: -12,
+                left: 40,
+                zIndex: 2,
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "0.66rem",
+                fontWeight: 900,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                color: "#3b82f6",
+                background: isDark ? "#0f172a" : "#eff6ff",
+                border: "1px solid #3b82f666",
+                borderRadius: 999,
+                padding: "2px 8px",
+              }}
+            >
+              Pacific
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                bottom: -12,
+                right: 40,
+                zIndex: 2,
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "0.66rem",
+                fontWeight: 900,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                color: "#f97316",
+                background: isDark ? "#1f2937" : "#fff7ed",
+                border: "1px solid #f9731666",
+                borderRadius: 999,
+                padding: "2px 8px",
+              }}
+            >
+              Atlantic
+            </div>
+          </>
+        )}
+        <div
+          style={{
+            display: "inline-grid",
+            gridTemplateColumns: isPolishedMatrix ? `28px repeat(${C}, ${cellSize}px)` : `repeat(${C}, ${cellSize}px)`,
+            gap,
+            padding: isPolishedMatrix ? 12 : 8,
+            background: isPolishedMatrix ? t.surface : isDark ? "#111827" : "#f3f4f6",
+            border: isPolishedMatrix ? `1.5px solid ${t.border}` : "none",
+            borderRadius: isPolishedMatrix ? 16 : 8,
+            boxShadow: isPolishedMatrix ? t.shadowSm : "none",
+            width: "fit-content",
+            maxWidth: "100%",
+            overflowX: "auto",
+          }}
+        >
         {isPolishedMatrix && (
           <>
             <div />
@@ -253,6 +416,10 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
               bg = isRotateHighlight ? t.yellow + "30" : done ? t.green + "14" : t.surfaceAlt;
             } else if (isWordSearch) {
               bg = isCurrent ? currentBorder + "24" : isWordVisited ? t.green + "22" : t.surfaceAlt;
+            } else if (isNumberOfIslands) {
+              bg = Number(val) === 0 ? water : land;
+              if (isVisited) bg = visitedLand;
+              if (isCurrent) bg = currentBorder + "24";
             } else if (val === 0 && !isPacificAtlantic) bg = water;
             else if (isPacificAtlantic) {
               if (toBoth) bg = bothColor;
@@ -287,10 +454,11 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
           }),
           ]
         )}
+        </div>
       </div>
       {isPacificAtlantic && result && result.length > 0 && (
-        <div style={{ padding: "10px 14px", borderRadius: 8, border: `2px solid ${bothColor}`, background: bothColor + "22" }}>
-          <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1em", fontWeight: 700, color: t.ink, marginBottom: 6 }}>
+        <div style={{ padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${bothColor}`, background: bothColor + "18", boxShadow: t.shadowSm }}>
+          <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05em", fontWeight: 800, color: t.ink, marginBottom: 8 }}>
             Answer — cells that flow to both oceans
           </div>
           <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.85rem", color: t.ink, display: "flex", flexWrap: "wrap", gap: "6px 10px" }}>

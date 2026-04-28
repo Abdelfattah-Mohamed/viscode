@@ -2,8 +2,60 @@ import { useMemo, useEffect, useRef } from "react";
 import rough from "roughjs";
 
 const NODE_R = 28;
+const EDGE_TRIM = NODE_R + 2;
 const PADDING = 48;
 const SVG_SIZE = 300;
+
+/** Trim segment from node center to node rim along chord pu→pv */
+function trimmedChordPoints(pu, pv) {
+  const dx = pv.x - pu.x;
+  const dy = pv.y - pu.y;
+  const len = Math.hypot(dx, dy) || 1;
+  if (len < EDGE_TRIM * 2) return null;
+  const ux = dx / len;
+  const uy = dy / len;
+  return {
+    p0: [pu.x + ux * EDGE_TRIM, pu.y + uy * EDGE_TRIM],
+    p1: [pv.x - ux * EDGE_TRIM, pv.y - uy * EDGE_TRIM],
+    len,
+    perp: [-dy / len, dx / len],
+  };
+}
+
+/** Quadratic Bézier from p0 to p2 with outward bend; returns SVG path d */
+function quadraticEdgePathD(p0, p1, bendSign = 1) {
+  const dx = p1[0] - p0[0];
+  const dy = p1[1] - p0[1];
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = (-dy / len) * bendSign;
+  const ny = (dx / len) * bendSign;
+  const bend = Math.min(18 + len * 0.2, 56);
+  const cx = (p0[0] + p1[0]) / 2 + nx * bend;
+  const cy = (p0[1] + p1[1]) / 2 + ny * bend;
+  return { d: `M ${p0[0]} ${p0[1]} Q ${cx} ${cy} ${p1[0]} ${p1[1]}`, midChord: [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2], nx, ny };
+}
+
+/** Sample points along same curve for rough.js linearPath */
+function quadraticEdgeSamples(p0, p1, bendSign = 1, segments = 18) {
+  const dx = p1[0] - p0[0];
+  const dy = p1[1] - p0[1];
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = (-dy / len) * bendSign;
+  const ny = (dx / len) * bendSign;
+  const bend = Math.min(18 + len * 0.2, 56);
+  const cx = (p0[0] + p1[0]) / 2 + nx * bend;
+  const cy = (p0[1] + p1[1]) / 2 + ny * bend;
+  const out = [];
+  for (let i = 0; i <= segments; i += 1) {
+    const t = i / segments;
+    const mt = 1 - t;
+    out.push([
+      mt * mt * p0[0] + 2 * mt * t * cx + t * t * p1[0],
+      mt * mt * p0[1] + 2 * mt * t * cy + t * t * p1[1],
+    ]);
+  }
+  return out;
+}
 
 // Excalidraw-style pastel palette
 const COMPONENT_COLORS = ["", "#6965db", "#70b050", "#e03131", "#f2a33c", "#eb8af0", "#4dabf7"];
@@ -80,14 +132,21 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
     const rc = rough.svg(g, { options: { roughness: 1.2, bowing: 2 } });
 
     if (!directed && !isWeightedGraph) {
-      edgesNormalized.forEach((e) => {
+      edgesNormalized.forEach((e, idx) => {
         const u = e[0], v = e[1];
-        if (u >= positions.length || v >= positions.length) return;
+        if (u < 0 || v < 0 || u >= positions.length || v >= positions.length) return;
+        if (u === v) return;
         const pu = positions[u];
         const pv = positions[v];
-        const el = rc.line(pu.x, pu.y, pv.x, pv.y, {
+        const chord = trimmedChordPoints(pu, pv);
+        if (!chord) return;
+        const bendSign = (u + v + idx) % 2 === 0 ? 1 : -1;
+        const pts = quadraticEdgeSamples(chord.p0, chord.p1, bendSign, 20);
+        const el = rc.linearPath(pts, {
           stroke: edgeColor(u, v),
           strokeWidth: highlighted.includes(u) && highlighted.includes(v) ? 2.5 : 1.5,
+          roughness: 1.15,
+          bowing: 2.2,
         });
         g.appendChild(el);
       });
@@ -273,49 +332,34 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
             <g transform={`translate(${PADDING}, ${PADDING})`}>
               {edgesNormalized.map((e, idx) => {
                 const u = e[0], v = e[1], w = e[2];
-                if (u >= positions.length || v >= positions.length) return null;
+                if (u < 0 || v < 0 || u >= positions.length || v >= positions.length) return null;
+                if (u === v) return null;
                 const pu = positions[u];
                 const pv = positions[v];
-                const dx = pv.x - pu.x;
-                const dy = pv.y - pu.y;
-                const len = Math.hypot(dx, dy) || 1;
-                const ux = dx / len;
-                const uy = dy / len;
-                const trim = NODE_R + 2;
-                const x1 = pu.x + ux * trim;
-                const y1 = pu.y + uy * trim;
-                const x2 = pv.x - ux * trim;
-                const y2 = pv.y - uy * trim;
+                const chord = trimmedChordPoints(pu, pv);
+                if (!chord) return null;
+                const bendSign = (u + v + idx) % 2 === 0 ? 1 : -1;
+                const { d, midChord, nx, ny } = quadraticEdgePathD(chord.p0, chord.p1, bendSign);
                 const isHl = highlighted.includes(u) && highlighted.includes(v);
-                const midX = (x1 + x2) / 2;
-                const midY = (y1 + y2) / 2;
+                const lx = midChord[0] + nx * 14;
+                const ly = midChord[1] + ny * 14;
                 return (
                   <g key={idx}>
-                    <line
-                      x1={x1}
-                      y1={y1}
-                      x2={x2}
-                      y2={y2}
+                    <path
+                      d={d}
+                      fill="none"
                       stroke={isHl ? EDGE_HIGHLIGHT : (isDark ? "#64748b" : "#1e1e1e")}
                       strokeWidth={isHl ? 2.5 : 1.5}
                       strokeLinecap="round"
                       markerEnd={isHl ? "url(#graph-arrow-hl)" : "url(#graph-arrow)"}
                     />
                     {isWeightedGraph && (
-                      (() => {
-                        const nx = -uy;
-                        const ny = ux;
-                        const lx = midX + nx * 12;
-                        const ly = midY + ny * 12;
-                        return (
-                          <g>
-                            <circle cx={lx} cy={ly} r={11} fill={isDark ? "#0f172a" : "#ffffff"} stroke={isDark ? "#475569" : "#cbd5e1"} strokeWidth="1.5" />
-                            <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 800, fill: isDark ? "#e2e8f0" : "#0f172a", pointerEvents: "none" }}>
-                              {w}
-                            </text>
-                          </g>
-                        );
-                      })()
+                      <g>
+                        <circle cx={lx} cy={ly} r={11} fill={isDark ? "#0f172a" : "#ffffff"} stroke={isDark ? "#475569" : "#cbd5e1"} strokeWidth="1.5" />
+                        <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 800, fill: isDark ? "#e2e8f0" : "#0f172a", pointerEvents: "none" }}>
+                          {w}
+                        </text>
+                      </g>
                     )}
                   </g>
                 );
@@ -326,22 +370,26 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
             <g transform={`translate(${PADDING}, ${PADDING})`}>
               {edgesNormalized.map((e, idx) => {
                 const u = e[0], v = e[1], w = e[2];
-                if (u >= positions.length || v >= positions.length) return null;
+                if (u < 0 || v < 0 || u >= positions.length || v >= positions.length) return null;
+                if (u === v) return null;
                 const pu = positions[u];
                 const pv = positions[v];
+                const chord = trimmedChordPoints(pu, pv);
+                if (!chord) return null;
+                const bendSign = (u + v + idx) % 2 === 0 ? 1 : -1;
+                const { d, midChord, nx, ny } = quadraticEdgePathD(chord.p0, chord.p1, bendSign);
                 const isHl = highlighted.includes(u) && highlighted.includes(v);
-                const midX = (pu.x + pv.x) / 2;
-                const midY = (pu.y + pv.y) / 2;
-                const dx = pv.x - pu.x;
-                const dy = pv.y - pu.y;
-                const len = Math.hypot(dx, dy) || 1;
-                const nx = -dy / len;
-                const ny = dx / len;
-                const lx = midX + nx * 10;
-                const ly = midY + ny * 10;
+                const lx = midChord[0] + nx * 12;
+                const ly = midChord[1] + ny * 12;
                 return (
                   <g key={idx}>
-                    <line x1={pu.x} y1={pu.y} x2={pv.x} y2={pv.y} stroke={edgeColor(u, v)} strokeWidth={isHl ? 2.5 : 1.5} strokeLinecap="round" />
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke={edgeColor(u, v)}
+                      strokeWidth={isHl ? 2.5 : 1.5}
+                      strokeLinecap="round"
+                    />
                     {isWeightedGraph && (
                       <>
                         <circle cx={lx} cy={ly} r={11} fill={isDark ? "#0f172a" : "#ffffff"} stroke={isDark ? "#475569" : "#cbd5e1"} strokeWidth="1.5" />
