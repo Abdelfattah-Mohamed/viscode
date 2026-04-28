@@ -56,7 +56,9 @@ function useTreeLayout(arr, width) {
 
 export default function InvertTreeViz({ root = [], stepState = {}, t }) {
   const { visiting, swapped = [], inverted, done } = stepState;
-  const arr = Array.isArray(inverted) && inverted.length ? inverted : (Array.isArray(root) ? root : []);
+  const hasInvertedNodes =
+    Array.isArray(inverted) && inverted.some((v) => v !== null && v !== undefined);
+  const arr = hasInvertedNodes ? inverted : (Array.isArray(root) ? root : []);
 
   const swappedSet = useMemo(() => new Set(swapped), [swapped]);
 

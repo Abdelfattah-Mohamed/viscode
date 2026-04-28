@@ -1533,6 +1533,24 @@ PROBLEMS["palindromic-substrings"].examples[2] = {
   values: { s: "ababae" },
 };
 
+PROBLEMS["same-tree"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: "p = [1,2], q = [1,null,2]",
+  output: "false",
+  note: "Same values appear, but node positions differ (structure mismatch).",
+  values: { p: [1, 2], q: [1, null, 2] },
+};
+
+PROBLEMS["same-tree"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "p = [5,3,8,1,4,7,9], q = [5,3,8,1,4,7,10]",
+  output: "false",
+  note: "Structures match, but one corresponding node value differs (9 vs 10).",
+  values: { p: [5, 3, 8, 1, 4, 7, 9], q: [5, 3, 8, 1, 4, 7, 10] },
+};
+
 PROBLEMS["number-of-1-bits"].examples[1] = {
   id: "example-2",
   label: "Example 2",
