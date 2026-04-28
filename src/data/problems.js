@@ -1551,6 +1551,33 @@ PROBLEMS["max-area-of-island"].examples[2] = {
   },
 };
 
+PROBLEMS["insert-interval"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]], newInterval = [4,9]",
+  output: "[[1,2],[3,10],[12,16]]",
+  note: "More intervals with a new interval spanning multiple middle ranges.",
+  values: { nums: [1, 2, 3, 5, 6, 7, 8, 10, 12, 16, 4, 9] },
+};
+
+PROBLEMS["meeting-rooms"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "intervals = [[1,4],[5,6],[6,10]]",
+  output: "true",
+  note: "No overlap: meetings are separated or touch at the boundary (end == start).",
+  values: { nums: [1, 4, 5, 6, 6, 10] },
+};
+
+PROBLEMS["meeting-rooms-ii"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "intervals = [[0,30],[5,10],[6,12],[15,20],[17,25],[26,35]]",
+  output: "3",
+  note: "More intervals with multiple overlaps; peak concurrency is 3 rooms.",
+  values: { nums: [0, 30, 5, 10, 6, 12, 15, 20, 17, 25, 26, 35] },
+};
+
 PROBLEMS["binary-search"].examples[2] = {
   id: "example-3",
   label: "Example 3",
