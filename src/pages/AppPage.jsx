@@ -56,6 +56,7 @@ export default function AppPage({
   const [lang, setLang]              = useState("cpp");
   const [solutionTab, setSolTab]     = useState("Solution");
   const [input, setInput]            = useState(() => (isPro && sharedInput) || PROBLEMS[selectedProblem].defaultInput);
+  const [selectedExampleId, setSelectedExampleId] = useState("primary");
   const [whiteboardFontScale, setWhiteboardFontScale] = useState(1);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [shareMsg, setShareMsg]      = useState("");
@@ -113,6 +114,10 @@ export default function AppPage({
   }, [isDraggingGutter]);
 
   const problem = PROBLEMS[selectedProblem];
+  const examples = Array.isArray(problem.examples) && problem.examples.length
+    ? problem.examples
+    : [{ id: "primary", label: "Example 1", ...problem.example, values: problem.defaultInput }];
+  const selectedExample = examples.find(example => example.id === selectedExampleId) || examples[0];
   const canEditInputs = !!isPro;
   const canUseNotes = !!isPro;
   const notesData = useProblemNotes(canUseNotes ? user : null, selectedProblem);
@@ -167,6 +172,7 @@ export default function AppPage({
     setReportOpen(false);
     setReportText("");
     setReportStatus("");
+    setSelectedExampleId("primary");
   }, [selectedProblem]);
 
   useEffect(() => {
@@ -191,6 +197,13 @@ export default function AppPage({
 
   const player = useStepPlayer(steps, 900);
   const { currentStep, stepIndex, totalSteps } = player;
+  const handleExampleSelect = useCallback((example) => {
+    setSelectedExampleId(example.id);
+    if (example.values) {
+      setInput(example.values);
+      player.reset();
+    }
+  }, [player]);
 
   const langDef = problem.languages[lang];
   const codeLines = langDef?.code?.length ?? 0;
@@ -602,9 +615,36 @@ export default function AppPage({
                 <span style={{ fontFamily: "'Caveat',cursive", fontSize: "0.85rem", padding: "3px 12px", border: `2px solid ${t.border}`, borderRadius: 20, fontWeight: 600, background: t.purple + "22", color: t.ink }}>💾 {problem.spaceComplexity}</span>
               </div>
               <div style={{ marginTop: 10, padding: "8px 10px", background: t.surfaceAlt, borderRadius: 8, border: `1.5px solid ${t.border}30`, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.76rem", color: t.inkMuted }}>
-                <div><span style={{ color: t.blue }}>Input:</span>  {problem.example.input}</div>
-                <div><span style={{ color: t.green }}>Output:</span> {problem.example.output}</div>
-                <div style={{ marginTop: 2, fontStyle: "italic" }}>{problem.example.note}</div>
+                {examples.length > 1 && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>
+                    {examples.map(example => {
+                      const active = selectedExample.id === example.id;
+                      return (
+                        <button
+                          key={example.id}
+                          type="button"
+                          onClick={() => handleExampleSelect(example)}
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: 999,
+                            border: `1.25px solid ${active ? t.blue : t.border}`,
+                            background: active ? t.blue + "18" : t.surface,
+                            color: active ? t.blue : t.inkMuted,
+                            cursor: "pointer",
+                            fontSize: "0.72rem",
+                            fontWeight: 800,
+                            fontFamily: "'DM Sans',sans-serif",
+                          }}
+                        >
+                          {example.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <div><span style={{ color: t.blue }}>Input:</span>  {selectedExample.input}</div>
+                <div><span style={{ color: t.green }}>Output:</span> {selectedExample.output}</div>
+                <div style={{ marginTop: 2, fontStyle: "italic" }}>{selectedExample.note}</div>
               </div>
             </div>
           </Card>

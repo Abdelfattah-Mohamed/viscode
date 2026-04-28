@@ -1,7 +1,7 @@
 // Step generators produce an array of animation steps for each problem.
 // Each step: { stepType, description, state }
 
-import { leetcodeToComplete } from "../utils/treeFormat";
+import { leetcodeToComplete } from "../utils/treeFormat.js";
 
 export function generateTwoSumSteps({ nums, target }) {
   const steps = [], map = {};
@@ -477,45 +477,32 @@ export function generateInvertTreeSteps({ root }) {
   }
 
   const steps = [];
-  const inverted = [...arr];
-  while (inverted.length < 2 * arr.length + 2) inverted.push(null);
+  const inverted = Array(arr.length).fill(null);
   const swapped = [];
 
-  function swapSub(a, i, j) {
-    if (i >= a.length && j >= a.length) return;
-    const vi = i < a.length ? a[i] : null;
-    const vj = j < a.length ? a[j] : null;
-    if (i < a.length) a[i] = vj;
-    if (j < a.length) a[j] = vi;
-    swapSub(a, 2 * i + 1, 2 * j + 1);
-    swapSub(a, 2 * i + 2, 2 * j + 2);
-  }
-
-  function dfs(idx) {
-    if (idx >= inverted.length || inverted[idx] === null || inverted[idx] === undefined) {
-      steps.push({ stepType: "base", description: `Node ${idx} is null/out of bounds`, state: { visiting: idx, swapped: [...swapped], inverted: [...inverted], done: false } });
+  function mirror(srcIdx, dstIdx) {
+    if (srcIdx >= arr.length || arr[srcIdx] === null || arr[srcIdx] === undefined || dstIdx >= inverted.length) {
+      steps.push({ stepType: "base", description: `Node ${srcIdx} is null/out of bounds`, state: { visiting: dstIdx, swapped: [...swapped], inverted: [...inverted], done: false } });
       return;
     }
 
-    steps.push({ stepType: "visit", description: `Visit node ${idx} (value=${inverted[idx]})`, state: { visiting: idx, swapped: [...swapped], inverted: [...inverted], done: false } });
+    steps.push({ stepType: "visit", description: `Visit node ${srcIdx} (value=${arr[srcIdx]})`, state: { visiting: dstIdx, swapped: [...swapped], inverted: [...inverted], done: false } });
+    inverted[dstIdx] = arr[srcIdx];
+    swapped.push(dstIdx);
 
-    const leftIdx = 2 * idx + 1;
-    const rightIdx = 2 * idx + 2;
+    steps.push({ stepType: "swap", description: `Place ${arr[srcIdx]} at mirrored index ${dstIdx}`, state: { visiting: dstIdx, swapped: [...swapped], inverted: [...inverted], done: false } });
+    steps.push({ stepType: "swap_assign", description: `Mirror children: left subtree becomes right, right subtree becomes left`, state: { visiting: dstIdx, swapped: [...swapped], inverted: [...inverted], done: false } });
+    steps.push({ stepType: "recurse", description: `Recurse into mirrored children of node ${srcIdx}`, state: { visiting: dstIdx, swapped: [...swapped], inverted: [...inverted], done: false } });
 
-    swapSub(inverted, leftIdx, rightIdx);
-    swapped.push(idx);
-
-    steps.push({ stepType: "swap", description: `Save temp = left child of ${idx}`, state: { visiting: idx, swapped: [...swapped], inverted: [...inverted], done: false } });
-    steps.push({ stepType: "swap_assign", description: `Assign left = right, right = temp for node ${idx}`, state: { visiting: idx, swapped: [...swapped], inverted: [...inverted], done: false } });
-    steps.push({ stepType: "recurse", description: `Recurse into children of node ${idx}`, state: { visiting: idx, swapped: [...swapped], inverted: [...inverted], done: false } });
-
-    dfs(leftIdx);
-    dfs(rightIdx);
+    mirror(2 * srcIdx + 1, 2 * dstIdx + 2);
+    mirror(2 * srcIdx + 2, 2 * dstIdx + 1);
   }
 
-  dfs(0);
+  mirror(0, 0);
   const trimmed = [...inverted];
-  while (trimmed.length > 0 && (trimmed[trimmed.length - 1] === null || trimmed[trimmed.length - 1] === undefined)) trimmed.pop();
+  while (trimmed.length > 0 && (trimmed[trimmed.length - 1] === null || trimmed[trimmed.length - 1] === undefined)) {
+    trimmed.pop();
+  }
   steps.push({ stepType: "done", description: "✅ Tree inverted!", state: { visiting: -1, swapped: [...swapped], inverted: trimmed, done: true } });
   return steps;
 }
@@ -1108,7 +1095,7 @@ export function generateHammingWeightSteps(input) {
 }
 
 export function generateCountingBitsSteps(input) {
-  const n = Math.max(0, Math.min(Number(input?.n) || 0, 32));
+  const n = Math.max(0, Number(input?.n) || 0);
   const ans = Array(n + 1).fill(0);
   const steps = [];
   steps.push({ stepType: "init", description: `countBits(${n}) — ans[0..${n}] = 0`, state: { nums: [...ans], i: 0, highlight: [], phase: "init" } });
@@ -1149,6 +1136,35 @@ function stubArraySteps(input) {
     steps.push({ stepType: "loop", description: `Step ${i + 1}/${Math.min(nums.length, 5)}`, state: { i, highlight: [i], nums: [...nums] } });
   }
   steps.push({ stepType: "done", description: "Done", state: { done: true, nums: [...nums], i: nums.length - 1, highlight: [] } });
+  return steps;
+}
+
+export function generateFindMinRotatedSteps(input) {
+  const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : [];
+  const steps = [];
+  if (!nums.length) {
+    return [{ stepType: "done", description: "Empty array", state: { nums: [], left: -1, right: -1, mid: -1, highlight: [], done: true } }];
+  }
+
+  let left = 0;
+  let right = nums.length - 1;
+  steps.push({ stepType: "init", description: `left=0, right=${right}`, state: { nums: [...nums], left, right, mid: -1, highlight: [left, right] } });
+
+  while (left < right) {
+    const mid = Math.floor((left + right) / 2);
+    steps.push({ stepType: "loop", description: `Search window [${left}, ${right}]`, state: { nums: [...nums], left, right, mid, highlight: [left, mid, right] } });
+    steps.push({ stepType: "calc_mid", description: `mid=${mid}; compare nums[mid]=${nums[mid]} with nums[right]=${nums[right]}`, state: { nums: [...nums], left, right, mid, highlight: [mid, right] } });
+
+    if (nums[mid] > nums[right]) {
+      left = mid + 1;
+      steps.push({ stepType: "go_right", description: `${nums[mid]} > ${nums[right]} → minimum is right of mid; left=${left}`, state: { nums: [...nums], left, right, mid, highlight: [left, right] } });
+    } else {
+      right = mid;
+      steps.push({ stepType: "go_left", description: `${nums[mid]} <= ${nums[right]} → minimum is at mid or left; right=${right}`, state: { nums: [...nums], left, right, mid, highlight: [left, right] } });
+    }
+  }
+
+  steps.push({ stepType: "done", description: `Minimum is nums[${left}] = ${nums[left]}`, state: { nums: [...nums], left, right, mid: left, highlight: [left], result: nums[left], done: true } });
   return steps;
 }
 
@@ -3903,23 +3919,30 @@ export function generateFloydWarshallSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const edges = buildWeightedEdgesFromNums(n, input?.nums || []);
   const steps = [];
-  if (n <= 0) return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], result: "" } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], result: "", done: true } }];
+  if (n <= 0) {
+    return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], dist: [], result: "" } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], dist: [], result: "", done: true } }];
+  }
   const INF = 1e8;
   const dist = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 0 : INF)));
-  for (const [u, v, w] of edges) if (u >= 0 && u < n && v >= 0 && v < n) dist[u][v] = Math.min(dist[u][v], w);
-  steps.push({ stepType: "init", description: "Initialize distance matrix", state: { n, edges: [...edges], directed: true, result: "dist initialized" } });
+  for (const [u, v, w] of edges) {
+    if (u >= 0 && u < n && v >= 0 && v < n) {
+      dist[u][v] = Math.min(dist[u][v], w);
+    }
+  }
+  const snapshot = () => dist.map(row => [...row]);
+  steps.push({ stepType: "init", description: "Initialize distance matrix", state: { n, edges: [...edges], dist: snapshot(), directed: true, result: "dist initialized", k: -1, matrixCell: null } });
   for (let k = 0; k < n; k++) {
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         if (dist[i][k] < INF && dist[k][j] < INF && dist[i][k] + dist[k][j] < dist[i][j]) {
           dist[i][j] = dist[i][k] + dist[k][j];
-          steps.push({ stepType: "relax", description: `Update dist[${i}][${j}] via ${k} -> ${dist[i][j]}`, state: { n, edges: [...edges], directed: true, highlighted: [i, k, j], result: `k=${k}` } });
+          steps.push({ stepType: "relax", description: `Update dist[${i}][${j}] via ${k} -> ${dist[i][j]}`, state: { n, edges: [...edges], dist: snapshot(), directed: true, highlighted: [i, k, j], result: `k=${k}`, k, matrixCell: [i, j], via: [i, k, j] } });
         }
       }
     }
   }
   const hasNegCycle = dist.some((row, i) => row[i] < 0);
-  steps.push({ stepType: "done", description: hasNegCycle ? "Negative cycle detected" : "All-pairs shortest paths computed", state: { n, edges: [...edges], directed: true, result: hasNegCycle ? "Negative cycle detected" : "No negative cycle", done: true } });
+  steps.push({ stepType: "done", description: hasNegCycle ? "Negative cycle detected" : "All-pairs shortest paths computed", state: { n, edges: [...edges], dist: snapshot(), directed: true, result: hasNegCycle ? "Negative cycle detected" : "No negative cycle", matrixCell: null, done: true } });
   return steps;
 }
 
@@ -3979,7 +4002,7 @@ export function generateKosarajuSteps(input) {
   let scc = 0;
   function dfs2(u) {
     vis[u] = true;
-    steps.push({ stepType: "visit", description: `SCC ${scc}: visit ${u} on transpose`, state: { n, edges: [...edges], directed: true, highlighted: [u], result: `scc=${scc}` } });
+    steps.push({ stepType: "dfs2_visit", description: `SCC ${scc}: visit ${u} on transpose`, state: { n, edges: [...edges], directed: true, highlighted: [u], result: `scc=${scc}` } });
     for (const v of gt[u]) if (!vis[v]) dfs2(v);
   }
   while (order.length) {
@@ -4115,7 +4138,7 @@ export const STEP_GENERATORS = {
   "linked-list-cycle":       generateLinkedListCycleSteps,
   "number-of-islands":       generateNumberOfIslandsSteps,
   "max-area-of-island":      generateMaxAreaOfIslandSteps,
-  "min-rotated-sorted":      (i) => stubArraySteps(i),
+  "min-rotated-sorted":      generateFindMinRotatedSteps,
   "search-rotated-sorted":   generateSearchRotatedSteps,
   "sum-two-integers":        generateSumTwoIntegersSteps,
   "number-of-1-bits":        generateHammingWeightSteps,

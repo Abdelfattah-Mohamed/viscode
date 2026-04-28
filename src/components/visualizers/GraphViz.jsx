@@ -11,7 +11,7 @@ const EDGE_COLOR = "#64748b";
 const EDGE_HIGHLIGHT = "#e03131";
 
 export default function GraphViz({ stepState = {}, problemId, t }) {
-  const { n = 0, edges = [], highlighted = [], vis = [], count, componentId = [], done, validTree, nodeState = [], canFinish, directed, labels = [], result, queue, stack, dist, mstEdges } = stepState;
+  const { n = 0, edges = [], highlighted = [], vis = [], count, componentId = [], done, validTree, nodeState = [], canFinish, directed, labels = [], result, queue, stack, dist, mstEdges, matrixCell, k } = stepState;
   const edgesNormalized = (edges || []).map((e) => (Array.isArray(e) && e.length >= 2 ? [Number(e[0]), Number(e[1]), e[2] != null ? Number(e[2]) : 1] : e));
   const isWeightedGraph = (edges || []).some((e) => Array.isArray(e) && e.length >= 3);
   const isDark = t._resolved === "dark";
@@ -20,7 +20,10 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
   const isCourseSchedule = problemId === "course-schedule";
   const isAlienDictionary = problemId === "alien-dictionary";
   const isCloneGraph = problemId === "clone-graph";
+  const isFloydWarshall = problemId === "floyd-warshall";
+  const distMatrix = isFloydWarshall && Array.isArray(dist?.[0]) ? dist : null;
   const roughRef = useRef(null);
+  const formatDist = (value) => (value == null || Math.abs(value) >= 1e8 ? "∞" : String(value));
 
   const isIsolated = (i) => !connectedNodes.has(i);
   const nodeStroke = (i) => {
@@ -430,11 +433,64 @@ export default function GraphViz({ stepState = {}, problemId, t }) {
             Output
           </span>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {Array.isArray(dist) && dist.length > 0 && (
+            {distMatrix && distMatrix.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.85rem", color: t.inkMuted }}>dist matrix</span>
+                  {Number.isInteger(k) && k >= 0 && (
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 800, color: t.blue, padding: "3px 8px", borderRadius: 999, background: t.blue + "18", border: `1px solid ${t.blue}55` }}>
+                      via k={k}
+                    </span>
+                  )}
+                </div>
+                <div style={{ overflowX: "auto", paddingBottom: 2 }}>
+                  <table style={{ borderCollapse: "separate", borderSpacing: 4, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.82rem" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ minWidth: 28 }} />
+                        {distMatrix.map((_, col) => (
+                          <th key={col} style={{ minWidth: 34, padding: "5px 7px", color: t.inkMuted, fontWeight: 800, textAlign: "center" }}>{col}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {distMatrix.map((row, r) => (
+                        <tr key={r}>
+                          <th style={{ minWidth: 28, padding: "5px 7px", color: t.inkMuted, fontWeight: 800, textAlign: "center" }}>{r}</th>
+                          {row.map((value, c) => {
+                            const isUpdated = Array.isArray(matrixCell) && matrixCell[0] === r && matrixCell[1] === c;
+                            const isVia = Number.isInteger(k) && (r === k || c === k);
+                            return (
+                              <td
+                                key={`${r}-${c}`}
+                                style={{
+                                  minWidth: 34,
+                                  padding: "6px 8px",
+                                  textAlign: "center",
+                                  borderRadius: 8,
+                                  border: `1.25px solid ${isUpdated ? t.green : isVia ? t.blue + "88" : t.border}`,
+                                  background: isUpdated ? t.green + "22" : isVia ? t.blue + "12" : t.surface,
+                                  color: isUpdated ? t.green : t.ink,
+                                  fontWeight: isUpdated ? 900 : 700,
+                                  boxShadow: isUpdated ? t.shadowSm : "none",
+                                }}
+                              >
+                                {formatDist(value)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            {Array.isArray(dist) && dist.length > 0 && !distMatrix && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.85rem", color: t.inkMuted }}>dist:</span>
                 <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.95rem", fontWeight: 700, color: t.ink }}>
-                  [{dist.map((d) => (d == null || Math.abs(d) >= 1e8 ? "∞" : String(d))).join(", ")}]
+                  [{dist.map((d) => formatDist(d)).join(", ")}]
                 </span>
               </div>
             )}
