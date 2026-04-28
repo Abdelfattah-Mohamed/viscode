@@ -1551,6 +1551,24 @@ PROBLEMS["same-tree"].examples[2] = {
   values: { p: [5, 3, 8, 1, 4, 7, 9], q: [5, 3, 8, 1, 4, 7, 10] },
 };
 
+PROBLEMS["lca-of-bst"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: "root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 4",
+  output: "2",
+  note: "One node is ancestor of the other; LCA is that ancestor node itself.",
+  values: { root: [6, 2, 8, 0, 4, 7, 9, null, null, 3, 5], p: 2, q: 4 },
+};
+
+PROBLEMS["lca-of-bst"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "root = [10,5,15,3,7,12,18,1,4,6,8,11,13,17,20], p = 1, q = 8",
+  output: "5",
+  note: "Deeper BST with multiple levels; p and q diverge inside the left subtree, so LCA is node 5.",
+  values: { root: [10, 5, 15, 3, 7, 12, 18, 1, 4, 6, 8, 11, 13, 17, 20], p: 1, q: 8 },
+};
+
 PROBLEMS["number-of-1-bits"].examples[1] = {
   id: "example-2",
   label: "Example 2",

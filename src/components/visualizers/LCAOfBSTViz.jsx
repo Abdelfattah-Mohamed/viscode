@@ -67,7 +67,7 @@ function findNodeIndex(arr, val) {
 export default function LCAOfBSTViz({ root = [], stepState = {}, t }) {
   const raw = Array.isArray(root) ? root : [];
   const arr = raw.length && raw[0] != null ? leetcodeToComplete(raw) : raw;
-  const { visiting, p, q, lca, done } = stepState;
+  const { visiting, p, q, lca, done, currentVal, bothLeft, bothRight, decision, path = [] } = stepState;
 
   const width = getTreeWidth(arr);
   const { nodes, edges, nullMarkers, maxLevel } = useTreeLayout(arr, width);
@@ -106,6 +106,47 @@ export default function LCAOfBSTViz({ root = [], stepState = {}, t }) {
           )}
         </div>
       )}
+
+      <div style={{
+        width: "100%",
+        maxWidth: width,
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 10,
+      }}>
+        <div style={{
+          border: `1px solid ${t.border}55`,
+          borderRadius: 10,
+          padding: "8px 10px",
+          background: t.surface,
+          fontFamily: "'JetBrains Mono',monospace",
+          fontSize: "0.76rem",
+          color: t.ink,
+          lineHeight: 1.45,
+        }}>
+          <div>node: {currentVal ?? "-"}</div>
+          <div>p, q: {p ?? "-"}, {q ?? "-"}</div>
+          <div>both &lt; node: {bothLeft === true ? "yes" : bothLeft === false ? "no" : "-"}</div>
+          <div>both &gt; node: {bothRight === true ? "yes" : bothRight === false ? "no" : "-"}</div>
+        </div>
+        <div style={{
+          border: `1px solid ${t.border}55`,
+          borderRadius: 10,
+          padding: "8px 10px",
+          background: t.surface,
+          fontFamily: "'Caveat',cursive",
+          fontSize: "0.92rem",
+          color: t.ink,
+          lineHeight: 1.4,
+        }}>
+          <div style={{ fontWeight: 700 }}>
+            Decision: {decision ?? "-"}
+          </div>
+          <div style={{ color: t.inkMuted }}>
+            Path: {Array.isArray(path) && path.length ? path.map((idx) => arr[idx]).join(" → ") : "-"}
+          </div>
+        </div>
+      </div>
 
       <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ maxWidth: width, overflow: "visible" }}>
         <g transform="translate(0, 4)">

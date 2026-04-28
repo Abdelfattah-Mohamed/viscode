@@ -3536,31 +3536,71 @@ export function generateLCAOfBSTSteps(input) {
   const qVal = input?.q;
   const p = (Array.isArray(pVal) ? pVal[0] : pVal) ?? 2;
   const q = (Array.isArray(qVal) ? qVal[0] : qVal) ?? 8;
+  const low = Math.min(p, q);
+  const high = Math.max(p, q);
   const steps = [];
+  const path = [];
   if (!arr.length || arr[0] === null) {
-    steps.push({ stepType: "base", description: "Tree is empty → return null", state: { visiting: -1, depthMap: {}, maxDepth: 0, p, q, lca: null, done: true } });
+    steps.push({ stepType: "base", description: "Tree is empty → return null", state: { visiting: -1, p, q, low, high, lca: null, path: [], decision: "empty", done: true } });
     return steps;
   }
+  steps.push({
+    stepType: "visit",
+    description: `Start BST search for p=${p}, q=${q}. At each node: go left if both < node, right if both > node, else found LCA.`,
+    state: { visiting: 0, p, q, low, high, lca: null, path: [], decision: "start", done: false },
+  });
   function dfs(idx) {
     if (idx >= arr.length || arr[idx] === null || arr[idx] === undefined) {
-      steps.push({ stepType: "base", description: `Node at index ${idx} is null`, state: { visiting: idx, p, q, lca: null, done: false } });
+      steps.push({ stepType: "base", description: `Node at index ${idx} is null`, state: { visiting: idx, p, q, low, high, lca: null, path: [...path], decision: "null", done: false } });
       return null;
     }
     const val = arr[idx];
-    steps.push({ stepType: "visit", description: `Visit node (value=${val})`, state: { visiting: idx, depthMap: {}, maxDepth: 0, p, q, lca: null, done: false } });
+    path.push(idx);
+    const bothLeft = high < val;
+    const bothRight = low > val;
+    steps.push({
+      stepType: "visit",
+      description: `Visit node ${val}: compare p=${p}, q=${q} against ${val}`,
+      state: {
+        visiting: idx,
+        p,
+        q,
+        low,
+        high,
+        currentVal: val,
+        bothLeft,
+        bothRight,
+        path: [...path],
+        lca: null,
+        decision: "compare",
+        done: false,
+      },
+    });
     if (p < val && q < val) {
-      steps.push({ stepType: "go_left", description: `Both ${p} and ${q} < ${val} → go left`, state: { visiting: idx, p, q, lca: null, done: false } });
+      steps.push({
+        stepType: "go_left",
+        description: `Both targets are smaller than ${val} → move to left child`,
+        state: { visiting: idx, p, q, low, high, currentVal: val, bothLeft, bothRight, path: [...path], nextIdx: 2 * idx + 1, lca: null, decision: "left", done: false },
+      });
       return dfs(2 * idx + 1);
     }
     if (p > val && q > val) {
-      steps.push({ stepType: "go_right", description: `Both ${p} and ${q} > ${val} → go right`, state: { visiting: idx, p, q, lca: null, done: false } });
+      steps.push({
+        stepType: "go_right",
+        description: `Both targets are greater than ${val} → move to right child`,
+        state: { visiting: idx, p, q, low, high, currentVal: val, bothLeft, bothRight, path: [...path], nextIdx: 2 * idx + 2, lca: null, decision: "right", done: false },
+      });
       return dfs(2 * idx + 2);
     }
-    steps.push({ stepType: "found", description: `LCA found: ${val} (p and q on different sides)`, state: { visiting: idx, p, q, lca: val, done: false } });
+    steps.push({
+      stepType: "found",
+      description: `Split found at ${val}: ${low} ≤ ${val} ≤ ${high}, so this node is the LCA`,
+      state: { visiting: idx, p, q, low, high, currentVal: val, bothLeft, bothRight, path: [...path], lca: val, decision: "found", done: false },
+    });
     return val;
   }
   const lca = dfs(0);
-  steps.push({ stepType: "done", description: `✓ LCA = ${lca}`, state: { visiting: -1, p, q, lca, done: true } });
+  steps.push({ stepType: "done", description: `✓ LCA = ${lca}`, state: { visiting: -1, p, q, low, high, lca, path: [...path], decision: "done", done: true } });
   return steps;
 }
 
