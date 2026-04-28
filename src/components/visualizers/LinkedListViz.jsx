@@ -134,6 +134,7 @@ function CopyListRandomViz({ stepState, interweaved, copyHead, copyRandom, head,
           ? "Move copy nodes into the result list and restore the original list's next pointers."
           : "The copy list has the same structure as the original and is independent in memory.";
   const activeIdx = (pIdx != null && pIdx >= 0 && pIdx < n) ? pIdx : -1;
+  const activeRandomIdx = activeIdx >= 0 ? (rand?.[activeIdx] ?? -1) : -1;
   const renderNodeRef = (idx) => {
     if (idx == null || idx < 0 || idx >= n) return "null";
     return `#${idx}:${head[idx]}`;
@@ -157,6 +158,21 @@ function CopyListRandomViz({ stepState, interweaved, copyHead, copyRandom, head,
       <p style={{ fontFamily: "'Caveat',cursive", fontSize: "1rem", color: t.inkMuted, textAlign: "center", margin: 0, maxWidth: 440 }}>
         {phaseTip}
       </p>
+      {phase === 2 && (
+        <div style={{
+          border: `1px solid ${t.purple}66`,
+          background: `${t.purple}14`,
+          borderRadius: 10,
+          padding: "8px 12px",
+          fontFamily: "'JetBrains Mono',monospace",
+          fontSize: "0.82rem",
+          color: t.ink,
+        }}>
+          {activeIdx >= 0
+            ? `copy(${activeIdx}).random = copy(random(${activeIdx})) = copy(${activeRandomIdx >= 0 ? activeRandomIdx : "null"})`
+            : "copy(i).random = copy(random(i))"}
+        </div>
+      )}
       <div style={{
         width: "100%",
         display: "grid",
