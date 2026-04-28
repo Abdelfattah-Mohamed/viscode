@@ -232,21 +232,7 @@ export default function LinkedListViz({ head = [], stepState = {}, problemId, in
     const g = roughRef.current;
     g.innerHTML = "";
     const rc = rough.svg(g, { options: { roughness: 1.2, bowing: 2 } });
-
-    // Draw directed arrows first (Excalidraw sketchy style) so nodes appear on top
-    for (let idx = 0; idx < nodes.length - 1; idx++) {
-      const isReversed = !isRemoveNth && idx + 1 <= splitPoint;
-      const isBreakingLink = toRemoveIdx >= 0 && idx === slowIdx && idx + 1 === toRemoveIdx;
-      const isArrowFromRemoved = toRemoveIdx >= 0 && idx === toRemoveIdx;
-      if (isBreakingLink || isArrowFromRemoved) continue;
-      const cx0 = 40 + idx * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
-      const cx1 = 40 + (idx + 1) * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
-      const y = height / 2;
-      const stroke = isReversed ? t.green : t.border;
-      const x1 = cx0 + NODE_R;
-      const x2 = cx1 - NODE_R;
-      const [sX, sY, eX, eY] = isReversed ? [x2, y, x1, y] : [x1, y, x2, y];
-
+    const drawArrowLine = (sX, sY, eX, eY, stroke) => {
       const headSize = 8;
       const dx = eX - sX;
       const dy = eY - sY;
@@ -278,6 +264,58 @@ export default function LinkedListViz({ head = [], stepState = {}, problemId, in
         roughness: 0.8,
       });
       g.appendChild(arrowHead);
+    };
+
+    const drawCurvedReverseArrow = (fromX, toX, y, stroke) => {
+      const controlY = y + 32;
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", `M ${fromX} ${y} Q ${(fromX + toX) / 2} ${controlY} ${toX} ${y}`);
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", stroke);
+      path.setAttribute("stroke-width", "1.5");
+      path.setAttribute("stroke-linecap", "round");
+      g.appendChild(path);
+
+      const t = 0.94;
+      const dx = 2 * (1 - t) * (((fromX + toX) / 2) - fromX) + 2 * t * (toX - ((fromX + toX) / 2));
+      const dy = 2 * (1 - t) * (controlY - y) + 2 * t * (y - controlY);
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len;
+      const uy = dy / len;
+      const headSize = 8;
+      const tipX = toX;
+      const tipY = y;
+      const baseX = tipX - ux * headSize;
+      const baseY = tipY - uy * headSize;
+      const perpX = -uy * (headSize * 0.6);
+      const perpY = ux * (headSize * 0.6);
+      const arrowHead = rc.polygon([[tipX, tipY], [baseX + perpX, baseY + perpY], [baseX - perpX, baseY - perpY]], {
+        stroke,
+        fill: stroke,
+        fillStyle: "solid",
+        strokeWidth: 1,
+        roughness: 0.8,
+      });
+      g.appendChild(arrowHead);
+    };
+
+    // Draw directed arrows first (Excalidraw sketchy style) so nodes appear on top
+    for (let idx = 0; idx < nodes.length - 1; idx++) {
+      const isReversed = !isRemoveNth && idx + 1 <= splitPoint;
+      const isBreakingLink = toRemoveIdx >= 0 && idx === slowIdx && idx + 1 === toRemoveIdx;
+      const isArrowFromRemoved = toRemoveIdx >= 0 && idx === toRemoveIdx;
+      if (isBreakingLink || isArrowFromRemoved) continue;
+      const cx0 = 40 + idx * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
+      const cx1 = 40 + (idx + 1) * (NODE_SPACING + ARROW_LEN) + NODE_SPACING / 2;
+      const y = height / 2;
+      const stroke = isReversed ? t.green : t.border;
+      const x1 = cx0 + NODE_R;
+      const x2 = cx1 - NODE_R;
+      if (isReversed) {
+        drawCurvedReverseArrow(x2, x1, y, stroke);
+      } else {
+        drawArrowLine(x1, y, x2, y, stroke);
+      }
     }
 
     nodes.forEach((val, idx) => {

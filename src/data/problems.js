@@ -1587,6 +1587,24 @@ PROBLEMS["linked-list-cycle"].examples[2] = {
   values: { head: [1, 2, 3, 4, 5], pos: -1 },
 };
 
+PROBLEMS["merge-two-sorted-lists"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "list1 = [1,3,5,7], list2 = [4]",
+  output: "[1,3,4,5,7]",
+  note: "Edge case: second list contains only one node.",
+  values: { list1: [1, 3, 5, 7], list2: [4] },
+};
+
+PROBLEMS["merge-two-sorted-lists"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: "list1 = [], list2 = [0,2,2]",
+  output: "[0,2,2]",
+  note: "Edge case: first list is empty, so the merged result is the second list.",
+  values: { list1: [], list2: [0, 2, 2] },
+};
+
 PROBLEMS["number-of-1-bits"].examples[1] = {
   id: "example-2",
   label: "Example 2",

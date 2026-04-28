@@ -13,15 +13,37 @@ function drawListRow(rc, list, y, highlightIdx, mergedStyle, isDark) {
   const strokeDefault = isDark ? EXCALIDRAW_TREE.strokeLight : EXCALIDRAW_TREE.stroke;
   const fillDefault = isDark ? EXCALIDRAW_TREE.fillNodeDark : EXCALIDRAW_TREE.fillNode;
   const lineStroke = mergedStyle ? EXCALIDRAW_TREE.success : (isDark ? EXCALIDRAW_TREE.strokeMuted : EXCALIDRAW_TREE.stroke);
-
-  for (let i = 0; i < list.length - 1; i++) {
-    const x1 = SVG_PAD + i * CELL + NODE_R;
-    const x2 = SVG_PAD + (i + 1) * CELL + NODE_R;
-    const line = rc.line(x1, y, x2, y, {
-      stroke: lineStroke,
+  const drawArrowLine = (x1, y1, x2, y2, stroke) => {
+    const headSize = 7;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    const tipX = x2;
+    const tipY = y2;
+    const baseX = tipX - ux * headSize;
+    const baseY = tipY - uy * headSize;
+    const line = rc.line(x1, y1, baseX, baseY, {
+      stroke,
       strokeWidth: EXCALIDRAW_TREE.strokeWidth,
     });
     elements.push(line);
+    const perpX = -uy * (headSize * 0.6);
+    const perpY = ux * (headSize * 0.6);
+    const arrowHead = rc.polygon(
+      [[tipX, tipY], [baseX + perpX, baseY + perpY], [baseX - perpX, baseY - perpY]],
+      { stroke, fill: stroke, fillStyle: "solid", strokeWidth: 1, roughness: 0.8 }
+    );
+    elements.push(arrowHead);
+  };
+
+  for (let i = 0; i < list.length - 1; i++) {
+    const c1 = SVG_PAD + i * CELL + NODE_R;
+    const c2 = SVG_PAD + (i + 1) * CELL + NODE_R;
+    const x1 = c1 + NODE_R;
+    const x2 = c2 - NODE_R;
+    drawArrowLine(x1, y, x2, y, lineStroke);
   }
 
   list.forEach((_, idx) => {
