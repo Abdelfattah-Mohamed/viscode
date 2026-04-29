@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { getSupabase, PROFILES_TABLE } from "../utils/supabase";
 import { sendVerificationCode, verifyCodeWithApi, isDemoCode } from "../utils/verificationApi";
 import { isValidAvatarId } from "../data/avatars";
+import { trackEvent } from "../utils/analytics";
 
 const VERIFICATION_CODE_LENGTH = 6;
 const GOOGLE_SCRIPT_ID = "google-gsi-script";
@@ -154,6 +155,7 @@ export function useAuth() {
       } catch (_) {}
     }
 
+    trackEvent("signup_started", { method: "email", hasPassword: !!password });
     const code = generateCode();
     const sendResult = await sendVerificationCode(normalizedEmail, code);
     setPendingVerification({
@@ -199,6 +201,7 @@ export function useAuth() {
     setPendingVerification(null);
     setUser(profile);
     upsertProfile(profile, pwHash);
+    trackEvent("signup_completed", { method: "email" });
     return { ok: true };
   };
 
@@ -216,6 +219,7 @@ export function useAuth() {
       localStorage.setItem("vc:session", JSON.stringify(data.profile));
       setUser(data.profile);
       upsertProfile(data.profile);
+      trackEvent("login_succeeded", { method: "local_cache" });
       return { ok: true };
     }
 
@@ -231,6 +235,7 @@ export function useAuth() {
     if (profile.email) localStorage.setItem(`vc:email:${profile.email.toLowerCase()}`, username);
     localStorage.setItem("vc:session", JSON.stringify(profile));
     setUser(profile);
+    trackEvent("login_succeeded", { method: "password_db" });
     return { ok: true };
   };
 
@@ -241,6 +246,7 @@ export function useAuth() {
 
   const loginAsGuest = () => {
     setUser({ username: "Guest", isGuest: true });
+    trackEvent("login_guest");
   };
 
   const googleClientId = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -268,6 +274,7 @@ export function useAuth() {
     localStorage.setItem("vc:session", JSON.stringify(profile));
     setUser(profile);
     upsertProfile(profile);
+    trackEvent("signup_completed", { method: "google" });
   };
 
   const initGoogleButton = (containerEl, isSignUp = false) => {

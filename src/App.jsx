@@ -5,6 +5,7 @@ import { useFavorites }       from "./hooks/useFavorites";
 import { useIsMobile }        from "./hooks/useIsMobile";
 import { useRecentProblems }  from "./hooks/useRecentProblems";
 import { useSubscription }    from "./hooks/useSubscription";
+import { useLearningProgress } from "./hooks/useLearningProgress";
 import { PROBLEMS }           from "./data/problems";
 import { trackEvent } from "./utils/analytics";
 import AuthScreen   from "./components/ui/AuthScreen";
@@ -81,6 +82,7 @@ export default function App() {
   const fav  = auth.user?.isGuest ? null : favData;
   const { recent, track } = useRecentProblems();
   const { isPro, loading: subscriptionLoading } = useSubscription(auth.user);
+  const learning = useLearningProgress(auth.user);
   const prevUser = useRef(null);
 
 
@@ -110,6 +112,47 @@ export default function App() {
     prevUser.current = auth.user;
   }, [auth.user]);
 
+  useEffect(() => {
+    if (!auth.user?.username) return;
+    learning.ensureReferralCode(auth.user.username);
+  }, [auth.user?.username, learning]);
+
+  useEffect(() => {
+    if (!auth.user || auth.user.isGuest) return;
+    const day = new Date().toISOString().slice(0, 10);
+    const seenKey = `viscode-retention-seen-${day}`;
+    try {
+      if (localStorage.getItem(seenKey)) return;
+      localStorage.setItem(seenKey, "1");
+      trackEvent("retention_checkin", {
+        day,
+        streak: learning.stats.streak,
+        completed: learning.stats.completed,
+      });
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [auth.user, learning.stats.streak, learning.stats.completed]);
+
+  useEffect(() => {
+    if (!auth.user?.createdAt || auth.user.isGuest) return;
+    const createdTs = new Date(auth.user.createdAt).getTime();
+    if (!Number.isFinite(createdTs)) return;
+    const days = Math.floor((Date.now() - createdTs) / (24 * 60 * 60 * 1000));
+    if (days !== 1 && days !== 7) return;
+    const key = `viscode-retention-day-${days}-fired`;
+    try {
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, "1");
+      trackEvent(days === 1 ? "retention_day1" : "retention_day7", {
+        completed: learning.stats.completed,
+        streak: learning.stats.streak,
+      });
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [auth.user?.createdAt, auth.user?.isGuest, learning.stats.completed, learning.stats.streak]);
+
   const promptPremium = (problemId) => {
     const title = PROBLEMS[problemId]?.title || "This problem";
     trackEvent("paywall_shown", { problemId, title, sourcePage: page });
@@ -134,6 +177,11 @@ export default function App() {
     setSharedInput(null);
     setPage("app");
     trackEvent("problem_opened", { problemId: id, category: PROBLEMS[id]?.category });
+    const startedBefore = Object.prototype.hasOwnProperty.call(learning.problems || {}, id);
+    if (!startedBefore) {
+      trackEvent("first_problem_started", { problemId: id, category: PROBLEMS[id]?.category });
+    }
+    learning.trackProblemStart(id);
     track(id);
     window.history.pushState({}, "", pathFor("app", id));
   };
@@ -152,6 +200,24 @@ export default function App() {
       promptPremium(selectedProblem);
     }
   }, [auth.user, subscriptionLoading, page, selectedProblem, isPro]);
+
+  useEffect(() => {
+    const title = page === "app" && PROBLEMS[selectedProblem]
+      ? `${PROBLEMS[selectedProblem].title} | VisCode`
+      : page === "problems"
+        ? "Algorithm Problems | VisCode"
+        : page === "billing"
+          ? "Pricing & Billing | VisCode"
+          : "VisCode - Visual Algorithm Learning";
+    document.title = title;
+    let descriptionTag = document.querySelector('meta[name="description"]');
+    if (!descriptionTag) {
+      descriptionTag = document.createElement("meta");
+      descriptionTag.setAttribute("name", "description");
+      document.head.appendChild(descriptionTag);
+    }
+    descriptionTag.setAttribute("content", "Interactive algorithm visualizations, line-by-line code playback, and interview prep learning tracks.");
+  }, [page, selectedProblem]);
 
   if (auth.loading || (auth.user && subscriptionLoading)) {
     return (
@@ -172,6 +238,7 @@ export default function App() {
         onNavigate={navigate} onLogout={auth.logout}
         username={auth.user?.username} user={auth.user} mobile={mobile}
         recent={recent} onSelectProblem={selectProblem} isPro={isPro}
+        learning={learning}
       />
     );
   }
@@ -205,6 +272,7 @@ export default function App() {
         fav={fav}
         onSelectProblem={selectProblem}
         mobile={mobile}
+        learning={learning}
       />
     );
   }
@@ -219,6 +287,7 @@ export default function App() {
         onNavigate={navigate}
         onLogout={auth.logout}
         mobile={mobile}
+        learning={learning}
       />
     );
   }
@@ -244,6 +313,7 @@ export default function App() {
       fav={fav} mobile={mobile}
       sharedInput={sharedInput}
       isPro={isPro}
+      learning={learning}
     />
   );
 }

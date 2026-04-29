@@ -1,3 +1,4 @@
+import { useState } from "react";
 import NavBar from "../components/ui/NavBar";
 import { Card } from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -24,11 +25,26 @@ const WORKFLOW_POINTS = [
   "Return to recent and flagged problems",
 ];
 
-export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, user, mobile, recent, onSelectProblem, isPro }) {
+const PREMIUM_TRACKS = [
+  { id: "track-2w", title: "2-week interview reset", detail: "Daily mixed set across arrays, trees, and graphs." },
+  { id: "track-4w", title: "4-week deep prep", detail: "Structured progression with spaced repetition checkpoints." },
+  { id: "track-mock", title: "Timed mock rounds", detail: "30-minute problem sessions with score rubric." },
+];
+
+export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, user, mobile, recent, onSelectProblem, isPro, learning }) {
   const freeCount = PROB_LIST.filter((p) => p.category === FREE_CATEGORY).length;
   const premiumCount = PROB_LIST.length - freeCount;
   const categoryCount = new Set(PROB_LIST.map((p) => p.category)).size;
   const isLocked = (p) => p && !isPro && p.category !== FREE_CATEGORY;
+  const [onboardingOpen, setOnboardingOpen] = useState(() => !learning?.onboarding?.completed);
+  const [skillLevel, setSkillLevel] = useState(learning?.onboarding?.skillLevel || "beginner");
+  const [weeklyGoal, setWeeklyGoal] = useState(learning?.onboarding?.weeklyGoal || 5);
+  const dueReviews = learning?.dueReviewItems || [];
+  const daysSinceVisit = (() => {
+    const ts = learning?.lifecycle?.lastVisitAt ? new Date(learning.lifecycle.lastVisitAt).getTime() : 0;
+    if (!ts) return 0;
+    return Math.floor((Date.now() - ts) / (24 * 60 * 60 * 1000));
+  })();
   const handleCardKeyDown = (e, action) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -42,6 +58,11 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
   const openProblemFromHome = (problemId, source) => {
     trackEvent("problem_opened", { problemId, source });
     onSelectProblem(problemId);
+  };
+  const completeOnboarding = () => {
+    learning?.updateOnboarding({ skillLevel, weeklyGoal });
+    trackEvent("onboarding_completed", { skillLevel, weeklyGoal });
+    setOnboardingOpen(false);
   };
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
@@ -146,6 +167,46 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
         </div>
       </PageContainer>
 
+      {daysSinceVisit >= 3 && (
+        <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="0 12px 0" paddingDesktop="0 24px 0">
+          <Card t={t} density="compact" style={{ marginBottom: 14, padding: "12px 14px", background: t.yellow + "10", border: `1.5px solid ${t.yellow}66` }}>
+            <div style={{ fontSize: "0.86rem", color: t.ink }}>
+              Welcome back. You have been away for {daysSinceVisit} days — run one guided problem today to rebuild momentum.
+            </div>
+          </Card>
+        </PageContainer>
+      )}
+
+      {onboardingOpen && !user?.isGuest && (
+        <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="0 12px 0" paddingDesktop="0 24px 0">
+          <Card t={t} style={{ marginBottom: 18, padding: mobile ? 16 : 18 }}>
+            <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1.2fr 1fr auto", gap: 12, alignItems: "end" }}>
+              <div>
+                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.3rem", fontWeight: 700, color: t.ink }}>
+                  Quick onboarding
+                </div>
+                <div style={{ fontSize: "0.85rem", color: t.inkMuted, marginTop: 3 }}>
+                  Set your level and weekly target to personalize your study loop.
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <select value={skillLevel} onChange={(e) => setSkillLevel(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: t.surface, color: t.ink }}>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+                <select value={weeklyGoal} onChange={(e) => setWeeklyGoal(Number(e.target.value) || 5)} style={{ padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: t.surface, color: t.ink }}>
+                  {[3, 5, 7, 10, 14].map((n) => <option key={n} value={n}>{n}/week goal</option>)}
+                </select>
+              </div>
+              <Button t={t} variant="primary" onClick={completeOnboarding} style={{ borderRadius: 8 }}>
+                Save plan
+              </Button>
+            </div>
+          </Card>
+        </PageContainer>
+      )}
+
       {/* Stats bar */}
       <div style={{ display: "flex", justifyContent: "center", borderTop: `1.5px solid ${t.border}`, borderBottom: `1.5px solid ${t.border}`, background: t.surface, flexWrap: "wrap" }}>
         {[{ n: `${PROB_LIST.length}+`, l: "Visual Problems" }, { n: `${categoryCount}`, l: "Topic Categories" }, { n: "4", l: "Code Languages" }, { n: "∞", l: "Practice Runs" }].map((s, i, a) => (
@@ -215,6 +276,26 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
               );
             })}
           </div>
+        </PageContainer>
+      )}
+
+      {dueReviews.length > 0 && (
+        <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="20px 12px 0" paddingDesktop="24px 24px 0">
+          <Card t={t} density="compact" style={{ padding: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.2rem", fontWeight: 700, color: t.ink }}>
+                  Review queue
+                </div>
+                <div style={{ fontSize: "0.83rem", color: t.inkMuted }}>
+                  {dueReviews.length} problem{dueReviews.length === 1 ? "" : "s"} due for spaced repetition.
+                </div>
+              </div>
+              <Button t={t} variant="secondary" onClick={() => openProblemFromHome(dueReviews[0].problemId, "review_queue")} style={{ borderRadius: 8 }}>
+                Start review
+              </Button>
+            </div>
+          </Card>
         </PageContainer>
       )}
 
@@ -288,6 +369,36 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
           </div>
         </PageContainer>
       )}
+
+      <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="30px 12px 0" paddingDesktop="34px 24px 0">
+        <SectionHeader
+          t={t}
+          title="Interview tracks"
+          subtitle="Outcome-focused premium paths, not just a bigger list."
+          compact
+          style={{ marginBottom: 14 }}
+        />
+        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+          {PREMIUM_TRACKS.map((track) => (
+            <Card key={track.id} t={t} density="compact" style={{ padding: 14, opacity: isPro ? 1 : 0.9 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05rem", fontWeight: 700, color: t.ink }}>{track.title}</div>
+                {!isPro && <span style={{ fontSize: "0.72rem", color: t.red, border: `1px solid ${t.red}66`, borderRadius: 999, padding: "2px 6px", background: t.red + "14" }}>Pro</span>}
+              </div>
+              <div style={{ marginTop: 6, fontSize: "0.82rem", color: t.inkMuted, lineHeight: 1.5 }}>{track.detail}</div>
+              <Button
+                t={t}
+                variant={isPro ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => (isPro ? goTo("problems", `track_${track.id}`) : goTo("billing", `track_${track.id}`))}
+                style={{ marginTop: 10, borderRadius: 8 }}
+              >
+                {isPro ? "Start track" : "Unlock track"}
+              </Button>
+            </Card>
+          ))}
+        </div>
+      </PageContainer>
 
       {/* How it works */}
       <PageContainer mobile={mobile} paddingMobile="48px 12px" paddingDesktop="56px 24px">

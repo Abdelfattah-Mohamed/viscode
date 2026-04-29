@@ -7,6 +7,7 @@ import PageContainer from "../components/ui/PageContainer";
 import SectionHeader from "../components/ui/SectionHeader";
 import { AVATARS, getAvatarEmoji, isValidAvatarId } from "../data/avatars";
 import { PROBLEMS, DIFF_COLOR, CAT_ICON } from "../data/problems";
+import { getAnalyticsMetrics } from "../utils/analyticsInsights";
 
 const TrashIcon = ({ size = 18, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", marginRight: 6 }}>
@@ -36,7 +37,7 @@ const XIcon = ({ size = 16 }) => (
   </svg>
 );
 
-export default function ProfilePage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, onDeleteAccount, onUpdateProfile, fav, onSelectProblem, mobile }) {
+export default function ProfilePage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, onDeleteAccount, onUpdateProfile, fav, onSelectProblem, mobile, learning }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -52,6 +53,8 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
   const flaggedCount = fav?.flagged?.length || 0;
   const savedCount = favoriteCount + flaggedCount;
   const activeStudyIds = studyListTab === "favorites" ? (fav?.favorites || []) : (fav?.flagged || []);
+  const analytics = getAnalyticsMetrics();
+  const showInternalAnalytics = !!import.meta.env.DEV;
   const activeStudyEmpty = studyListTab === "favorites"
     ? "No favorite problems yet. Star problems you want to revisit often."
     : "No flagged problems yet. Flag problems you want to revisit.";
@@ -336,6 +339,54 @@ export default function ProfilePage({ user, t, themeMode, setThemeMode, onNaviga
             Sign out
           </Button>
         </div>
+
+        {learning && (
+          <div style={{ marginTop: 22, display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+            <Card t={t} density="compact" style={{ padding: 16 }}>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+                Learning goals
+              </div>
+              <div style={{ fontSize: "0.84rem", color: t.inkMuted, lineHeight: 1.6 }}>
+                Level: <strong style={{ color: t.ink }}>{learning.onboarding.skillLevel}</strong><br />
+                Weekly goal: <strong style={{ color: t.ink }}>{learning.onboarding.weeklyGoal} problems</strong><br />
+                Current streak: <strong style={{ color: t.ink }}>{learning.stats.streak} day(s)</strong><br />
+                Mastered: <strong style={{ color: t.ink }}>{learning.stats.mastered}</strong>
+              </div>
+            </Card>
+            <Card t={t} density="compact" style={{ padding: 16 }}>
+              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+                Referral program
+              </div>
+              <div style={{ fontSize: "0.84rem", color: t.inkMuted, lineHeight: 1.6 }}>
+                Code: <code style={{ fontFamily: "'JetBrains Mono',monospace", color: t.ink }}>{learning.growth.referralCode || "Generating..."}</code><br />
+                Invites: <strong style={{ color: t.ink }}>{learning.growth.invitedCount}</strong><br />
+                Bonus months: <strong style={{ color: t.ink }}>{learning.growth.referralBonusMonths}</strong>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {showInternalAnalytics && (
+          <Card t={t} style={{ marginTop: 20 }}>
+            <div style={{ padding: "14px 16px", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt, fontFamily: "'Caveat',cursive", fontSize: "1.1rem", fontWeight: 700, color: t.ink }}>
+              Analytics dashboard (local)
+            </div>
+            <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(5, minmax(0, 1fr))", gap: 10 }}>
+              {[
+                ["Events", analytics.totals.events],
+                ["Paywall views", analytics.totals.paywallViews],
+                ["Checkout starts", analytics.totals.checkoutStarts],
+                ["Paid", analytics.totals.paid],
+                ["Activation %", `${analytics.funnel.activationRate.toFixed(0)}%`],
+              ].map(([label, value]) => (
+                <div key={label} style={{ border: `1px solid ${t.border}`, borderRadius: 10, background: t.surfaceAlt, padding: "10px 11px" }}>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 800, color: t.ink }}>{value}</div>
+                  <div style={{ color: t.inkMuted, fontSize: "0.78rem" }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         {!user?.isGuest && onDeleteAccount && (
           <div style={{ marginTop: 32, paddingTop: 24, borderTop: `1px solid ${t.border}` }}>

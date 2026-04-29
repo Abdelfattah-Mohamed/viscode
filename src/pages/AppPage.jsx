@@ -52,6 +52,7 @@ export default function AppPage({
   t, themeMode, setThemeMode,
   onNavigate, onLogout, user, username, fav, mobile,
   sharedInput, isPro,
+  learning,
 }) {
   const [lang, setLang]              = useState("cpp");
   const [solutionTab, setSolTab]     = useState("Solution");
@@ -79,6 +80,11 @@ export default function AppPage({
   });
   const [isDraggingGutter, setIsDraggingGutter] = useState(false);
   const leftPanelPercentRef = useRef(leftPanelPercent);
+  const sessionStartedAtRef = useRef(Date.now());
+  const completionTrackedRef = useRef(false);
+  const [confidence, setConfidence] = useState("medium");
+  const [mockMode, setMockMode] = useState(false);
+  const [mockSecondsLeft, setMockSecondsLeft] = useState(30 * 60);
   leftPanelPercentRef.current = leftPanelPercent;
 
   const mainScrollRef = useRef(null);
@@ -173,7 +179,24 @@ export default function AppPage({
     setReportText("");
     setReportStatus("");
     setSelectedExampleId("primary");
+    sessionStartedAtRef.current = Date.now();
+    completionTrackedRef.current = false;
+    setConfidence("medium");
   }, [selectedProblem]);
+
+  useEffect(() => {
+    if (!mockMode) return undefined;
+    const id = setInterval(() => {
+      setMockSecondsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(id);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [mockMode]);
 
   useEffect(() => {
     if (sharedInput && canEditInputs) setInput(sharedInput);
@@ -293,6 +316,30 @@ export default function AppPage({
     return Math.min(raw, codeLines);
   })();
   const isFinished = currentStep?.stepType === "found" || currentStep?.stepType === "done";
+  useEffect(() => {
+    if (!isFinished || completionTrackedRef.current) return;
+    completionTrackedRef.current = true;
+    const practiceMs = Math.max(0, Date.now() - sessionStartedAtRef.current);
+    const alreadyCompleted = !!learning?.problems?.[selectedProblem]?.completedAt;
+    learning?.trackProblemCompletion?.(selectedProblem, { confidence, practiceMs, mastered: false });
+    trackEvent("problem_completed", { problemId: selectedProblem, confidence, practiceMs });
+    if (!alreadyCompleted) {
+      trackEvent("first_problem_completed", { problemId: selectedProblem });
+    }
+  }, [isFinished, learning, selectedProblem, confidence]);
+
+  const recommendNext = useMemo(() => {
+    const category = problem?.category;
+    if (!category || !learning?.problems) return null;
+    return Object.keys(PROBLEMS).find((id) => id !== selectedProblem && PROBLEMS[id]?.category === category && !learning.problems[id]?.completedAt) || null;
+  }, [problem?.category, learning?.problems, selectedProblem]);
+
+  const mockScore = useMemo(() => {
+    const complete = isFinished ? 1 : 0;
+    const confidenceScore = confidence === "high" ? 1 : confidence === "medium" ? 0.7 : 0.4;
+    const timeScore = mockMode ? Math.max(0, Math.min(1, mockSecondsLeft / (30 * 60))) : 1;
+    return Math.round(((complete * 0.5) + (confidenceScore * 0.3) + (timeScore * 0.2)) * 100);
+  }, [isFinished, confidence, mockMode, mockSecondsLeft]);
   const stepDescColor = isFinished ? t.green : t.yellow;
 
   const handleSelectSimilar = id => {
@@ -830,6 +877,42 @@ export default function AppPage({
           </div>
           <StepControls {...player} t={t} mobile={mobile} />
           <div style={{ borderTop: `1.5px solid ${t.border}`, padding: "10px 12px", background: t.surfaceAlt + "66" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.8rem", color: t.inkMuted }}>Confidence:</span>
+                <select value={confidence} onChange={(e) => setConfidence(e.target.value)} style={{ padding: "4px 8px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: t.surface, color: t.ink, fontSize: "0.78rem" }}>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+                {isFinished && (
+                  <button
+                    type="button"
+                    onClick={() => learning?.markMastered?.(selectedProblem)}
+                    style={{ border: `1.5px solid ${t.green}`, background: t.green + "14", color: t.green, borderRadius: 8, padding: "4px 8px", fontSize: "0.78rem", cursor: "pointer" }}
+                  >
+                    Mark mastered
+                  </button>
+                )}
+              </div>
+              {isPro && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {!mockMode ? (
+                    <button
+                      type="button"
+                      onClick={() => { setMockMode(true); setMockSecondsLeft(30 * 60); trackEvent("mock_round_started", { problemId: selectedProblem }); }}
+                      style={{ border: `1.5px solid ${t.blue}`, background: t.blue + "12", color: t.blue, borderRadius: 8, padding: "4px 8px", fontSize: "0.78rem", cursor: "pointer" }}
+                    >
+                      Start mock timer (30m)
+                    </button>
+                  ) : (
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", color: mockSecondsLeft <= 60 ? t.red : t.ink }}>
+                      Mock: {String(Math.floor(mockSecondsLeft / 60)).padStart(2, "0")}:{String(mockSecondsLeft % 60).padStart(2, "0")}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
               <div style={{ fontSize: "0.8rem", color: t.inkMuted }}>
                 Was this visualization helpful for understanding the algorithm?
@@ -923,6 +1006,22 @@ export default function AppPage({
                   >
                     {reportStatus === "sending" ? "Sending..." : reportStatus === "sent" ? "Sent" : "Send report"}
                   </button>
+                </div>
+              </div>
+            )}
+            {(isFinished || mockMode) && (
+              <div style={{ marginTop: 8, padding: "8px 10px", border: `1px solid ${t.border}66`, borderRadius: 8, background: t.surface }}>
+                <div style={{ fontSize: "0.78rem", color: t.inkMuted }}>
+                  Mock round score: <strong style={{ color: t.ink }}>{mockScore}/100</strong>
+                  {recommendNext ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProblem(recommendNext)}
+                      style={{ marginLeft: 8, border: "none", background: "transparent", color: t.blue, cursor: "pointer", textDecoration: "underline", fontSize: "0.78rem" }}
+                    >
+                      Next recommended: {PROBLEMS[recommendNext].title}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             )}

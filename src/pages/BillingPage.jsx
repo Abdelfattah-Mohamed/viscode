@@ -106,7 +106,7 @@ const BILLING_FAQS = [
   },
 ];
 
-export default function BillingPage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, mobile }) {
+export default function BillingPage({ user, t, themeMode, setThemeMode, onNavigate, onLogout, mobile, learning }) {
   const {
     subscription,
     plan,
@@ -607,6 +607,29 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
                 </p>
               </Card>
             </div>
+
+            <Card t={t} density="compact" style={{ marginTop: 16, padding: 16 }}>
+              <h3 style={{ margin: "0 0 8px", fontFamily: "'Caveat',cursive", fontSize: "1.15rem", color: t.ink }}>
+                Trial and guarantee policy
+              </h3>
+              <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.84rem", lineHeight: 1.55 }}>
+                New users receive a 7-day Pro trial on monthly and yearly plans. If billing fails, access is kept in grace period for 3 days before reverting to Free.
+              </p>
+            </Card>
+
+            {learning && (
+              <Card t={t} density="compact" style={{ marginTop: 16, padding: 16 }}>
+                <h3 style={{ margin: "0 0 8px", fontFamily: "'Caveat',cursive", fontSize: "1.15rem", color: t.ink }}>
+                  Referral growth
+                </h3>
+                <p style={{ margin: "0 0 8px", color: t.inkMuted, fontSize: "0.84rem", lineHeight: 1.55 }}>
+                  Share code <code style={{ fontFamily: "'JetBrains Mono',monospace", color: t.ink }}>{learning.growth.referralCode || "..."}</code>. Each successful invite gives one bonus month.
+                </p>
+                <Button t={t} variant="secondary" size="sm" onClick={() => learning.applyReferral()} style={{ borderRadius: 8 }}>
+                  Simulate successful referral
+                </Button>
+              </Card>
+            )}
 
             <Card t={t} style={{ marginTop: 24, overflow: "hidden" }}>
               <div style={{ padding: "16px 20px", borderBottom: `1.5px solid ${t.border}`, background: t.surfaceAlt }}>
