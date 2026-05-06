@@ -14,6 +14,7 @@ import ProblemsPage from "./pages/ProblemsPage";
 import AppPage      from "./pages/AppPage";
 import ProfilePage  from "./pages/ProfilePage";
 import BillingPage  from "./pages/BillingPage";
+import VotesPage from "./pages/VotesPage";
 
 const DEFAULT_PROBLEM = "two-sum";
 
@@ -36,6 +37,7 @@ function getRouteFromPath(pathname) {
   if (path === "/problems") return { page: "problems" };
   if (path === "/profile") return { page: "profile" };
   if (path === "/billing") return { page: "billing" };
+  if (path === "/votes") return { page: "votes" };
   const match = path.match(/^\/problem\/(.+)$/);
   if (match && PROBLEMS[match[1]]) return { page: "app", problemId: match[1] };
   return { page: "home" };
@@ -47,6 +49,7 @@ function pathFor(page, problemId) {
   if (page === "problems") return "/problems";
   if (page === "profile") return "/profile";
   if (page === "billing") return "/billing";
+  if (page === "votes") return "/votes";
   return "/";
 }
 
@@ -208,6 +211,8 @@ export default function App() {
         ? "Algorithm Problems | VisCode"
         : page === "billing"
           ? "Pricing & Billing | VisCode"
+          : page === "votes"
+            ? "Vote Content | VisCode"
           : "VisCode - Visual Algorithm Learning";
     document.title = title;
     let descriptionTag = document.querySelector('meta[name="description"]');
@@ -288,6 +293,21 @@ export default function App() {
         onLogout={auth.logout}
         mobile={mobile}
         learning={learning}
+      />
+    );
+  }
+
+  if (page === "votes") {
+    return (
+      <VotesPage
+        t={t}
+        themeMode={themeMode}
+        setThemeMode={setThemeMode}
+        onNavigate={navigate}
+        onLogout={auth.logout}
+        username={auth.user?.username}
+        user={auth.user}
+        mobile={mobile}
       />
     );
   }
