@@ -146,7 +146,7 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
     .map((x) => x.trim().toLowerCase())
     .filter(Boolean);
   const currentEmail = String(user?.email || "").trim().toLowerCase();
-  const isAdmin = adminEmails.includes(currentEmail) || String(username || "").trim().toLowerCase() === "admin";
+  const isAdmin = adminEmails.includes(currentEmail);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
