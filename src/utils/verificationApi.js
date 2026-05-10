@@ -1,6 +1,7 @@
 import { getSupabase } from "./supabase";
 
 const DEMO_CODE = "123456";
+const DEMO_CODES_ENABLED = Boolean(import.meta.env.DEV);
 
 export { DEMO_CODE };
 
@@ -44,21 +45,23 @@ async function sendViaEmailJS(email, code) {
 /* ── Supabase Edge Function helpers ── */
 
 async function parseInvokeError(error) {
-  if (!error) return { message: "Failed to send", demo: true };
+  if (!error) return { message: "Failed to send", demo: DEMO_CODES_ENABLED };
   let message = error.message || "Failed to send";
-  let demo = true;
+  let demo = false;
   try {
     const status = error.context?.status ?? (error.message && /(\d{3})/.exec(error.message)?.[1]);
     if (String(status) === "503") {
       message = "Email service not configured.";
-      demo = true;
+      demo = DEMO_CODES_ENABLED;
     } else if (String(status) === "404" || /not found|function/i.test(error.message || "")) {
       message = "Email verification service is not available.";
-      demo = true;
+      demo = DEMO_CODES_ENABLED;
     } else if (error.context?.json) {
       const body = await error.context.json();
       if (body?.error) message = body.error;
-      if (String(status) === "503" || (body?.error && body.error.includes("not configured"))) demo = true;
+      if (String(status) === "503" || (body?.error && body.error.includes("not configured"))) {
+        demo = DEMO_CODES_ENABLED;
+      }
     }
   } catch (_) {}
   return { message, demo };
@@ -80,7 +83,13 @@ export async function sendVerificationCode(email, code) {
   console.warn("[VisCode] EmailJS not ready. SERVICE:", !!EMAILJS_SERVICE, "TEMPLATE:", !!EMAILJS_TEMPLATE, "KEY:", !!EMAILJS_KEY);
 
   const sb = getSupabase();
-  if (!sb) return { ok: false, error: "No email service configured. Set up EmailJS or Supabase Edge Functions.", demo: true };
+  if (!sb) {
+    return {
+      ok: false,
+      error: "No email service configured. Set up EmailJS or Supabase Edge Functions.",
+      demo: DEMO_CODES_ENABLED,
+    };
+  }
 
   const { data, error } = await sb.functions.invoke("send-verification-code", {
     body: { email: email.trim().toLowerCase(), code },
@@ -99,7 +108,7 @@ export async function sendVerificationCode(email, code) {
 export async function verifyCodeWithApi(email, code) {
   const normalized = String(code).replace(/\D/g, "").slice(0, 6);
   const sb = getSupabase();
-  if (!sb) return { ok: normalized === DEMO_CODE, demo: true };
+  if (!sb) return { ok: DEMO_CODES_ENABLED && normalized === DEMO_CODE, demo: DEMO_CODES_ENABLED };
 
   const { data, error } = await sb.functions.invoke("verify-code", {
     body: { email: email.trim().toLowerCase(), code: normalized },
