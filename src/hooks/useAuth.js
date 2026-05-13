@@ -6,16 +6,6 @@ import { trackEvent } from "../utils/analytics";
 
 const VERIFICATION_CODE_LENGTH = 6;
 const GOOGLE_SCRIPT_ID = "google-gsi-script";
-const ADMIN_BOOTSTRAP_USERNAME = typeof import.meta !== "undefined" && import.meta.env
-  ? String(import.meta.env.VITE_ADMIN_USERNAME || "").trim()
-  : "";
-const ADMIN_BOOTSTRAP_EMAIL = typeof import.meta !== "undefined" && import.meta.env
-  ? String(import.meta.env.VITE_ADMIN_EMAIL || "").trim().toLowerCase()
-  : "";
-const ADMIN_BOOTSTRAP_PASSWORD = typeof import.meta !== "undefined" && import.meta.env
-  ? String(import.meta.env.VITE_ADMIN_PASSWORD || "")
-  : "";
-
 function decodeGoogleJwt(credential) {
   try {
     const payload = credential.split(".")[1];
@@ -126,46 +116,6 @@ async function findUserByEmailInDb(email) {
   return data;
 }
 
-async function bootstrapAdminAccount() {
-  if (!ADMIN_BOOTSTRAP_USERNAME || !ADMIN_BOOTSTRAP_EMAIL || !ADMIN_BOOTSTRAP_PASSWORD) return;
-  const profile = {
-    username: ADMIN_BOOTSTRAP_USERNAME,
-    email: ADMIN_BOOTSTRAP_EMAIL,
-    createdAt: new Date().toISOString(),
-    avatarId: 1,
-  };
-
-  try {
-    const existingRaw = localStorage.getItem(`vc:user:${ADMIN_BOOTSTRAP_USERNAME}`);
-    if (!existingRaw) {
-      localStorage.setItem(
-        `vc:user:${ADMIN_BOOTSTRAP_USERNAME}`,
-        JSON.stringify({ password: ADMIN_BOOTSTRAP_PASSWORD, profile })
-      );
-      localStorage.setItem(`vc:email:${ADMIN_BOOTSTRAP_EMAIL}`, ADMIN_BOOTSTRAP_USERNAME);
-    } else {
-      const existing = JSON.parse(existingRaw);
-      if (existing?.profile?.email) {
-        localStorage.setItem(`vc:email:${String(existing.profile.email).toLowerCase()}`, ADMIN_BOOTSTRAP_USERNAME);
-      } else {
-        localStorage.setItem(`vc:email:${ADMIN_BOOTSTRAP_EMAIL}`, ADMIN_BOOTSTRAP_USERNAME);
-      }
-    }
-  } catch {
-    // Ignore localStorage failures.
-  }
-
-  try {
-    const inDb = await findUserByEmailInDb(ADMIN_BOOTSTRAP_EMAIL);
-    if (!inDb) {
-      const pwHash = await hashPassword(ADMIN_BOOTSTRAP_PASSWORD);
-      await upsertProfile(profile, pwHash);
-    }
-  } catch {
-    // Ignore DB bootstrap failures; local auth remains available.
-  }
-}
-
 export function useAuth() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -175,7 +125,6 @@ export function useAuth() {
   useEffect(() => {
     (async () => {
       try {
-        await bootstrapAdminAccount();
         const raw = localStorage.getItem("vc:session");
         if (raw) {
           const local = JSON.parse(raw);
