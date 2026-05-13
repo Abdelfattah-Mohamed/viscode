@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import NavBar from "../components/ui/NavBar";
 import PageContainer from "../components/ui/PageContainer";
 import AccountMenuChip from "../components/ui/AccountMenuChip";
@@ -7,6 +7,7 @@ import Button from "../components/ui/Button";
 import { trackEvent } from "../utils/analytics";
 
 const STORAGE_KEY = "viscode-content-votes-v1";
+const VOTED_STORAGE_KEY_PREFIX = "viscode-content-votes-voted-v1";
 
 const SEED_ITEMS = [
   {
@@ -125,6 +126,33 @@ function saveItems(items) {
   }
 }
 
+function userScopedStorageKey(prefix, user, username) {
+  if (user?.isGuest) return null;
+  const identity = user?.email || user?.sub || username;
+  const normalized = String(identity || "").trim().toLowerCase();
+  return normalized ? `${prefix}:${encodeURIComponent(normalized)}` : null;
+}
+
+function readVotedIds(storageKey) {
+  if (!storageKey) return new Set();
+  try {
+    const raw = localStorage.getItem(storageKey);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? parsed.filter(Boolean).map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveVotedIds(storageKey, votedIds) {
+  if (!storageKey) return;
+  try {
+    localStorage.setItem(storageKey, JSON.stringify([...votedIds]));
+  } catch {
+    // Ignore localStorage errors.
+  }
+}
+
 function toId(text) {
   return String(text || "")
     .trim()
@@ -135,18 +163,26 @@ function toId(text) {
 }
 
 export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, user, mobile }) {
+  const votedStorageKey = useMemo(
+    () => userScopedStorageKey(VOTED_STORAGE_KEY_PREFIX, user, username),
+    [user?.email, user?.isGuest, user?.sub, username]
+  );
   const [items, setItems] = useState(() => readItems());
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("LeetCode Problem");
   const [description, setDescription] = useState("");
   const [search, setSearch] = useState("");
-  const [votedIds, setVotedIds] = useState(() => new Set());
-  const adminEmails = String(import.meta.env.VITE_ADMIN_EMAILS || "")
+  const [votedIds, setVotedIds] = useState(() => readVotedIds(votedStorageKey));
+  const adminEmails = String(import.meta.env.VITE_ADMIN_EMAILS || import.meta.env.VITE_ADMIN_EMAIL || "")
     .split(",")
     .map((x) => x.trim().toLowerCase())
     .filter(Boolean);
   const currentEmail = String(user?.email || "").trim().toLowerCase();
-  const isAdmin = adminEmails.includes(currentEmail) || String(username || "").trim().toLowerCase() === "admin";
+  const isAdmin = !!currentEmail && adminEmails.includes(currentEmail);
+
+  useEffect(() => {
+    setVotedIds(readVotedIds(votedStorageKey));
+  }, [votedStorageKey]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -177,7 +213,11 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
     ];
     setItems(next);
     saveItems(next);
-    setVotedIds((prev) => new Set(prev).add(id));
+    setVotedIds((prev) => {
+      const updated = new Set(prev).add(id);
+      saveVotedIds(votedStorageKey, updated);
+      return updated;
+    });
     trackEvent("content_request_created", { requestId: id, category });
     setTitle("");
     setDescription("");
@@ -188,7 +228,11 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
     const next = items.map((item) => (item.id === id ? { ...item, votes: item.votes + 1 } : item));
     setItems(next);
     saveItems(next);
-    setVotedIds((prev) => new Set(prev).add(id));
+    setVotedIds((prev) => {
+      const updated = new Set(prev).add(id);
+      saveVotedIds(votedStorageKey, updated);
+      return updated;
+    });
     trackEvent("content_request_voted", { requestId: id });
   };
 
