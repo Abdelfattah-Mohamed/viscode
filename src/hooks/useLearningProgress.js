@@ -1,15 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-const STORAGE_KEY = "viscode-learning-progress-v1";
+const STORAGE_PREFIX = "viscode-learning-progress-v1";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function readState() {
+function storageKeyFor(user) {
+  if (user?.isGuest) return `${STORAGE_PREFIX}:guest`;
+  const identity = user?.email || user?.username;
+  if (!identity) return `${STORAGE_PREFIX}:anonymous`;
+  return `${STORAGE_PREFIX}:user:${encodeURIComponent(String(identity).trim().toLowerCase())}`;
+}
+
+function readState(storageKey) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed : null;
@@ -18,9 +25,9 @@ function readState() {
   }
 }
 
-function writeState(state) {
+function writeState(storageKey, state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
     // Ignore storage failures.
   }
@@ -78,15 +85,36 @@ function upsertReviewItem(queue, problemId, dueAt, reason) {
 }
 
 export function useLearningProgress(user) {
-  const [state, setState] = useState(() => mergeDefaults(readState()));
+  const storageKey = useMemo(() => storageKeyFor(user), [user?.email, user?.username, user?.isGuest]);
+  const [store, setStore] = useState(() => ({
+    storageKey,
+    data: mergeDefaults(readState(storageKey)),
+  }));
   const isGuest = !user || user.isGuest;
+  const state = store.data;
 
   useEffect(() => {
-    writeState(state);
-  }, [state]);
+    setStore((prev) => {
+      if (prev.storageKey === storageKey) return prev;
+      return { storageKey, data: mergeDefaults(readState(storageKey)) };
+    });
+  }, [storageKey]);
+
+  const setProgressState = useCallback((updater) => {
+    setStore((prev) => {
+      const data = typeof updater === "function" ? updater(prev.data) : updater;
+      if (data === prev.data) return prev;
+      return { ...prev, data };
+    });
+  }, []);
+
+  useEffect(() => {
+    if (store.storageKey !== storageKey) return;
+    writeState(storageKey, state);
+  }, [state, storageKey, store.storageKey]);
 
   const updateOnboarding = useCallback((payload) => {
-    setState((prev) => ({
+    setProgressState((prev) => ({
       ...prev,
       onboarding: {
         ...prev.onboarding,
@@ -94,10 +122,10 @@ export function useLearningProgress(user) {
         completed: true,
       },
     }));
-  }, []);
+  }, [setProgressState]);
 
   const ensureReferralCode = useCallback((username) => {
-    setState((prev) => {
+    setProgressState((prev) => {
       if (prev.growth.referralCode) return prev;
       const clean = String(username || "user").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10) || "user";
       const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -109,11 +137,11 @@ export function useLearningProgress(user) {
         },
       };
     });
-  }, []);
+  }, [setProgressState]);
 
   const trackProblemStart = useCallback((problemId) => {
     if (!problemId) return;
-    setState((prev) => {
+    setProgressState((prev) => {
       const problem = prev.problems[problemId] || {};
       const problems = {
         ...prev.problems,
@@ -131,14 +159,14 @@ export function useLearningProgress(user) {
         lifecycle: { ...prev.lifecycle, lastVisitAt: new Date().toISOString() },
       };
     });
-  }, []);
+  }, [setProgressState]);
 
   const trackProblemCompletion = useCallback((problemId, payload = {}) => {
     if (!problemId) return;
     const { confidence = "medium", practiceMs = 0, mastered = false } = payload;
     const now = new Date();
     const today = todayKey();
-    setState((prev) => {
+    setProgressState((prev) => {
       const existing = prev.problems[problemId] || {};
       const completedOnce = !!existing.completedAt;
       const dayCount = (prev.stats.dailyCompletions[today] || 0) + 1;
@@ -185,11 +213,11 @@ export function useLearningProgress(user) {
         reviewQueue,
       };
     });
-  }, []);
+  }, [setProgressState]);
 
   const markMastered = useCallback((problemId) => {
     if (!problemId) return;
-    setState((prev) => {
+    setProgressState((prev) => {
       const existing = prev.problems[problemId] || {};
       if (existing.mastered) return prev;
       return {
@@ -206,18 +234,18 @@ export function useLearningProgress(user) {
         },
       };
     });
-  }, []);
+  }, [setProgressState]);
 
   const completeReview = useCallback((problemId) => {
     if (!problemId) return;
-    setState((prev) => ({
+    setProgressState((prev) => ({
       ...prev,
       reviewQueue: prev.reviewQueue.filter((item) => item.problemId !== problemId),
     }));
-  }, []);
+  }, [setProgressState]);
 
   const applyReferral = useCallback(() => {
-    setState((prev) => ({
+    setProgressState((prev) => ({
       ...prev,
       growth: {
         ...prev.growth,
@@ -225,7 +253,7 @@ export function useLearningProgress(user) {
         referralBonusMonths: prev.growth.referralBonusMonths + 1,
       },
     }));
-  }, []);
+  }, [setProgressState]);
 
   const dueReviewItems = useMemo(() => {
     const nowTs = Date.now();
