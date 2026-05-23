@@ -141,12 +141,6 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
   const [description, setDescription] = useState("");
   const [search, setSearch] = useState("");
   const [votedIds, setVotedIds] = useState(() => new Set());
-  const adminEmails = String(import.meta.env.VITE_ADMIN_EMAILS || "")
-    .split(",")
-    .map((x) => x.trim().toLowerCase())
-    .filter(Boolean);
-  const currentEmail = String(user?.email || "").trim().toLowerCase();
-  const isAdmin = adminEmails.includes(currentEmail) || String(username || "").trim().toLowerCase() === "admin";
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -190,21 +184,6 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
     saveItems(next);
     setVotedIds((prev) => new Set(prev).add(id));
     trackEvent("content_request_voted", { requestId: id });
-  };
-
-  const markAlreadyAdded = (id) => {
-    const next = items.map((item) => {
-      if (item.id !== id) return item;
-      const currentlyAdded = !!item.alreadyAdded;
-      return {
-        ...item,
-        alreadyAdded: !currentlyAdded,
-        addedAt: !currentlyAdded ? new Date().toISOString() : null,
-      };
-    });
-    setItems(next);
-    saveItems(next);
-    trackEvent("content_request_marked_added", { requestId: id });
   };
 
   return (
@@ -317,16 +296,6 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
                     <span style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 800, color: t.ink, padding: "5px 8px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: t.surfaceAlt }}>
                       {item.votes} votes
                     </span>
-                    {isAdmin && (
-                      <Button
-                        t={t}
-                        variant={item.alreadyAdded ? "ghost" : "secondary"}
-                        onClick={() => markAlreadyAdded(item.id)}
-                        style={{ borderRadius: 8, borderColor: item.alreadyAdded ? t.green : undefined, color: item.alreadyAdded ? t.green : undefined }}
-                      >
-                        {item.alreadyAdded ? "Added ✓" : "Already added"}
-                      </Button>
-                    )}
                     <Button
                       t={t}
                       variant={voted ? "ghost" : "secondary"}
