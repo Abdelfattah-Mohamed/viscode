@@ -141,12 +141,8 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
   const [description, setDescription] = useState("");
   const [search, setSearch] = useState("");
   const [votedIds, setVotedIds] = useState(() => new Set());
-  const adminEmails = String(import.meta.env.VITE_ADMIN_EMAILS || "")
-    .split(",")
-    .map((x) => x.trim().toLowerCase())
-    .filter(Boolean);
-  const currentEmail = String(user?.email || "").trim().toLowerCase();
-  const isAdmin = adminEmails.includes(currentEmail) || String(username || "").trim().toLowerCase() === "admin";
+  // Admin moderation needs a server-verified role before exposing privileged controls.
+  const isAdmin = false;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
