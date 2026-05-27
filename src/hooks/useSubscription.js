@@ -12,12 +12,6 @@ let plansCache = {
   at: 0,
   plans: null,
 };
-const ADMIN_EMAILS = typeof import.meta !== "undefined" && import.meta.env
-  ? String(import.meta.env.VITE_ADMIN_EMAILS || import.meta.env.VITE_ADMIN_EMAIL || "")
-      .split(",")
-      .map((x) => x.trim().toLowerCase())
-      .filter(Boolean)
-  : [];
 
 export function useSubscription(user) {
   const [subscription, setSubscription] = useState(null);
@@ -27,7 +21,6 @@ export function useSubscription(user) {
   const [error, setError] = useState(null);
 
   const email = user?.email?.toLowerCase?.() || null;
-  const isAdmin = !!email && ADMIN_EMAILS.includes(email);
   const isGuest = !user || user.isGuest;
 
   const refetch = useCallback(async () => {
@@ -110,10 +103,10 @@ export function useSubscription(user) {
       plansCache = { at: now, plans: plansData };
       const lifetimeFallback = {
         id: "lifetime",
-        name: "Lifetime (Admin)",
+        name: "Lifetime",
         amount_cents: 0,
         interval: "one_time",
-        features: ["Full problem library", "Custom inputs", "Personal notes", "Admin lifetime access"],
+        features: ["Full problem library", "Custom inputs", "Personal notes", "Lifetime access"],
       };
       const plansWithLifetime = mergedPlans.some((p) => p.id === "lifetime")
         ? mergedPlans
@@ -127,17 +120,7 @@ export function useSubscription(user) {
         return;
       }
 
-      if (isAdmin) {
-        const adminPlan = plansWithLifetime.find((x) => x.id === "lifetime") || lifetimeFallback;
-        setSubscription({
-          plan_id: "lifetime",
-          status: "active",
-          current_period_end: null,
-          cancel_at_period_end: false,
-          stripe_subscription_id: null,
-        });
-        setPlan(adminPlan);
-      } else if (!subRow) {
+      if (!subRow) {
         // Persist free row asynchronously; don't block initial billing render.
         sb.from(USER_SUBSCRIPTIONS_TABLE).upsert(
           {
@@ -168,7 +151,7 @@ export function useSubscription(user) {
       setLoading(false);
       if (dev) log(`refetch total: ${Math.round(performance.now() - t0)}ms`);
     }
-  }, [email, isGuest, isAdmin]);
+  }, [email, isGuest]);
 
   useEffect(() => {
     refetch();
