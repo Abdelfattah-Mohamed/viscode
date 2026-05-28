@@ -3,13 +3,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const STORAGE_KEY = "viscode-learning-progress-v1";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function storageKeyForUser(user) {
+  const email = user?.email?.trim?.().toLowerCase();
+  if (!email || user?.isGuest) return null;
+  return `${STORAGE_KEY}:${encodeURIComponent(email)}`;
+}
+
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function readState() {
+function readState(storageKey) {
+  if (!storageKey) return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed : null;
@@ -18,9 +25,10 @@ function readState() {
   }
 }
 
-function writeState(state) {
+function writeState(storageKey, state) {
+  if (!storageKey) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
     // Ignore storage failures.
   }
@@ -78,12 +86,20 @@ function upsertReviewItem(queue, problemId, dueAt, reason) {
 }
 
 export function useLearningProgress(user) {
-  const [state, setState] = useState(() => mergeDefaults(readState()));
+  const storageKey = useMemo(() => storageKeyForUser(user), [user?.email, user?.isGuest]);
+  const [loadedStorageKey, setLoadedStorageKey] = useState(storageKey);
+  const [state, setState] = useState(() => mergeDefaults(readState(storageKey)));
   const isGuest = !user || user.isGuest;
 
   useEffect(() => {
-    writeState(state);
-  }, [state]);
+    setState(mergeDefaults(readState(storageKey)));
+    setLoadedStorageKey(storageKey);
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (loadedStorageKey !== storageKey) return;
+    writeState(storageKey, state);
+  }, [state, storageKey, loadedStorageKey]);
 
   const updateOnboarding = useCallback((payload) => {
     setState((prev) => ({
