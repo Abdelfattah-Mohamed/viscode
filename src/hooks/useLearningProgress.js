@@ -1,15 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-const STORAGE_KEY = "viscode-learning-progress-v1";
+const STORAGE_KEY_PREFIX = "viscode-learning-progress-v1";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function readState() {
+function storageKeyForUser(user) {
+  if (!user || user.isGuest) return null;
+  const identity = user.email || user.username;
+  if (!identity) return null;
+  return `${STORAGE_KEY_PREFIX}:${encodeURIComponent(String(identity).trim().toLowerCase())}`;
+}
+
+function readState(storageKey) {
+  if (!storageKey) return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed : null;
@@ -18,9 +26,10 @@ function readState() {
   }
 }
 
-function writeState(state) {
+function writeState(storageKey, state) {
+  if (!storageKey) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
     // Ignore storage failures.
   }
@@ -78,12 +87,23 @@ function upsertReviewItem(queue, problemId, dueAt, reason) {
 }
 
 export function useLearningProgress(user) {
-  const [state, setState] = useState(() => mergeDefaults(readState()));
+  const storageKey = useMemo(() => storageKeyForUser(user), [user?.email, user?.username, user?.isGuest]);
+  const [state, setState] = useState(() => mergeDefaults(null));
+  const pendingLoadKey = useRef(null);
   const isGuest = !user || user.isGuest;
 
   useEffect(() => {
-    writeState(state);
-  }, [state]);
+    pendingLoadKey.current = storageKey;
+    setState(mergeDefaults(readState(storageKey)));
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (pendingLoadKey.current === storageKey) {
+      pendingLoadKey.current = null;
+      return;
+    }
+    writeState(storageKey, state);
+  }, [storageKey, state]);
 
   const updateOnboarding = useCallback((payload) => {
     setState((prev) => ({
