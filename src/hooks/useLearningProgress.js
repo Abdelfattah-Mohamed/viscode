@@ -1,15 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-const STORAGE_KEY = "viscode-learning-progress-v1";
+const STORAGE_PREFIX = "viscode-learning-progress-v1:";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function readState() {
+function storageKeyForUser(user) {
+  if (!user || user.isGuest) return null;
+  const identity = user.email || user.sub || user.username;
+  if (!identity) return null;
+  return `${STORAGE_PREFIX}${encodeURIComponent(String(identity).trim().toLowerCase())}`;
+}
+
+function readState(storageKey) {
+  if (!storageKey) return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed : null;
@@ -18,9 +26,10 @@ function readState() {
   }
 }
 
-function writeState(state) {
+function writeState(storageKey, state) {
+  if (!storageKey) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
     // Ignore storage failures.
   }
@@ -78,15 +87,54 @@ function upsertReviewItem(queue, problemId, dueAt, reason) {
 }
 
 export function useLearningProgress(user) {
-  const [state, setState] = useState(() => mergeDefaults(readState()));
+  const storageKey = useMemo(() => storageKeyForUser(user), [
+    user?.email,
+    user?.isGuest,
+    user?.sub,
+    user?.username,
+  ]);
+  const [stateRecord, setStateRecord] = useState(() => ({
+    storageKey,
+    state: mergeDefaults(readState(storageKey)),
+  }));
+  const state = stateRecord.state;
   const isGuest = !user || user.isGuest;
 
   useEffect(() => {
-    writeState(state);
-  }, [state]);
+    setStateRecord({
+      storageKey,
+      state: mergeDefaults(readState(storageKey)),
+    });
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (stateRecord.storageKey !== storageKey) return;
+    writeState(storageKey, stateRecord.state);
+  }, [stateRecord, storageKey]);
+
+  useEffect(() => {
+    if (!storageKey) return undefined;
+    const handleStorage = (event) => {
+      if (event.key !== storageKey) return;
+      setStateRecord({
+        storageKey,
+        state: mergeDefaults(readState(storageKey)),
+      });
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [storageKey]);
+
+  const setProgressState = useCallback((updater) => {
+    setStateRecord((prev) => ({
+      ...prev,
+      state: typeof updater === "function" ? updater(prev.state) : updater,
+    }));
+  }, []);
 
   const updateOnboarding = useCallback((payload) => {
-    setState((prev) => ({
+    if (!storageKey) return;
+    setProgressState((prev) => ({
       ...prev,
       onboarding: {
         ...prev.onboarding,
@@ -94,10 +142,11 @@ export function useLearningProgress(user) {
         completed: true,
       },
     }));
-  }, []);
+  }, [setProgressState, storageKey]);
 
   const ensureReferralCode = useCallback((username) => {
-    setState((prev) => {
+    if (!storageKey) return;
+    setProgressState((prev) => {
       if (prev.growth.referralCode) return prev;
       const clean = String(username || "user").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10) || "user";
       const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -109,11 +158,11 @@ export function useLearningProgress(user) {
         },
       };
     });
-  }, []);
+  }, [setProgressState, storageKey]);
 
   const trackProblemStart = useCallback((problemId) => {
-    if (!problemId) return;
-    setState((prev) => {
+    if (!storageKey || !problemId) return;
+    setProgressState((prev) => {
       const problem = prev.problems[problemId] || {};
       const problems = {
         ...prev.problems,
@@ -131,14 +180,14 @@ export function useLearningProgress(user) {
         lifecycle: { ...prev.lifecycle, lastVisitAt: new Date().toISOString() },
       };
     });
-  }, []);
+  }, [setProgressState, storageKey]);
 
   const trackProblemCompletion = useCallback((problemId, payload = {}) => {
-    if (!problemId) return;
+    if (!storageKey || !problemId) return;
     const { confidence = "medium", practiceMs = 0, mastered = false } = payload;
     const now = new Date();
     const today = todayKey();
-    setState((prev) => {
+    setProgressState((prev) => {
       const existing = prev.problems[problemId] || {};
       const completedOnce = !!existing.completedAt;
       const dayCount = (prev.stats.dailyCompletions[today] || 0) + 1;
@@ -185,11 +234,11 @@ export function useLearningProgress(user) {
         reviewQueue,
       };
     });
-  }, []);
+  }, [setProgressState, storageKey]);
 
   const markMastered = useCallback((problemId) => {
-    if (!problemId) return;
-    setState((prev) => {
+    if (!storageKey || !problemId) return;
+    setProgressState((prev) => {
       const existing = prev.problems[problemId] || {};
       if (existing.mastered) return prev;
       return {
@@ -206,18 +255,19 @@ export function useLearningProgress(user) {
         },
       };
     });
-  }, []);
+  }, [setProgressState, storageKey]);
 
   const completeReview = useCallback((problemId) => {
-    if (!problemId) return;
-    setState((prev) => ({
+    if (!storageKey || !problemId) return;
+    setProgressState((prev) => ({
       ...prev,
       reviewQueue: prev.reviewQueue.filter((item) => item.problemId !== problemId),
     }));
-  }, []);
+  }, [setProgressState, storageKey]);
 
   const applyReferral = useCallback(() => {
-    setState((prev) => ({
+    if (!storageKey) return;
+    setProgressState((prev) => ({
       ...prev,
       growth: {
         ...prev.growth,
@@ -225,7 +275,7 @@ export function useLearningProgress(user) {
         referralBonusMonths: prev.growth.referralBonusMonths + 1,
       },
     }));
-  }, []);
+  }, [setProgressState, storageKey]);
 
   const dueReviewItems = useMemo(() => {
     const nowTs = Date.now();
