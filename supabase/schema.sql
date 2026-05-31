@@ -177,14 +177,17 @@ alter table public.user_subscriptions enable row level security;
 drop policy if exists "subscriptions_select" on public.user_subscriptions;
 create policy "subscriptions_select" on public.user_subscriptions for select using (true);
 
+-- Subscription entitlements must be written only by service-role Edge Functions
+-- after Stripe confirms checkout/webhook events. The browser anon key can read
+-- plans/status for UI, but must not be able to grant itself Pro or lifetime.
 drop policy if exists "subscriptions_insert" on public.user_subscriptions;
-create policy "subscriptions_insert" on public.user_subscriptions for insert with check (true);
+create policy "subscriptions_insert" on public.user_subscriptions for insert with check (false);
 
 drop policy if exists "subscriptions_update" on public.user_subscriptions;
-create policy "subscriptions_update" on public.user_subscriptions for update using (true);
+create policy "subscriptions_update" on public.user_subscriptions for update using (false);
 
 drop policy if exists "subscriptions_delete" on public.user_subscriptions;
-create policy "subscriptions_delete" on public.user_subscriptions for delete using (true);
+create policy "subscriptions_delete" on public.user_subscriptions for delete using (false);
 
 -- Optional: invoice history (e.g. from Stripe webhooks)
 create table if not exists public.billing_invoices (
