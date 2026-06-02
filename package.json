@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "validate:problems": "node scripts/validate-problems.mjs",
+    "validate:security": "node scripts/validate-security.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
