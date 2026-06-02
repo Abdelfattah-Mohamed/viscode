@@ -12,12 +12,9 @@ let plansCache = {
   at: 0,
   plans: null,
 };
-const ADMIN_EMAILS = typeof import.meta !== "undefined" && import.meta.env
-  ? String(import.meta.env.VITE_ADMIN_EMAILS || import.meta.env.VITE_ADMIN_EMAIL || "")
-      .split(",")
-      .map((x) => x.trim().toLowerCase())
-      .filter(Boolean)
-  : [];
+
+const PAID_PLAN_IDS = new Set(["pro_weekly", "pro", "pro_yearly", "lifetime"]);
+const ACCESS_STATUSES = new Set(["active", "trialing"]);
 
 export function useSubscription(user) {
   const [subscription, setSubscription] = useState(null);
@@ -27,7 +24,6 @@ export function useSubscription(user) {
   const [error, setError] = useState(null);
 
   const email = user?.email?.toLowerCase?.() || null;
-  const isAdmin = !!email && ADMIN_EMAILS.includes(email);
   const isGuest = !user || user.isGuest;
 
   const refetch = useCallback(async () => {
@@ -108,17 +104,7 @@ export function useSubscription(user) {
 
       const mergedPlans = mergeBillingPlansFromDb(plansData);
       plansCache = { at: now, plans: plansData };
-      const lifetimeFallback = {
-        id: "lifetime",
-        name: "Lifetime (Admin)",
-        amount_cents: 0,
-        interval: "one_time",
-        features: ["Full problem library", "Custom inputs", "Personal notes", "Admin lifetime access"],
-      };
-      const plansWithLifetime = mergedPlans.some((p) => p.id === "lifetime")
-        ? mergedPlans
-        : [...mergedPlans, lifetimeFallback];
-      setPlans(plansWithLifetime);
+      setPlans(mergedPlans);
 
       if (subErr) {
         setError(subErr.message);
@@ -127,17 +113,7 @@ export function useSubscription(user) {
         return;
       }
 
-      if (isAdmin) {
-        const adminPlan = plansWithLifetime.find((x) => x.id === "lifetime") || lifetimeFallback;
-        setSubscription({
-          plan_id: "lifetime",
-          status: "active",
-          current_period_end: null,
-          cancel_at_period_end: false,
-          stripe_subscription_id: null,
-        });
-        setPlan(adminPlan);
-      } else if (!subRow) {
+      if (!subRow) {
         // Persist free row asynchronously; don't block initial billing render.
         sb.from(USER_SUBSCRIPTIONS_TABLE).upsert(
           {
@@ -148,7 +124,7 @@ export function useSubscription(user) {
           },
           { onConflict: "user_id" }
         ).then(() => {}).catch(() => {});
-        const p = plansWithLifetime.find((x) => x.id === "free");
+        const p = mergedPlans.find((x) => x.id === "free");
         setSubscription({
           plan_id: "free",
           status: "active",
@@ -158,7 +134,7 @@ export function useSubscription(user) {
         setPlan(p || null);
       } else {
         setSubscription(subRow);
-        const p = plansWithLifetime.find((x) => x.id === subRow.plan_id);
+        const p = mergedPlans.find((x) => x.id === subRow.plan_id);
         setPlan(p || null);
       }
     } catch (e) {
@@ -168,17 +144,15 @@ export function useSubscription(user) {
       setLoading(false);
       if (dev) log(`refetch total: ${Math.round(performance.now() - t0)}ms`);
     }
-  }, [email, isGuest, isAdmin]);
+  }, [email, isGuest]);
 
   useEffect(() => {
     refetch();
   }, [refetch]);
 
   const isPro =
-    plan?.id === "pro_weekly" ||
-    plan?.id === "pro" ||
-    plan?.id === "pro_yearly" ||
-    plan?.id === "lifetime";
+    PAID_PLAN_IDS.has(plan?.id) &&
+    ACCESS_STATUSES.has(subscription?.status);
   const planName = plan?.name || "Free";
   const nextBillingDate = subscription?.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString(undefined, {

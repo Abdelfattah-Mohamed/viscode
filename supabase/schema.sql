@@ -178,13 +178,13 @@ drop policy if exists "subscriptions_select" on public.user_subscriptions;
 create policy "subscriptions_select" on public.user_subscriptions for select using (true);
 
 drop policy if exists "subscriptions_insert" on public.user_subscriptions;
-create policy "subscriptions_insert" on public.user_subscriptions for insert with check (true);
+create policy "subscriptions_insert" on public.user_subscriptions for insert with check (false);
 
 drop policy if exists "subscriptions_update" on public.user_subscriptions;
-create policy "subscriptions_update" on public.user_subscriptions for update using (true);
+create policy "subscriptions_update" on public.user_subscriptions for update using (false);
 
 drop policy if exists "subscriptions_delete" on public.user_subscriptions;
-create policy "subscriptions_delete" on public.user_subscriptions for delete using (true);
+create policy "subscriptions_delete" on public.user_subscriptions for delete using (false);
 
 -- Optional: invoice history (e.g. from Stripe webhooks)
 create table if not exists public.billing_invoices (
@@ -208,4 +208,4 @@ drop policy if exists "invoices_select" on public.billing_invoices;
 create policy "invoices_select" on public.billing_invoices for select using (true);
 
 drop policy if exists "invoices_insert" on public.billing_invoices;
-create policy "invoices_insert" on public.billing_invoices for insert with check (true);
+create policy "invoices_insert" on public.billing_invoices for insert with check (false);
