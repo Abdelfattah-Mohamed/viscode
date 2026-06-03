@@ -50,7 +50,7 @@ Optional history of invoices (e.g. from Stripe webhooks).
 
 1. Run the billing section of `schema.sql` in the Supabase SQL Editor (the part from `-- Billing schema` to the end), or run the full `schema.sql` if you haven’t yet.
 2. Ensure every user has a row in `profiles` (your signup flow should create one). The billing tables use `profiles.id` (UUID), not email.
-3. On signup, optionally insert a row into `user_subscriptions` with `plan_id = 'free'` and `user_id = profiles.id`.
+3. Do not insert subscription rows from browser code. Missing rows are treated as Free in the UI; paid rows should be created or updated only by service-role Edge Functions after Stripe confirms payment.
 
 ### Supabase CLI commands
 
@@ -65,7 +65,7 @@ Use `npx supabase ...` for CLI operations in this project, for example:
 
 - **Check plan in app:** Query `user_subscriptions` (and join `billing_plans`) by `user_id` (from the current profile) to show plan name, features, and status.
 - **Stripe:** Store `stripe_customer_id` and `stripe_subscription_id` when you create a Stripe customer/subscription. Use webhooks to update `user_subscriptions` (status, period end) and to insert rows into `billing_invoices`.
-- **Gating features:** If `plan_id` is `free`, restrict access; allow full access for `pro_weekly`, `pro`, `pro_yearly`, or `lifetime`.
+- **Gating features:** Allow full access only when `status` is `active` or `trialing` and the plan is a paid tier (`pro_weekly`, `pro`, `pro_yearly`, or `lifetime`). Treat missing, `free`, `canceled`, `past_due`, and `incomplete` rows as Free.
 
 ## Operational notes
 
@@ -75,4 +75,4 @@ Use `npx supabase ...` for CLI operations in this project, for example:
 
 ## RLS
 
-Policies are permissive (`using (true)`) to match the rest of the project. For production, restrict `user_subscriptions` and `billing_invoices` so users can only read/update their own row (e.g. `user_id = auth.uid()` or your app’s user id).
+Browser clients can read billing status for display, but anonymous insert/update/delete policies are denied for `user_subscriptions` and `billing_invoices`. Stripe webhooks and billing Edge Functions use the Supabase service role, which bypasses RLS for legitimate entitlement and invoice writes.
