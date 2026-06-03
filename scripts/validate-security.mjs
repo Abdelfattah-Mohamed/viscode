@@ -24,6 +24,11 @@ assert(
 );
 
 assert(
+  /const loginAsGuest = \(\) => \{[\s\S]*localStorage\.setItem\("vc:session",\s*JSON\.stringify\(guestUser\)\)/.test(useAuth),
+  "guest login must persist vc:session so navigation/remounts do not drop users back to auth"
+);
+
+assert(
   !/VITE_ADMIN_EMAIL/.test(useSubscription),
   "useSubscription must not grant paid entitlements from public Vite admin email env values"
 );
