@@ -245,7 +245,9 @@ export function useAuth() {
   };
 
   const loginAsGuest = () => {
-    setUser({ username: "Guest", isGuest: true });
+    const guestUser = { username: "Guest", isGuest: true };
+    localStorage.setItem("vc:session", JSON.stringify(guestUser));
+    setUser(guestUser);
     trackEvent("login_guest");
   };
 
