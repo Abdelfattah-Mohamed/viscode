@@ -3,6 +3,14 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  envPrefix: [
+    "VITE_SUPABASE_",
+    "VITE_EMAILJS_",
+    "VITE_GOOGLE_CLIENT_ID",
+    "VITE_ANALYTICS_ENDPOINT",
+    "VITE_FEEDBACK_ENDPOINT",
+    "VITE_ADMIN_EMAILS",
+  ],
   resolve: {
     alias: { "@": "/src" },
   },
