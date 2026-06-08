@@ -75,4 +75,4 @@ Use `npx supabase ...` for CLI operations in this project, for example:
 
 ## RLS
 
-Policies are permissive (`using (true)`) to match the rest of the project. For production, restrict `user_subscriptions` and `billing_invoices` so users can only read/update their own row (e.g. `user_id = auth.uid()` or your app’s user id).
+`billing_plans`, `user_subscriptions`, and `billing_invoices` remain readable by the public client so the app can render plan state for its client-side profile model. Do not add anon insert/update/delete policies to `user_subscriptions` or `billing_invoices`; Stripe Edge Functions use the service role key for entitlement and invoice writes.

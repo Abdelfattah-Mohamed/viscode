@@ -178,13 +178,14 @@ drop policy if exists "subscriptions_select" on public.user_subscriptions;
 create policy "subscriptions_select" on public.user_subscriptions for select using (true);
 
 drop policy if exists "subscriptions_insert" on public.user_subscriptions;
-create policy "subscriptions_insert" on public.user_subscriptions for insert with check (true);
 
 drop policy if exists "subscriptions_update" on public.user_subscriptions;
-create policy "subscriptions_update" on public.user_subscriptions for update using (true);
 
 drop policy if exists "subscriptions_delete" on public.user_subscriptions;
-create policy "subscriptions_delete" on public.user_subscriptions for delete using (true);
+
+-- Entitlement rows are written only by Stripe Edge Functions using the service
+-- role key. Do not grant anon insert/update/delete policies here; otherwise any
+-- browser with the public anon key can forge paid access.
 
 -- Optional: invoice history (e.g. from Stripe webhooks)
 create table if not exists public.billing_invoices (
@@ -208,4 +209,5 @@ drop policy if exists "invoices_select" on public.billing_invoices;
 create policy "invoices_select" on public.billing_invoices for select using (true);
 
 drop policy if exists "invoices_insert" on public.billing_invoices;
-create policy "invoices_insert" on public.billing_invoices for insert with check (true);
+
+-- Invoice history is also webhook-owned. Service role bypasses RLS for inserts.
