@@ -13,7 +13,8 @@ import {
   DuplicateViz, AnagramViz, StockViz, BinarySearchViz, ClimbingViz, SubtreeViz,
   PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
   MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
-  ThreeSumViz, ContainerViz, MergeListsViz, MergeKViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, MedianFinderViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz,   TrappingRainWaterViz, PalindromicSubstringsViz, CharReplacementViz, EncodeDecodeViz, LCAOfBSTViz,
+  ThreeSumViz, ContainerViz, MergeListsViz, MergeKViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, MedianFinderViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz,   TrappingRainWaterViz, PalindromicSubstringsViz, CharReplacementViz,   EncodeDecodeViz, LCAOfBSTViz,
+  SortingViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -527,6 +528,7 @@ export default function AppPage({
               {problem.visualizer === "cycle"      && <CycleViz         head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "grid"       && <GridViz         stepState={currentStep?.state ?? {}} input={input} problemId={selectedProblem} t={t} />}
               {problem.visualizer === "graph"       && <GraphViz        stepState={currentStep?.state ?? {}} problemId={selectedProblem} t={t} />}
+              {problem.visualizer === "sorting" && <SortingViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "rpn"         && <RpnViz          stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "decodeways"    && <DecodeWaysViz         s={input.s ?? ""}  stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "genparentheses" && <GenerateParenthesesViz stepState={currentStep?.state ?? {}} t={t} />}
@@ -759,7 +761,7 @@ export default function AppPage({
             extra={
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {canEditInputs ? (
-                  <InputEditor input={input} fields={problem.inputFields} onChange={setInput} onReset={player.reset} t={t} problem={problem} />
+                  <InputEditor input={input} fields={problem.inputFields} onChange={setInput} onReset={player.reset} t={t} problem={problem} problemId={selectedProblem} />
                 ) : (
                   <button
                     type="button"
@@ -850,6 +852,7 @@ export default function AppPage({
             {problem.visualizer === "cycle"      && <CycleViz         head={input.head || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "grid"       && <GridViz         stepState={currentStep?.state ?? {}} input={input} problemId={selectedProblem} t={t} />}
             {problem.visualizer === "graph"       && <GraphViz        stepState={currentStep?.state ?? {}} problemId={selectedProblem} t={t} />}
+            {problem.visualizer === "sorting" && <SortingViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "rpn"         && <RpnViz          stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "decodeways"    && <DecodeWaysViz         s={input.s ?? ""}  stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "genparentheses" && <GenerateParenthesesViz stepState={currentStep?.state ?? {}} t={t} />}

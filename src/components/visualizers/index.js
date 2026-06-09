@@ -50,3 +50,4 @@ export { default as PalindromicSubstringsViz } from "./PalindromicSubstringsViz"
 export { default as CharReplacementViz } from "./CharReplacementViz";
 export { default as EncodeDecodeViz } from "./EncodeDecodeViz";
 export { default as LCAOfBSTViz } from "./LCAOfBSTViz";
+export { default as SortingViz } from "./SortingViz";

@@ -435,6 +435,7 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
                   height: cellSize,
                   background: bg,
                   border: `2px solid ${isCurrent ? currentBorder : activeMarker ? t.green : markerCell ? t.green + "aa" : isWordVisited ? t.green + "88" : isSpiralVisited ? t.green + "88" : isRotateHighlight ? t.yellow : isSetMatrixZeroes && val === 0 ? t.red + "88" : isSetMatrixZeroes && (isMarkerRow || isMarkerCol) ? t.border : "transparent"}`,
+                  borderWidth: "2px",
                   borderRadius: isPolishedMatrix ? 10 : 4,
                   display: "flex",
                   alignItems: "center",

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import NavBar from "../components/ui/NavBar";
 import { Card } from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -11,40 +10,11 @@ import { PROB_LIST, DIFF_COLOR, CAT_ICON } from "../data/problems";
 
 const FREE_CATEGORY = "Famous Algorithms";
 
-const PRO_BENEFITS = [
-  { icon: "01", title: "Complete topic coverage", desc: "Practice across arrays, trees, graphs, dynamic programming, sliding window, stacks, linked lists, and more." },
-  { icon: "02", title: "Custom input practice", desc: "Adjust arrays, matrices, trees, strings, and weighted graphs to test edge cases and deepen understanding." },
-  { icon: "03", title: "Personal study notes", desc: "Capture patterns, mistakes, hints, and interview reminders directly beside each problem." },
-  { icon: "04", title: "Structured review workflow", desc: "Use favorites, flags, recent problems, and synced code lines to keep practice organized." },
-];
-
-const WORKFLOW_POINTS = [
-  "Visualize each algorithm step by step",
-  "Follow highlighted code as state changes",
-  "Review explanations in plain language",
-  "Return to recent and flagged problems",
-];
-
-const PREMIUM_TRACKS = [
-  { id: "track-2w", title: "2-week interview reset", detail: "Daily mixed set across arrays, trees, and graphs." },
-  { id: "track-4w", title: "4-week deep prep", detail: "Structured progression with spaced repetition checkpoints." },
-  { id: "track-mock", title: "Timed mock rounds", detail: "30-minute problem sessions with score rubric." },
-];
-
 export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, user, mobile, recent, onSelectProblem, isPro, learning }) {
-  const freeCount = PROB_LIST.filter((p) => p.category === FREE_CATEGORY).length;
-  const premiumCount = PROB_LIST.length - freeCount;
   const categoryCount = new Set(PROB_LIST.map((p) => p.category)).size;
   const isLocked = (p) => p && !isPro && p.category !== FREE_CATEGORY;
-  const [onboardingOpen, setOnboardingOpen] = useState(() => !learning?.onboarding?.completed);
-  const [skillLevel, setSkillLevel] = useState(learning?.onboarding?.skillLevel || "beginner");
-  const [weeklyGoal, setWeeklyGoal] = useState(learning?.onboarding?.weeklyGoal || 5);
   const dueReviews = learning?.dueReviewItems || [];
-  const daysSinceVisit = (() => {
-    const ts = learning?.lifecycle?.lastVisitAt ? new Date(learning.lifecycle.lastVisitAt).getTime() : 0;
-    if (!ts) return 0;
-    return Math.floor((Date.now() - ts) / (24 * 60 * 60 * 1000));
-  })();
+
   const handleCardKeyDown = (e, action) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -59,15 +29,10 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
     trackEvent("problem_opened", { problemId, source });
     onSelectProblem(problemId);
   };
-  const completeOnboarding = () => {
-    learning?.updateOnboarding({ skillLevel, weeklyGoal });
-    trackEvent("onboarding_completed", { skillLevel, weeklyGoal });
-    setOnboardingOpen(false);
-  };
+
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: t.bg, color: t.ink, minHeight: "100vh" }}>
       <style>{`
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: ${t.border}; border-radius: 3px; }
@@ -89,123 +54,33 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
       />
 
       {/* Hero */}
-      <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="36px 16px 28px" paddingDesktop="68px 24px 52px">
-        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1.2fr 0.8fr", gap: mobile ? 28 : 42, alignItems: "center" }}>
-          <div style={{ textAlign: mobile ? "center" : "left" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 999, background: t.surface, border: `1.25px solid ${t.border}`, color: t.inkMuted, fontSize: "0.84rem", fontWeight: 800 }}>
-              Interactive algorithm learning platform
-            </span>
-            <h1 style={{ fontFamily: "'Caveat',cursive", fontSize: "clamp(2.4rem,5.2vw,4rem)", fontWeight: 700, color: t.ink, margin: "16px 0 14px", lineHeight: 1.05 }}>
-              Understand algorithms by watching the code execute.
-            </h1>
-            <p style={{ fontSize: "1.05rem", color: t.inkMuted, lineHeight: 1.75, margin: "0 0 24px", maxWidth: 620, marginLeft: mobile ? "auto" : 0, marginRight: mobile ? "auto" : 0 }}>
-              VisCode combines line-by-line code, animated data structures, and guided explanations so learners can move from memorizing solutions to understanding patterns.
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8, margin: "0 0 24px", maxWidth: 640 }}>
-              {WORKFLOW_POINTS.map((point) => (
-                <div key={point} style={{ display: "flex", alignItems: "center", gap: 8, color: t.inkMuted, fontSize: "0.88rem" }}>
-                  <span style={{ color: t.green, fontWeight: 900 }}>✓</span>
-                  <span>{point}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginBottom: 22, display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 11px", borderRadius: 10, border: `1.25px solid ${t.border}`, background: t.surface }}>
-              <span style={{ fontSize: "0.83rem", color: t.inkMuted }}>
-                Soft beta is open. Early users help shape roadmap and get fast support turnarounds.
-              </span>
-            </div>
-            <div style={{ display: "flex", gap: 12, justifyContent: mobile ? "center" : "flex-start", flexWrap: "wrap" }}>
-              <Button t={t} variant="primary" size="lg" onClick={() => goTo("problems", "hero_primary")} style={{ borderWidth: 2 }}>
-                Explore problems →
+      <PageContainer mobile={mobile} maxWidth={760} paddingMobile="40px 16px 32px" paddingDesktop="72px 24px 48px">
+        <div style={{ textAlign: "center" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 999, background: t.surface, border: `1.25px solid ${t.border}`, color: t.inkMuted, fontSize: "0.84rem", fontWeight: 800 }}>
+            Interactive algorithm learning platform
+          </span>
+          <h1 style={{ fontFamily: "'Caveat',cursive", fontSize: "clamp(2.4rem,5.2vw,3.8rem)", fontWeight: 700, color: t.ink, margin: "16px 0 14px", lineHeight: 1.05 }}>
+            Understand algorithms by watching the code execute.
+          </h1>
+          <p style={{ fontSize: "1.05rem", color: t.inkMuted, lineHeight: 1.7, margin: "0 auto 26px", maxWidth: 580 }}>
+            VisCode combines line-by-line code, animated data structures, and clear explanations — so you move from memorizing solutions to understanding patterns.
+          </p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <Button t={t} variant="primary" size="lg" onClick={() => goTo("problems", "hero_primary")} style={{ borderWidth: 2 }}>
+              Explore problems →
+            </Button>
+            {!isPro ? (
+              <Button t={t} variant="secondary" size="lg" onClick={() => goTo("billing", "hero_secondary")} style={{ borderWidth: 2 }}>
+                View Pro options
               </Button>
-              {!isPro ? (
-                <Button t={t} variant="secondary" size="lg" onClick={() => goTo("billing", "hero_secondary")} style={{ borderWidth: 2 }}>
-                  View Pro options
-                </Button>
-              ) : (
-                <Button t={t} variant="ghost" size="lg" onClick={() => goTo("problems", "hero_pro_browse")} style={{ borderWidth: 2, boxShadow: t.shadowSm }}>
-                  Browse full library
-                </Button>
-              )}
-            </div>
+            ) : (
+              <Button t={t} variant="ghost" size="lg" onClick={() => goTo("problems", "hero_pro_browse")} style={{ borderWidth: 2, boxShadow: t.shadowSm }}>
+                Browse full library
+              </Button>
+            )}
           </div>
-
-          <Card t={t} density="compact" style={{ padding: mobile ? 16 : 18, background: `linear-gradient(135deg, ${t.surface} 0%, ${t.surfaceAlt} 100%)`, alignSelf: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: "#1c1c2e", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: t.shadowSm, flexShrink: 0 }}>
-                <svg width={26} height={26} viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                  <line x1="20" y1="7" x2="20" y2="33" stroke="white" strokeWidth="4.5" strokeLinecap="round" />
-                  <line x1="31.26" y1="13.5" x2="8.74" y2="26.5" stroke="white" strokeWidth="4.5" strokeLinecap="round" />
-                  <line x1="8.74" y1="13.5" x2="31.26" y2="26.5" stroke="white" strokeWidth="4.5" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div>
-                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.15rem", fontWeight: 700, color: t.ink, lineHeight: 1 }}>
-                  Learning dashboard
-                </div>
-                <div style={{ fontSize: "0.78rem", color: t.inkMuted, marginTop: 3 }}>
-                  Code, visuals, and practice tools
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "grid", gap: 8 }}>
-              {[
-                { label: "Supported languages", value: "4" },
-                { label: "Free algorithm set", value: freeCount },
-                { label: "Practice library", value: `${PROB_LIST.length}+` },
-              ].map((item) => (
-                <div key={item.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "9px 10px", borderRadius: 10, background: t.bg, border: `1.25px solid ${t.border}` }}>
-                  <span style={{ color: t.inkMuted, fontSize: "0.8rem" }}>{item.label}</span>
-                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 900, color: t.ink, fontSize: "0.86rem" }}>{item.value}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1.25px solid ${t.border}`, color: t.inkMuted, fontSize: "0.8rem", lineHeight: 1.5 }}>
-              Built for guided repetition: pick a problem, run the visualizer, review the code, then revisit it later.
-            </div>
-          </Card>
         </div>
       </PageContainer>
-
-      {daysSinceVisit >= 3 && (
-        <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="0 12px 0" paddingDesktop="0 24px 0">
-          <Card t={t} density="compact" style={{ marginBottom: 14, padding: "12px 14px", background: t.yellow + "10", border: `1.5px solid ${t.yellow}66` }}>
-            <div style={{ fontSize: "0.86rem", color: t.ink }}>
-              Welcome back. You have been away for {daysSinceVisit} days — run one guided problem today to rebuild momentum.
-            </div>
-          </Card>
-        </PageContainer>
-      )}
-
-      {onboardingOpen && !user?.isGuest && (
-        <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="0 12px 0" paddingDesktop="0 24px 0">
-          <Card t={t} style={{ marginBottom: 18, padding: mobile ? 16 : 18 }}>
-            <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1.2fr 1fr auto", gap: 12, alignItems: "end" }}>
-              <div>
-                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.3rem", fontWeight: 700, color: t.ink }}>
-                  Quick onboarding
-                </div>
-                <div style={{ fontSize: "0.85rem", color: t.inkMuted, marginTop: 3 }}>
-                  Set your level and weekly target to personalize your study loop.
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <select value={skillLevel} onChange={(e) => setSkillLevel(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: t.surface, color: t.ink }}>
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                </select>
-                <select value={weeklyGoal} onChange={(e) => setWeeklyGoal(Number(e.target.value) || 5)} style={{ padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: t.surface, color: t.ink }}>
-                  {[3, 5, 7, 10, 14].map((n) => <option key={n} value={n}>{n}/week goal</option>)}
-                </select>
-              </div>
-              <Button t={t} variant="primary" onClick={completeOnboarding} style={{ borderRadius: 8 }}>
-                Save plan
-              </Button>
-            </div>
-          </Card>
-        </PageContainer>
-      )}
 
       {/* Stats bar */}
       <div style={{ display: "flex", justifyContent: "center", borderTop: `1.5px solid ${t.border}`, borderBottom: `1.5px solid ${t.border}`, background: t.surface, flexWrap: "wrap" }}>
@@ -216,26 +91,6 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
           </div>
         ))}
       </div>
-
-      {!isPro && (
-        <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="32px 12px 0" paddingDesktop="44px 24px 0">
-          <Card t={t} style={{ padding: mobile ? 18 : 22, background: t.surface }}>
-            <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr auto", gap: 18, alignItems: "center" }}>
-              <div>
-                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.55rem", fontWeight: 700, color: t.ink, marginBottom: 6 }}>
-                  Start with the free algorithm set, then unlock the full workflow.
-                </div>
-                <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.92rem", lineHeight: 1.6 }}>
-                  Famous Algorithms are available for everyone. Pro adds the full topic library, custom inputs, personal notes, and better tools for repeated interview practice.
-                </p>
-              </div>
-              <Button t={t} variant="primary" onClick={() => goTo("billing", "free_vs_pro_card")} style={{ borderRadius: 10, whiteSpace: "nowrap" }}>
-                Compare Pro plans →
-              </Button>
-            </div>
-          </Card>
-        </PageContainer>
-      )}
 
       {/* Continue where you left off */}
       {recent?.length > 0 && (
@@ -279,6 +134,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
         </PageContainer>
       )}
 
+      {/* Review queue */}
       {dueReviews.length > 0 && (
         <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="20px 12px 0" paddingDesktop="24px 24px 0">
           <Card t={t} density="compact" style={{ padding: 16 }}>
@@ -304,7 +160,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
         <SectionHeader
           t={t}
           title="Start with Famous Algorithms"
-          subtitle="Explore core graph, dynamic programming, and data structure algorithms before moving into the full practice library."
+          subtitle="Explore core graph, dynamic programming, and data structure algorithms — free for everyone."
           compact
           style={{ marginBottom: 20 }}
           action={!isPro ? (
@@ -339,97 +195,11 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
         </Button>
       </PageContainer>
 
-      {/* Pro value */}
-      {!isPro && (
-        <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="44px 12px 0" paddingDesktop="56px 24px 0">
-          <SectionHeader
-            t={t}
-            title="What Pro adds"
-            subtitle="Pro expands VisCode into a complete interview-preparation workspace."
-            compact
-            style={{ marginBottom: 18 }}
-            action={(
-              <Button t={t} variant="primary" size="sm" onClick={() => goTo("billing", "pro_benefits_header")}>
-                View plans
-              </Button>
-            )}
-          />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
-            {PRO_BENEFITS.map((item) => (
-              <Card key={item.title} t={t} density="compact" style={{ padding: 18, boxShadow: t.shadowSm, background: t.surface }}>
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 10, background: t.blue + "18", color: t.blue, border: `1.25px solid ${t.blue}66`, fontSize: "0.75rem", fontWeight: 900, marginBottom: 10 }}>{item.icon}</div>
-                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.12rem", fontWeight: 700, color: t.ink, marginBottom: 6 }}>
-                  {item.title}
-                </div>
-                <p style={{ margin: 0, fontSize: "0.86rem", color: t.inkMuted, lineHeight: 1.6 }}>
-                  {item.desc}
-                </p>
-              </Card>
-            ))}
-          </div>
-        </PageContainer>
-      )}
-
-      <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="30px 12px 0" paddingDesktop="34px 24px 0">
-        <SectionHeader
-          t={t}
-          title="Interview tracks"
-          subtitle="Outcome-focused premium paths, not just a bigger list."
-          compact
-          style={{ marginBottom: 14 }}
-        />
-        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 12 }}>
-          {PREMIUM_TRACKS.map((track) => (
-            <Card key={track.id} t={t} density="compact" style={{ padding: 14, opacity: isPro ? 1 : 0.9 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.05rem", fontWeight: 700, color: t.ink }}>{track.title}</div>
-                {!isPro && <span style={{ fontSize: "0.72rem", color: t.red, border: `1px solid ${t.red}66`, borderRadius: 999, padding: "2px 6px", background: t.red + "14" }}>Pro</span>}
-              </div>
-              <div style={{ marginTop: 6, fontSize: "0.82rem", color: t.inkMuted, lineHeight: 1.5 }}>{track.detail}</div>
-              <Button
-                t={t}
-                variant={isPro ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => (isPro ? goTo("problems", `track_${track.id}`) : goTo("billing", `track_${track.id}`))}
-                style={{ marginTop: 10, borderRadius: 8 }}
-              >
-                {isPro ? "Start track" : "Unlock track"}
-              </Button>
-            </Card>
-          ))}
-        </div>
-      </PageContainer>
-
-      {/* How it works */}
-      <PageContainer mobile={mobile} paddingMobile="48px 12px" paddingDesktop="56px 24px">
-        <SectionHeader t={t} title="A Clear Learning Loop" compact style={{ marginBottom: 24, justifyContent: "center", textAlign: "center" }} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
-          {[
-            { n: "01", icon: "📋", title: "Select a topic",  desc: "Choose a free algorithm or continue into the complete practice library." },
-            { n: "02", icon: "▶",  title: "Run the walkthrough", desc: "Watch the algorithm advance step by step while the matching code line stays highlighted." },
-            { n: "03", icon: "💡", title: "Connect the idea", desc: "Use concise explanations to understand the decision behind each state change." },
-            { n: "04", icon: "🔁", title: "Review and repeat", desc: "Use editable inputs, notes, favorites, and flags to reinforce patterns over time." },
-          ].map((item, i) => (
-            <Card key={i} t={t} density="compact" style={{ padding: 20, boxShadow: t.shadowSm }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68rem", fontWeight: 700, color: t.blue, background: t.blue + "22", padding: "2px 8px", borderRadius: 5 }}>{item.n}</span>
-                <span style={{ fontSize: "1.2rem" }}>{item.icon}</span>
-              </div>
-              <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.1rem", fontWeight: 700, color: t.ink, marginBottom: 6 }}>{item.title}</div>
-              <div style={{ fontSize: "0.87rem", color: t.inkMuted, lineHeight: 1.6 }}>{item.desc}</div>
-            </Card>
-          ))}
-        </div>
-      </PageContainer>
-
       {/* CTA footer */}
-      <div style={{ textAlign: "center", padding: "48px 24px 56px", borderTop: `1.5px solid ${t.border}`, background: t.surface }}>
+      <div style={{ textAlign: "center", padding: "48px 24px 56px", marginTop: 48, borderTop: `1.5px solid ${t.border}`, background: t.surface }}>
         <h2 style={{ fontFamily: "'Caveat',cursive", fontSize: "2rem", fontWeight: 700, color: t.ink, marginBottom: 12 }}>
-          {isPro ? "Continue your practice session" : "Build a stronger interview routine"}
+          {isPro ? "Continue your practice session" : "Ready to start practicing?"}
         </h2>
-        <p style={{ color: t.inkMuted, marginBottom: 24, fontSize: "0.95rem" }}>
-          {isPro ? "Use the full workspace to keep building interview confidence." : "Start with free algorithms, then upgrade when you want the full library and advanced practice tools."}
-        </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Button t={t} variant="primary" size="lg" onClick={() => goTo("problems", "footer_primary")}
             style={{ padding: "14px 44px", borderWidth: 2 }}>

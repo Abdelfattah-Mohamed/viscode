@@ -2,6 +2,7 @@
 // Each step: { stepType, description, state }
 
 import { leetcodeToComplete } from "../utils/treeFormat.js";
+import { SORTING_STEP_GENERATORS } from "./sortingStepGenerators.js";
 
 export function generateTwoSumSteps({ nums, target }) {
   const steps = [], map = {};
@@ -4546,4 +4547,5 @@ export const STEP_GENERATORS = {
   "fenwick-tree":            generateFenwickTreeSteps,
   "segment-tree":            generateSegmentTreeSteps,
   "knapsack-01": generateKnapsackSteps,
+  ...SORTING_STEP_GENERATORS,
 };

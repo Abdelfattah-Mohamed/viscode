@@ -3,7 +3,6 @@ import { leetcodeToComplete, completeToLeetcode } from "../../utils/treeFormat";
 
 const TREE_FIELDS = new Set(["root", "subRoot", "p", "q"]);
 const INT_FIELDS = new Set(["target", "n", "m", "pos", "rows", "cols", "k", "amount"]);
-const STRING_FIELDS = new Set(["s", "t", "dict", "words", "word", "board", "preorder", "inorder"]);
 
 function stripBrackets(s) {
   let out = String(s ?? "").trim();
@@ -308,7 +307,7 @@ function buildLcsMatrixPreview(text1, text2) {
   return { t1, t2, dp };
 }
 
-export default function InputEditor({ input, fields, onChange, onReset, t, problem }) {
+export default function InputEditor({ input, fields, onChange, onReset, t, problem, problemId = "" }) {
   const visualizer = problem?.visualizer || "";
   const isRealtimePreview = visualizer === "container" || visualizer === "trapping";
   const weightedGraphInput = useMemo(() => isWeightedGraphProblem(problem, visualizer), [problem, visualizer]);
@@ -336,7 +335,7 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
   useEffect(() => {
     setDraft(buildInitialDraft(input, fields, visualizer, weightedGraphInput));
     setError(null);
-  }, [fields.join(","), problem?.title, problem?.description, weightedGraphInput]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fields.join(","), problem?.title, problem?.description, weightedGraphInput, problemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const schema = useMemo(
     () =>
@@ -414,8 +413,8 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
         next[field] = leetcodeToComplete(trimTrailingNulls(parseTreeTokens(sourceDraft[field])));
       } else if (kind === "matrix") {
         const gridModel = sourceDraft[field];
-        const rows = Math.max(1, Number(gridModel?.rows) || 1);
-        const cols = Math.max(1, Number(gridModel?.cols) || 1);
+        let rows = Math.max(1, Number(gridModel?.rows) || 1);
+        let cols = Math.max(1, Number(gridModel?.cols) || 1);
         const cells = Array.isArray(gridModel?.cells) ? gridModel.cells : [];
         const flat = [];
         for (let r = 0; r < rows; r += 1) {
@@ -423,8 +422,11 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
             if (field === "board") {
               flat.push(String(cells[r]?.[c] ?? "").trim().slice(0, 1).toUpperCase() || "A");
             } else {
-              const val = Number(cells[r]?.[c] ?? 0);
-              flat.push(Number.isNaN(val) ? 0 : val);
+              let val = Number(cells[r]?.[c] ?? 0);
+              if (Number.isNaN(val)) {
+                val = 0;
+              }
+              flat.push(val);
             }
           }
         }
@@ -498,7 +500,8 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
     setDraft((prev) => {
       const current = prev[field];
       const nextCells = current.cells.map((row) => [...row]);
-      nextCells[r][c] = value;
+      const nextVal = String(value);
+      nextCells[r][c] = nextVal;
       return { ...prev, [field]: { ...current, cells: nextCells } };
     });
   };
@@ -726,27 +729,27 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
                   {kind === "matrix" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                        <label style={{ fontFamily: sansFont, fontSize: "0.8rem", color: t.inkMuted, fontWeight: 700 }}>
-                          Rows{" "}
-                          <input
-                            type="number"
-                            min={1}
-                            value={draft[field]?.rows ?? 1}
-                            onChange={(e) => updateGridMeta(field, "rows", e.target.value)}
-                            style={{ width: 78, marginLeft: 4, padding: "7px 8px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: paper, color: ink, fontFamily: monoFont }}
-                          />
-                        </label>
-                        <label style={{ fontFamily: sansFont, fontSize: "0.8rem", color: t.inkMuted, fontWeight: 700 }}>
-                          Cols{" "}
-                          <input
-                            type="number"
-                            min={1}
-                            value={draft[field]?.cols ?? 1}
-                            onChange={(e) => updateGridMeta(field, "cols", e.target.value)}
-                            style={{ width: 78, marginLeft: 4, padding: "7px 8px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: paper, color: ink, fontFamily: monoFont }}
-                          />
-                        </label>
-                      </div>
+                          <label style={{ fontFamily: sansFont, fontSize: "0.8rem", color: t.inkMuted, fontWeight: 700 }}>
+                            Rows{" "}
+                            <input
+                              type="number"
+                              min={1}
+                              value={draft[field]?.rows ?? 1}
+                              onChange={(e) => updateGridMeta(field, "rows", e.target.value)}
+                              style={{ width: 78, marginLeft: 4, padding: "7px 8px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: paper, color: ink, fontFamily: monoFont }}
+                            />
+                          </label>
+                          <label style={{ fontFamily: sansFont, fontSize: "0.8rem", color: t.inkMuted, fontWeight: 700 }}>
+                            Cols{" "}
+                            <input
+                              type="number"
+                              min={1}
+                              value={draft[field]?.cols ?? 1}
+                              onChange={(e) => updateGridMeta(field, "cols", e.target.value)}
+                              style={{ width: 78, marginLeft: 4, padding: "7px 8px", borderRadius: 8, border: `1.5px solid ${t.border}`, background: paper, color: ink, fontFamily: monoFont }}
+                            />
+                          </label>
+                        </div>
                       <div style={{ overflowX: "auto", border: `1.5px solid ${t.border}`, borderRadius: 16, background: t.surface, boxShadow: t.shadowSm, padding: 12, width: "fit-content", maxWidth: "100%" }}>
                         <table style={{ borderCollapse: "separate", borderSpacing: 4 }}>
                           <thead>

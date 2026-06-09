@@ -1,3 +1,5 @@
+import { SORTING_PROBLEMS, SORTING_PROB_LIST, SORTING_ORDER } from "./sortingProblems.js";
+
 export const LANG_META = {
   cpp:        { label: "C++",        iconBg: "#00599c", iconColor: "#fff"     },
   java:       { label: "Java",       iconBg: "#f89820", iconColor: "#fff"     },
@@ -27,6 +29,7 @@ export const CAT_ICON = {
   "Backtracking":         "🔙",
   "Design":               "🎨",
   "Heap":                 "📦",
+  "Sorting":              "📊",
   "Famous Algorithms":   "⭐",
 };
 
@@ -1003,6 +1006,8 @@ export const PROBLEMS = {
   "knapsack-01": { title: "0/1 Knapsack", difficulty: "Medium", category: "Famous Algorithms", timeComplexity: "O(n × W)", spaceComplexity: "O(W)", visualizer: "array", description: "Given weights and values of n items and capacity W, maximize total value without exceeding weight. Each item use at most once.", example: { input: "weights = [2,3,4,5], values = [3,4,5,6], W = 8", output: "Max value (e.g. 10)", note: "dp[w] = max value with capacity w." }, defaultInput: { nums: [2, 3, 4, 5], val: [3, 4, 5, 6], target: 8 }, inputFields: ["nums", "val", "target"], explanation: [{ emoji: "💡", title: "Idea", body: "DP: dp[w] = max value achievable with capacity w. For each item (weight wi, value vi), iterate w from W down to wi: dp[w] = max(dp[w], dp[w-wi] + vi)." }, { emoji: "👣", title: "Steps", body: "1. dp[0..W] = 0.\n2. For each item (wi, vi): for w from W down to wi, dp[w] = max(dp[w], dp[w-wi] + vi).\n3. Return dp[W]." }, { emoji: "⚡", title: "Complexity", body: "Time O(n×W), space O(W). Pseudo-polynomial (depends on W)." }], languages: { cpp: { code: ["int knapsack(int W, vector<int>& wt, vector<int>& val) {","    vector<int> dp(W+1, 0);","    for (int i = 0; i < wt.size(); i++)","        for (int w = W; w >= wt[i]; w--)","            dp[w] = max(dp[w], dp[w - wt[i]] + val[i]);","    return dp[W];","}"], lineMap: { init: 2, loop: 4, loop_i: 3, loop_w: 4, update: 5, done: 7 } }, java: { code: ["int knapsack(int W, int[] wt, int[] val) {","    int[] dp = new int[W+1];","    for (int i = 0; i < wt.length; i++)","        for (int w = W; w >= wt[i]; w--)","            dp[w] = Math.max(dp[w], dp[w - wt[i]] + val[i]);","    return dp[W];","}"], lineMap: { init: 2, loop: 4, loop_i: 3, loop_w: 4, update: 5, done: 7 } }, javascript: { code: ["function knapsack(W, wt, val) {","  const dp = Array(W+1).fill(0);","  for (let i = 0; i < wt.length; i++)","    for (let w = W; w >= wt[i]; w--)","      dp[w] = Math.max(dp[w], dp[w - wt[i]] + val[i]);","  return dp[W];","}"], lineMap: { init: 2, loop: 4, loop_i: 3, loop_w: 4, update: 5, done: 7 } }, python: { code: ["def knapsack(W, wt, val):","    dp = [0] * (W + 1)","    for i in range(len(wt)):","        for w in range(W, wt[i] - 1, -1):","            dp[w] = max(dp[w], dp[w - wt[i]] + val[i])","    return dp[W]"], lineMap: { init: 2, loop: 4, loop_i: 3, loop_w: 4, update: 5, done: 6 } } } },
 };
 
+Object.assign(PROBLEMS, SORTING_PROBLEMS);
+
 const FAMOUS_ALGO_EXPLANATION_BOOST = {
   "bellman-ford": [
     { emoji: "🧠", title: "Why V-1 Passes Are Enough", body: "The longest simple path in a graph with V vertices has at most V-1 edges. Each full relaxation pass can correctly settle shortest paths that use one more edge. After V-1 passes, any further improvement means a cycle is helping — and if it still improves distance, that cycle must be negative." },
@@ -1268,6 +1273,14 @@ function normalizeIntervalList(values, field) {
 }
 
 function makeSmallCase(problem) {
+  if (problem.title === "Valid Sudoku") {
+    const values = withFields(problem.defaultInput || {}, problem.inputFields || []);
+    const g = Array.isArray(values.grid) ? values.grid.map((x) => Number(x) || 0) : [];
+    while (g.length < 81) g.push(0);
+    values.grid = g.slice(0, 81);
+    values.rows = 9;
+    return values;
+  }
   const values = withFields(problem.defaultInput || {}, problem.inputFields || []);
   for (const field of problem.inputFields || []) {
     const value = values[field];
@@ -1302,6 +1315,13 @@ function makeSmallCase(problem) {
 
 function makeAlternateCase(problem) {
   const values = withFields(problem.defaultInput || {}, problem.inputFields || []);
+  if (problem.title === "Valid Sudoku") {
+    const g = Array.isArray(values.grid) ? values.grid.map((x) => Number(x) || 0) : [];
+    while (g.length < 81) g.push(0);
+    values.grid = g.slice(0, 81);
+    values.rows = 9;
+    return values;
+  }
   if (problem.title === "Set Matrix Zeroes") {
     values.grid = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     values.rows = 3;
@@ -1386,13 +1406,14 @@ function makeExampleCase(problem, id, label, values, output, note) {
   };
 }
 
-Object.values(PROBLEMS).forEach((problem) => {
+Object.entries(PROBLEMS).forEach(([problemId, problem]) => {
   if (problem.category === FREE_CATEGORY || !problem.inputFields?.length) {
     return;
   }
   const primaryValues = withFields(problem.defaultInput || {}, problem.inputFields);
-  const smallValues = makeSmallCase(problem);
-  const alternateValues = makeAlternateCase(problem);
+  let smallValues = makeSmallCase(problem);
+  let alternateValues = makeAlternateCase(problem);
+
   problem.examples = [
     {
       id: "primary",
@@ -1402,8 +1423,22 @@ Object.values(PROBLEMS).forEach((problem) => {
       note: problem.example.note,
       values: primaryValues,
     },
-    makeExampleCase(problem, "example-2", "Example 2", smallValues, "Run the visualizer to inspect this case.", "A compact input for stepping through the algorithm quickly."),
-    makeExampleCase(problem, "example-3", "Example 3", alternateValues, "Run the visualizer to inspect this case.", "A boundary-style variation to test a different branch of the logic."),
+    makeExampleCase(
+      problem,
+      "example-2",
+      "Example 2",
+      smallValues,
+      "Run the visualizer to inspect this case.",
+      "A compact input for stepping through the algorithm quickly."
+    ),
+    makeExampleCase(
+      problem,
+      "example-3",
+      "Example 3",
+      alternateValues,
+      "Run the visualizer to inspect this case.",
+      "A boundary-style variation to test a different branch of the logic."
+    ),
   ];
 });
 
@@ -1886,11 +1921,34 @@ const PROB_LIST_RAW = [
   { id: "knapsack-01",       title: "0/1 Knapsack",             difficulty: "Medium", category: "Famous Algorithms", desc: "Max value with weight limit; each item at most once. DP.", tags: ["dp", "knapsack"] },
 ];
 
-const byId = new Map(PROB_LIST_RAW.map(p => [p.id, p]));
-export const PROB_LIST = [
-  ...BLIND_75_ORDER.filter(id => byId.has(id)).map(id => byId.get(id)),
-  ...PROB_LIST_RAW.filter(p => !BLIND_75_ORDER.includes(p.id)),
+const FAMOUS_ALGO_ORDER = [
+  "bellman-ford", "floyd-warshall", "kosaraju", "tarjan-scc", "mst-kruskal",
+  "a-star", "dijkstra", "prim-mst", "bfs-graph", "dfs-graph", "union-find",
+  "fenwick-tree", "segment-tree", "knapsack-01",
 ];
+
+const byId = new Map([
+  ...PROB_LIST_RAW.map((p) => [p.id, p]),
+  ...SORTING_PROB_LIST.map((p) => [p.id, p]),
+]);
+
+function uniqById(items) {
+  const seen = new Set();
+  return items.filter((p) => {
+    if (!p || seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  });
+}
+
+export const PROB_LIST = uniqById([
+  ...BLIND_75_ORDER.filter((id) => byId.has(id)).map((id) => byId.get(id)),
+  ...PROB_LIST_RAW.filter(
+    (p) => !BLIND_75_ORDER.includes(p.id) && p.category !== "Famous Algorithms"
+  ),
+  ...SORTING_ORDER.filter((id) => byId.has(id)).map((id) => byId.get(id)),
+  ...FAMOUS_ALGO_ORDER.filter((id) => byId.has(id)).map((id) => byId.get(id)),
+]);
 
 export function getSimilar(currentId, max = 3) {
   const current = PROB_LIST.find(p => p.id === currentId);
