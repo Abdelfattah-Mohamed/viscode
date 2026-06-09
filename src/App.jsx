@@ -15,6 +15,7 @@ import AppPage      from "./pages/AppPage";
 import ProfilePage  from "./pages/ProfilePage";
 import BillingPage  from "./pages/BillingPage";
 import VotesPage from "./pages/VotesPage";
+import PremiumModal from "./components/ui/PremiumModal";
 
 const DEFAULT_PROBLEM = "two-sum";
 
@@ -77,6 +78,7 @@ export default function App() {
   const [page, setPage]                = useState(initialRoute.page);
   const [selectedProblem, setSelected] = useState(initialRoute.problemId || shared.current?.pid || DEFAULT_PROBLEM);
   const [sharedInput, setSharedInput]  = useState(shared.current?.input || null);
+  const [premiumPromptId, setPremiumPromptId] = useState(null);
 
   const t      = useTheme(themeMode);
   const mobile = useIsMobile();
@@ -159,13 +161,15 @@ export default function App() {
   const promptPremium = (problemId) => {
     const title = PROBLEMS[problemId]?.title || "This problem";
     trackEvent("paywall_shown", { problemId, title, sourcePage: page });
-    window.alert(
-      `${title} is a premium problem.\n\n` +
-      "Famous Algorithms are free for all users.\n" +
-      "Upgrade to Pro to unlock all other problems."
-    );
-    setPage("billing");
-    window.history.pushState({}, "", pathFor("billing"));
+    setPremiumPromptId(problemId);
+  };
+
+  const dismissPremium = () => setPremiumPromptId(null);
+
+  const upgradeFromPremium = () => {
+    trackEvent("landing_cta_click", { destination: "billing", source: "premium_modal", problemId: premiumPromptId });
+    setPremiumPromptId(null);
+    navigate("billing");
   };
 
   const canAccessProblem = (id) => isPro || isFreeProblem(id);
@@ -200,6 +204,9 @@ export default function App() {
   useEffect(() => {
     if (!auth.user || subscriptionLoading) return;
     if (page === "app" && selectedProblem && !canAccessProblem(selectedProblem)) {
+      // Don't render locked content: move to the library and surface the upgrade modal.
+      setPage("problems");
+      window.history.replaceState({}, "", pathFor("problems"));
       promptPremium(selectedProblem);
     }
   }, [auth.user, subscriptionLoading, page, selectedProblem, isPro]);
@@ -236,8 +243,9 @@ export default function App() {
     return <AuthScreen onAuth={auth} t={t} themeMode={themeMode} />;
   }
 
+  let content;
   if (page === "home") {
-    return (
+    content = (
       <HomePage
         t={t} themeMode={themeMode} setThemeMode={setThemeMode}
         onNavigate={navigate} onLogout={auth.logout}
@@ -246,10 +254,8 @@ export default function App() {
         learning={learning}
       />
     );
-  }
-
-  if (page === "problems") {
-    return (
+  } else if (page === "problems") {
+    content = (
       <ProblemsPage
         t={t} themeMode={themeMode} setThemeMode={setThemeMode}
         onNavigate={navigate} onSelectProblem={selectProblem}
@@ -261,10 +267,8 @@ export default function App() {
         isPro={isPro}
       />
     );
-  }
-
-  if (page === "profile") {
-    return (
+  } else if (page === "profile") {
+    content = (
       <ProfilePage
         user={auth.user}
         t={t}
@@ -280,10 +284,8 @@ export default function App() {
         learning={learning}
       />
     );
-  }
-
-  if (page === "billing") {
-    return (
+  } else if (page === "billing") {
+    content = (
       <BillingPage
         user={auth.user}
         t={t}
@@ -295,10 +297,8 @@ export default function App() {
         learning={learning}
       />
     );
-  }
-
-  if (page === "votes") {
-    return (
+  } else if (page === "votes") {
+    content = (
       <VotesPage
         t={t}
         themeMode={themeMode}
@@ -310,30 +310,45 @@ export default function App() {
         mobile={mobile}
       />
     );
+  } else {
+    content = (
+      <AppPage
+        selectedProblem={selectedProblem}
+        setSelectedProblem={(id) => {
+          if (!PROBLEMS[id]) return;
+          if (!canAccessProblem(id)) {
+            promptPremium(id);
+            return;
+          }
+          setSelected(id);
+          track(id);
+          window.history.pushState({}, "", pathFor("app", id));
+        }}
+        t={t} themeMode={themeMode} setThemeMode={setThemeMode}
+        onNavigate={navigate}
+        onLogout={auth.logout}
+        user={auth.user}
+        username={auth.user.username}
+        fav={fav} mobile={mobile}
+        sharedInput={sharedInput}
+        isPro={isPro}
+        learning={learning}
+      />
+    );
   }
 
   return (
-    <AppPage
-      selectedProblem={selectedProblem}
-      setSelectedProblem={(id) => {
-        if (!PROBLEMS[id]) return;
-        if (!canAccessProblem(id)) {
-          promptPremium(id);
-          return;
-        }
-        setSelected(id);
-        track(id);
-        window.history.pushState({}, "", pathFor("app", id));
-      }}
-      t={t} themeMode={themeMode} setThemeMode={setThemeMode}
-      onNavigate={navigate}
-      onLogout={auth.logout}
-      user={auth.user}
-      username={auth.user.username}
-      fav={fav} mobile={mobile}
-      sharedInput={sharedInput}
-      isPro={isPro}
-      learning={learning}
-    />
+    <>
+      {content}
+      {premiumPromptId && PROBLEMS[premiumPromptId] && (
+        <PremiumModal
+          t={t}
+          mobile={mobile}
+          problem={PROBLEMS[premiumPromptId]}
+          onClose={dismissPremium}
+          onUpgrade={upgradeFromPremium}
+        />
+      )}
+    </>
   );
 }
