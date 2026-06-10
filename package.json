@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "validate:problems": "node scripts/validate-problems.mjs",
+    "deploy:functions": "supabase functions deploy create-checkout-session create-upgrade-portal-session change-subscription-plan cancel-subscription resume-subscription stripe-webhook",
     "preview": "vite preview"
   },
   "dependencies": {

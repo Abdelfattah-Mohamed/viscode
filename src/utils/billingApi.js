@@ -2,6 +2,11 @@ import { getSupabase } from "./supabase";
 
 async function extractEdgeError(error, fallback) {
   if (!error) return fallback;
+  // Network-level failure (FunctionsFetchError): the request never reached the
+  // function — usually it isn't deployed, the project is unreachable, or you're offline.
+  if (error.name === "FunctionsFetchError" || /failed to send a request/i.test(error.message || "")) {
+    return "Couldn't reach the billing service. The checkout function may not be deployed yet, or you're offline. Please try again shortly.";
+  }
   const context = error.context;
   if (context) {
     try {
