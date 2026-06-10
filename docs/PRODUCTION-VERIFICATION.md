@@ -1,5 +1,9 @@
 # Email verification in production
 
+> **Superseded:** Auth now uses Supabase Auth (email confirmation + Google).
+> Follow **GO-LIVE.md §2** instead. The legacy `send-verification-code` /
+> `verify-code` Edge Functions have been removed.
+
 For signup/sign-in with email verification to work in **production**, do the following.
 
 ## 1. Build-time environment variables

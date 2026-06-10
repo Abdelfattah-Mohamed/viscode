@@ -49,8 +49,8 @@ Operational runbook for auth, billing, and visualization incidents.
 
 1. Verify build-time `VITE_SUPABASE_*` values.
 2. Validate Google OAuth authorized origins.
-3. Check `send-verification-code` and `verify-code` deployments and logs.
-4. Confirm any email provider credentials/secrets.
+3. Check Supabase Auth settings (Providers, URL Configuration) and auth logs.
+4. Confirm Google OAuth origins match the production domain.
 
 ### Rollback Strategy
 

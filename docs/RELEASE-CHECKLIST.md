@@ -10,11 +10,12 @@ Use this checklist before each soft-beta and public release.
 - [ ] Edge Functions are deployed and healthy:
   - [ ] `create-checkout-session`
   - [ ] `create-upgrade-portal-session`
+  - [ ] `change-subscription-plan`
   - [ ] `cancel-subscription`
   - [ ] `resume-subscription`
   - [ ] `stripe-webhook`
-  - [ ] `send-verification-code`
-  - [ ] `verify-code`
+  - [ ] `delete-account`
+  - [ ] `track-event`
 
 ## 2) Core Product Journeys
 

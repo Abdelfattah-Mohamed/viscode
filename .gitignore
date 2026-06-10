@@ -10,8 +10,13 @@ dist/
 .env.*.local
 
 # Editor
+.cursor/
 .vscode/
 .idea/
+Untitled
+
+# Supabase CLI cache
+supabase/.temp/
 *.swp
 *.swo
 
