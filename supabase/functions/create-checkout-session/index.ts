@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveProfileFromRequest } from "../_shared/profile.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -72,14 +73,14 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", normalizedEmail)
-      .maybeSingle();
-
-    if (profileError || !profile?.id) {
-      return jsonResponse({ error: "Profile not found. Sign up first." }, 404);
+    const resolved = await resolveProfileFromRequest(req, supabase);
+    if ("error" in resolved) {
+      return jsonResponse({ error: resolved.error }, resolved.status);
+    }
+    const profile = resolved.profile;
+    const profileEmail = profile.email?.toLowerCase() || normalizedEmail;
+    if (normalizedEmail && profileEmail && normalizedEmail !== profileEmail) {
+      return jsonResponse({ error: "Email does not match signed-in account" }, 403);
     }
 
     const isLifetime = planId === "lifetime";
@@ -97,7 +98,7 @@ Deno.serve(async (req) => {
 
     const body = {
       mode: isLifetime ? "payment" : "subscription",
-      "customer_email": normalizedEmail,
+      "customer_email": profileEmail,
       "client_reference_id": profile.id,
       "metadata[profile_id]": profile.id,
       "metadata[plan_id]": planId,

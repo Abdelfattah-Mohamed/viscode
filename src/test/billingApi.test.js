@@ -12,6 +12,10 @@ vi.mock("../utils/supabase", () => ({
   BILLING_INVOICES_TABLE: "billing_invoices",
 }));
 
+vi.mock("../utils/profile", () => ({
+  ensureProfile: vi.fn(async () => ({ ok: true, profileId: "profile-1" })),
+}));
+
 const { createCheckoutSession, cancelSubscription } = await import("../utils/billingApi");
 
 beforeEach(() => {

@@ -1,4 +1,5 @@
 import { getSupabase } from "./supabase";
+import { ensureProfile } from "./profile";
 
 async function extractEdgeError(error, fallback) {
   if (!error) return fallback;
@@ -26,6 +27,8 @@ async function extractEdgeError(error, fallback) {
 export async function createCheckoutSession(email, planId) {
   const sb = getSupabase();
   if (!sb) return { error: "Not configured" };
+  const profileResult = await ensureProfile();
+  if (profileResult.error) return { error: profileResult.error };
   const { data, error } = await sb.functions.invoke("create-checkout-session", {
     body: { email: email?.trim()?.toLowerCase(), plan_id: planId },
   });
@@ -42,6 +45,8 @@ export async function createCheckoutSession(email, planId) {
 export async function createUpgradePortalSession(email, currentPlanId, targetPlanId) {
   const sb = getSupabase();
   if (!sb) return { error: "Not configured" };
+  const profileResult = await ensureProfile();
+  if (profileResult.error) return { error: profileResult.error };
   const { data, error } = await sb.functions.invoke("create-upgrade-portal-session", {
     body: {
       email: email?.trim()?.toLowerCase(),
@@ -62,6 +67,8 @@ export async function createUpgradePortalSession(email, currentPlanId, targetPla
 export async function cancelSubscription(email) {
   const sb = getSupabase();
   if (!sb) return { error: "Not configured" };
+  const profileResult = await ensureProfile();
+  if (profileResult.error) return { error: profileResult.error };
   const { data, error } = await sb.functions.invoke("cancel-subscription", {
     body: { email: email?.trim()?.toLowerCase() },
   });
@@ -77,6 +84,8 @@ export async function cancelSubscription(email) {
 export async function resumeSubscription(email) {
   const sb = getSupabase();
   if (!sb) return { error: "Not configured" };
+  const profileResult = await ensureProfile();
+  if (profileResult.error) return { error: profileResult.error };
   const { data, error } = await sb.functions.invoke("resume-subscription", {
     body: { email: email?.trim()?.toLowerCase() },
   });

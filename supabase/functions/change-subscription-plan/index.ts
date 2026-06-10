@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveProfileFromRequest } from "../_shared/profile.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -97,14 +98,14 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", normalizedEmail)
-      .maybeSingle();
-
-    if (profileError || !profile?.id) {
-      return jsonResponse({ error: "Profile not found" }, 404);
+    const resolved = await resolveProfileFromRequest(req, supabase);
+    if ("error" in resolved) {
+      return jsonResponse({ error: resolved.error }, resolved.status);
+    }
+    const profile = resolved.profile;
+    const profileEmail = profile.email?.toLowerCase() || normalizedEmail;
+    if (normalizedEmail && profileEmail && normalizedEmail !== profileEmail) {
+      return jsonResponse({ error: "Email does not match signed-in account" }, 403);
     }
 
     const { data: subRow, error: subError } = await supabase

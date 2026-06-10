@@ -71,7 +71,7 @@ async function loadOrCreateProfile(sb, authUser) {
     };
     const { data: created } = await sb
       .from(PROFILES_TABLE)
-      .insert(insertRow)
+      .upsert(insertRow, { onConflict: "id" })
       .select("*")
       .maybeSingle();
     if (created) return { ...rowToProfile(created), id: authUser.id };
