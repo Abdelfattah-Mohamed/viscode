@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { leetcodeToComplete, completeToLeetcode } from "../../utils/treeFormat";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 const TREE_FIELDS = new Set(["root", "subRoot", "p", "q"]);
 const INT_FIELDS = new Set(["target", "n", "m", "pos", "rows", "cols", "k", "amount"]);
+const STRING_FIELDS = new Set(["s", "t", "dict", "words", "word", "board", "preorder", "inorder"]);
 
 function stripBrackets(s) {
   let out = String(s ?? "").trim();
@@ -321,6 +323,7 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(() => buildInitialDraft(input, fields, visualizer, weightedGraphInput));
   const [error, setError] = useState(null);
+  const dialogRef = useFocusTrap(open);
   const [showInputHint, setShowInputHint] = useState(false);
 
   useEffect(() => {
@@ -533,6 +536,10 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
           }}
         >
           <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Input editor"
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "min(900px, 95vw)",

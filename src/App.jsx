@@ -8,6 +8,8 @@ import { useSubscription }    from "./hooks/useSubscription";
 import { useLearningProgress } from "./hooks/useLearningProgress";
 import { PROBLEMS }           from "./data/problems";
 import { trackEvent } from "./utils/analytics";
+import { getRouteFromPath, pathFor, LEGAL_PAGES } from "./utils/routes";
+import { canAccessProblem as canAccess } from "./utils/access";
 import AuthScreen   from "./components/ui/AuthScreen";
 import HomePage     from "./pages/HomePage";
 import ProblemsPage from "./pages/ProblemsPage";
@@ -15,6 +17,7 @@ import AppPage      from "./pages/AppPage";
 import ProfilePage  from "./pages/ProfilePage";
 import BillingPage  from "./pages/BillingPage";
 import VotesPage from "./pages/VotesPage";
+import LegalPage from "./pages/LegalPage";
 import PremiumModal from "./components/ui/PremiumModal";
 
 const DEFAULT_PROBLEM = "two-sum";
@@ -32,31 +35,6 @@ function parseShareUrl() {
   return null;
 }
 
-function getRouteFromPath(pathname) {
-  const path = (pathname || window.location.pathname).replace(/\/$/, "") || "/";
-  if (path === "/" || path === "/home") return { page: "home" };
-  if (path === "/problems") return { page: "problems" };
-  if (path === "/profile") return { page: "profile" };
-  if (path === "/billing") return { page: "billing" };
-  if (path === "/votes") return { page: "votes" };
-  const match = path.match(/^\/problem\/(.+)$/);
-  if (match && PROBLEMS[match[1]]) return { page: "app", problemId: match[1] };
-  return { page: "home" };
-}
-
-function pathFor(page, problemId) {
-  if (page === "app" && problemId) return `/problem/${problemId}`;
-  if (page === "home") return "/";
-  if (page === "problems") return "/problems";
-  if (page === "profile") return "/profile";
-  if (page === "billing") return "/billing";
-  if (page === "votes") return "/votes";
-  return "/";
-}
-
-function isFreeProblem(problemId) {
-  return PROBLEMS[problemId]?.category === "Famous Algorithms";
-}
 
 export default function App() {
   const [themeMode, setThemeModeRaw] = useState(() => {
@@ -172,7 +150,7 @@ export default function App() {
     navigate("billing");
   };
 
-  const canAccessProblem = (id) => isPro || isFreeProblem(id);
+  const canAccessProblem = (id) => canAccess(id, isPro);
 
   const selectProblem = (id) => {
     if (!PROBLEMS[id]) return;
@@ -230,6 +208,11 @@ export default function App() {
     }
     descriptionTag.setAttribute("content", "Interactive algorithm visualizations, line-by-line code playback, and interview prep learning tracks.");
   }, [page, selectedProblem]);
+
+  // Legal pages are public — no account or loading gate.
+  if (LEGAL_PAGES.has(page)) {
+    return <LegalPage kind={page} t={t} mobile={mobile} onNavigate={navigate} />;
+  }
 
   if (auth.loading || (auth.user && subscriptionLoading)) {
     return (

@@ -12,12 +12,6 @@ let plansCache = {
   at: 0,
   plans: null,
 };
-const ADMIN_EMAILS = typeof import.meta !== "undefined" && import.meta.env
-  ? String(import.meta.env.VITE_ADMIN_EMAILS || import.meta.env.VITE_ADMIN_EMAIL || "")
-      .split(",")
-      .map((x) => x.trim().toLowerCase())
-      .filter(Boolean)
-  : [];
 
 export function useSubscription(user) {
   const [subscription, setSubscription] = useState(null);
@@ -27,7 +21,9 @@ export function useSubscription(user) {
   const [error, setError] = useState(null);
 
   const email = user?.email?.toLowerCase?.() || null;
-  const isAdmin = !!email && ADMIN_EMAILS.includes(email);
+  const userId = user?.id || null;
+  // Admin flag comes from the user's own profiles row (set server-side only).
+  const isAdmin = !!user?.isAdmin;
   const isGuest = !user || user.isGuest;
 
   const refetch = useCallback(async () => {
@@ -42,12 +38,12 @@ export function useSubscription(user) {
       }
     };
 
-    if (isGuest || !email) {
+    if (isGuest || (!userId && !email)) {
       setSubscription(null);
       setPlan(null);
       setPlans([]);
       setLoading(false);
-      log("refetch skipped (guest or missing email)");
+      log("refetch skipped (guest or missing identity)");
       return;
     }
 
@@ -61,23 +57,24 @@ export function useSubscription(user) {
     }
 
     try {
-      const tProfile0 = dev ? performance.now() : 0;
-      const { data: profile, error: profileErr } = await sb
-        .from(PROFILES_TABLE)
-        .select("id")
-        .eq("email", email)
-        .maybeSingle();
-      if (dev) log(`profile lookup: ${Math.round(performance.now() - tProfile0)}ms`);
-
-      if (profileErr || !profile?.id) {
-        setSubscription(null);
-        setPlan(null);
-        setLoading(false);
-        log("profile lookup failed or missing profile", profileErr?.message || null);
-        return;
+      let profileId = userId;
+      if (!profileId) {
+        const tProfile0 = dev ? performance.now() : 0;
+        const { data: profile, error: profileErr } = await sb
+          .from(PROFILES_TABLE)
+          .select("id")
+          .eq("email", email)
+          .maybeSingle();
+        if (dev) log(`profile lookup: ${Math.round(performance.now() - tProfile0)}ms`);
+        if (profileErr || !profile?.id) {
+          setSubscription(null);
+          setPlan(null);
+          setLoading(false);
+          log("profile lookup failed or missing profile", profileErr?.message || null);
+          return;
+        }
+        profileId = profile.id;
       }
-
-      const profileId = profile.id;
 
       const now = Date.now();
       const cachedPlansValid = plansCache.plans && now - plansCache.at < PLAN_CACHE_TTL_MS;
@@ -168,7 +165,7 @@ export function useSubscription(user) {
       setLoading(false);
       if (dev) log(`refetch total: ${Math.round(performance.now() - t0)}ms`);
     }
-  }, [email, isGuest, isAdmin]);
+  }, [email, userId, isGuest, isAdmin]);
 
   useEffect(() => {
     refetch();

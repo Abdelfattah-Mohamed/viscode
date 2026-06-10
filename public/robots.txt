@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /profile
+Disallow: /billing
+
+Sitemap: https://viscode.dev/sitemap.xml

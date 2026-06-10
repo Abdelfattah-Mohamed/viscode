@@ -9,7 +9,7 @@ export default function NavBar({ page, onNavigate, t, themeMode, right, mobile }
   ];
 
   return (
-    <nav style={{
+    <nav aria-label="Main navigation" style={{
       display: "flex", alignItems: "center", gap: 0,
       padding: mobile ? "0 10px" : "0 20px", height: 52,
       background: t.surface,
@@ -17,6 +17,21 @@ export default function NavBar({ page, onNavigate, t, themeMode, right, mobile }
       position: "sticky", top: 0, zIndex: 200,
       flexShrink: 0, boxShadow: t.shadow,
     }}>
+      {/* Skip link: visually hidden until keyboard-focused */}
+      <a
+        href="#main-content"
+        style={{
+          position: "absolute", left: 8, top: -52,
+          padding: "8px 14px", borderRadius: 8,
+          background: t.ink, color: t.surface,
+          fontFamily: "'DM Sans',sans-serif", fontSize: "0.85rem", fontWeight: 700,
+          textDecoration: "none", zIndex: 300, transition: "top 0.15s ease",
+        }}
+        onFocus={(e) => { e.currentTarget.style.top = "8px"; }}
+        onBlur={(e) => { e.currentTarget.style.top = "-52px"; }}
+      >
+        Skip to content
+      </a>
       {/* Logo */}
       <button
         onClick={() => onNavigate("home")}

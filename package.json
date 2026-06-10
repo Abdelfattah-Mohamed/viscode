@@ -6,9 +6,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run generate:sitemap && vite build",
+    "generate:sitemap": "node scripts/generate-sitemap.mjs",
+    "lint": "eslint src scripts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "validate:problems": "node scripts/validate-problems.mjs",
-    "deploy:functions": "supabase functions deploy create-checkout-session create-upgrade-portal-session change-subscription-plan cancel-subscription resume-subscription stripe-webhook",
+    "deploy:functions": "npx supabase functions deploy create-checkout-session create-upgrade-portal-session change-subscription-plan cancel-subscription resume-subscription stripe-webhook delete-account track-event",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -20,8 +24,16 @@
     "stripe": "^22.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^4.3.1",
-    "eslint": "^10.0.2",
-    "vite": "^7.3.1"
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.6.0",
+    "jsdom": "^29.1.1",
+    "vite": "^7.3.1",
+    "vitest": "^4.1.8"
   }
 }

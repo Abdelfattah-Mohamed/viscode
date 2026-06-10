@@ -387,6 +387,12 @@ verify_jwt = false
 verify_jwt = false
 [functions.verify-code]
 verify_jwt = false
+# delete-account requires a valid user JWT (caller deletes only themselves).
+[functions.delete-account]
+verify_jwt = true
+# track-event accepts plain JSON POSTs from the app (no auth session required).
+[functions.track-event]
+verify_jwt = false
 
 [analytics]
 enabled = true

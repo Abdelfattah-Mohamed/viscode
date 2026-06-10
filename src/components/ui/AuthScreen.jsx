@@ -6,13 +6,11 @@ const MIN_PASSWORD_LENGTH = 6;
 export default function AuthScreen({ onAuth, t, themeMode }) {
   const [tab, setTab]     = useState("login");
   const [form, setForm]   = useState({ username: "", email: "", password: "", confirmPassword: "" });
-  const [verifyCode, setVerifyCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy]   = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
   const [resetEmail, setResetEmail]       = useState("");
-  const [resetCode, setResetCode]         = useState("");
   const [resetPw, setResetPw]             = useState("");
   const [resetPwConfirm, setResetPwConfirm] = useState("");
 
@@ -40,17 +38,18 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
   const handle = async e => {
     e.preventDefault();
     setError("");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (tab === "login") {
-      if (!form.username.trim() || !form.password) { setError("Username and password required"); return; }
+      if (!form.email.trim() || !form.password) { setError("Email and password required"); return; }
+      if (!emailRegex.test(form.email.trim())) { setError("Enter a valid email"); return; }
       setBusy(true);
-      const res = await onAuth.login(form.username.trim(), form.password);
+      const res = await onAuth.login(form.email.trim(), form.password);
       setBusy(false);
       if (res.error) setError(res.error);
       return;
     }
     if (!form.username.trim()) { setError("Username required"); return; }
     if (!form.email.trim()) { setError("Email required"); return; }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email.trim())) { setError("Enter a valid email"); return; }
     if (form.password.length < MIN_PASSWORD_LENGTH) { setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`); return; }
     if (form.password !== form.confirmPassword) { setError("Passwords do not match"); return; }
@@ -58,17 +57,15 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
     const res = await onAuth.signup(form.username.trim(), form.email.trim(), form.password);
     setBusy(false);
     if (res.error) setError(res.error);
-    if (res.needVerification) setVerifyCode("");
   };
 
-  const handleVerify = async e => {
-    e.preventDefault();
-    if (!verifyCode.trim()) { setError("Enter the verification code"); return; }
+  const handleResend = async () => {
     setError("");
     setBusy(true);
-    const res = await onAuth.verifyEmail(verifyCode.trim());
+    const res = await onAuth.resendConfirmation();
     setBusy(false);
     if (res.error) setError(res.error);
+    else setSuccessMsg("Confirmation email re-sent.");
   };
 
   const handleResetRequest = async e => {
@@ -79,17 +76,6 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
     if (!emailRegex.test(resetEmail.trim())) { setError("Enter a valid email"); return; }
     setBusy(true);
     const res = await onAuth.requestPasswordReset(resetEmail.trim());
-    setBusy(false);
-    if (res.error) setError(res.error);
-    else setResetCode("");
-  };
-
-  const handleResetVerify = async e => {
-    e.preventDefault();
-    if (!resetCode.trim()) { setError("Enter the verification code"); return; }
-    setError("");
-    setBusy(true);
-    const res = await onAuth.verifyResetCode(resetCode.trim());
     setBusy(false);
     if (res.error) setError(res.error);
   };
@@ -105,7 +91,6 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
     if (res.error) { setError(res.error); return; }
     setSuccessMsg("Password updated! You can now sign in.");
     setResetEmail("");
-    setResetCode("");
     setResetPw("");
     setResetPwConfirm("");
     setTab("login");
@@ -139,13 +124,6 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
 
   const inputStyle = {
     ...inputBaseStyle,
-  };
-
-  const codeInputStyle = {
-    width: "100%", padding: "12px 14px", textAlign: "center", letterSpacing: 8,
-    fontFamily: "'JetBrains Mono',monospace", fontSize: "1.2rem",
-    border: `2px solid ${t.border}`, borderRadius: 9,
-    background: t.bg, color: t.ink, outline: "none", boxSizing: "border-box",
   };
 
   const btnPrimary = (label, disabled) => (
@@ -189,8 +167,8 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
     </div>
   );
 
-  /* ── Reset password: enter new password ── */
-  if (pendingReset?.codeVerified) {
+  /* ── Reset password: arrived from recovery link — enter new password ── */
+  if (pendingReset?.recovery) {
     return shell("Set new password", (
       <form onSubmit={handleResetConfirm} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <p style={{ margin: "0 0 4px", color: t.inkMuted, fontSize: "0.9rem" }}>
@@ -203,87 +181,52 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
           onChange={e => { setResetPwConfirm(e.target.value); setError(""); }}
           style={inputStyle} />
         {errorBox}
-        {btnPrimary("Reset Password", false)}
+        {btnPrimary("Reset Password", busy)}
         {backLink("← Cancel", () => { onAuth.cancelReset(); setError(""); })}
       </form>
     ));
   }
 
-  /* ── Reset password: verify code ── */
-  if (pendingReset?.email && !pendingReset.codeVerified) {
-    return shell("Verify your email", (
-      <>
-        {pendingReset.demoHint ? (
-          <div style={{ margin: "0 0 16px", padding: "10px 14px", background: t.blue + "15", border: `1.5px solid ${t.blue}44`, borderRadius: 8 }}>
-            <p style={{ margin: 0, color: t.ink, fontSize: "0.9rem", fontWeight: 500 }}>
-              Enter code <code style={{ background: t.surfaceAlt, padding: "2px 8px", borderRadius: 4, fontFamily: "'JetBrains Mono',monospace", fontSize: "1rem", fontWeight: 700, letterSpacing: 2 }}>123456</code> to continue.
-            </p>
-            {pendingReset.sendError && (
-              <p style={{ margin: "6px 0 0", color: t.inkMuted, fontSize: "0.78rem" }}>{pendingReset.sendError}</p>
-            )}
-          </div>
-        ) : (
-          <>
-            <p style={{ margin: "0 0 12px", color: t.inkMuted, fontSize: "0.9rem" }}>
-              We sent a 6-digit code to <strong style={{ color: t.ink }}>{pendingReset.email}</strong>. Enter it below.
-            </p>
-            {pendingReset.sendError && (
-              <div style={{ margin: "0 0 16px", padding: "8px 12px", background: t.red + "15", border: `1.5px solid ${t.red}44`, borderRadius: 8, color: t.red, fontSize: "0.82rem" }}>
-                {pendingReset.sendError}
-              </div>
-            )}
-          </>
-        )}
-        <form onSubmit={handleResetVerify} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <input
-            type="text" inputMode="numeric" maxLength={6} placeholder="000000"
-            value={resetCode}
-            onChange={e => { setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
-            style={codeInputStyle} />
-          {errorBox}
-          {btnPrimary("Verify", busy)}
-          {backLink("← Cancel", () => { onAuth.cancelReset(); setError(""); })}
-        </form>
-      </>
+  /* ── Reset password: link sent ── */
+  if (pendingReset?.linkSent) {
+    return shell("Check your email", (
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.92rem", lineHeight: 1.6 }}>
+          We sent a password reset link to <strong style={{ color: t.ink }}>{pendingReset.email}</strong>.
+          Open it on this device to choose a new password.
+        </p>
+        {errorBox}
+        {backLink("← Back to sign in", () => { onAuth.cancelReset(); setError(""); setTab("login"); })}
+      </div>
     ));
   }
 
-  /* ── Signup email verification ── */
+  /* ── Signup email confirmation ── */
   if (pending?.email) {
-    return shell("Verify your email", (
-      <>
-        {pending.demoHint ? (
-          <div style={{ margin: "0 0 16px", padding: "10px 14px", background: t.blue + "15", border: `1.5px solid ${t.blue}44`, borderRadius: 8 }}>
-            <p style={{ margin: 0, color: t.ink, fontSize: "0.9rem", fontWeight: 500 }}>
-              Enter code <code style={{ background: t.surfaceAlt, padding: "2px 8px", borderRadius: 4, fontFamily: "'JetBrains Mono',monospace", fontSize: "1rem", fontWeight: 700, letterSpacing: 2 }}>123456</code> to continue.
-            </p>
-            {pending.sendError && (
-              <p style={{ margin: "6px 0 0", color: t.inkMuted, fontSize: "0.78rem" }}>{pending.sendError}</p>
-            )}
+    return shell("Confirm your email", (
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.92rem", lineHeight: 1.6 }}>
+          We sent a confirmation link to <strong style={{ color: t.ink }}>{pending.email}</strong>.
+          Click the link in the email, then sign in.
+        </p>
+        {successMsg && (
+          <div style={{ padding: "8px 12px", background: t.green + "1f", border: `1.5px solid ${t.green}`, borderRadius: 8, color: t.green, fontSize: "0.85rem", fontWeight: 700 }}>
+            {successMsg}
           </div>
-        ) : (
-          <>
-            <p style={{ margin: "0 0 12px", color: t.inkMuted, fontSize: "0.9rem" }}>
-              We sent a 6-digit code to <strong style={{ color: t.ink }}>{pending.email}</strong>. Enter it below.
-            </p>
-            {pending.sendError && (
-              <div style={{ margin: "0 0 16px", padding: "8px 12px", background: t.red + "15", border: `1.5px solid ${t.red}44`, borderRadius: 8, color: t.red, fontSize: "0.82rem" }}>
-                {pending.sendError}
-              </div>
-            )}
-          </>
         )}
-        <form onSubmit={handleVerify} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <input
-            type="text" inputMode="numeric" maxLength={6} placeholder="000000"
-            value={verifyCode}
-            onChange={e => { setVerifyCode(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
-            style={codeInputStyle} />
-          {errorBox}
-          {btnPrimary("Verify", busy)}
-          {backLink("← Back to sign up", onAuth.cancelVerification)}
-        </form>
-      </>
+        {errorBox}
+        <button type="button" onClick={handleResend} disabled={busy}
+          style={{
+            padding: "11px 0", width: "100%",
+            fontFamily: "'Caveat',cursive", fontSize: "1.1rem", fontWeight: 700,
+            border: `2px solid ${t.border}`, borderRadius: 9,
+            background: t.surface, color: t.ink, cursor: busy ? "wait" : "pointer",
+            boxShadow: t.shadowSm, opacity: busy ? 0.7 : 1,
+          }}>
+          {busy ? "…" : "Resend confirmation email"}
+        </button>
+        {backLink("← Back to sign in", () => { onAuth.cancelVerification(); setError(""); setSuccessMsg(""); setTab("login"); })}
+      </div>
     ));
   }
 
@@ -292,13 +235,13 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
     return shell("Reset password", (
       <form onSubmit={handleResetRequest} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.9rem" }}>
-          Enter the email address associated with your account and we'll send you a verification code.
+          Enter the email address associated with your account and we'll send you a reset link.
         </p>
         <input type="email" placeholder="Email address" value={resetEmail}
           onChange={e => { setResetEmail(e.target.value); setError(""); }}
           style={inputStyle} />
         {errorBox}
-        {btnPrimary("Send Code", busy)}
+        {btnPrimary("Send Reset Link", busy)}
         {backLink("← Back to sign in", () => { setTab("login"); setError(""); setResetEmail(""); })}
       </form>
     ));
@@ -387,8 +330,8 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
                 </div>
               )}
 
-              {field("username", "Username", "text", "username")}
-              {tab === "signup" && field("email", "Email address", "email", "email")}
+              {tab === "signup" && field("username", "Username", "text", "username")}
+              {field("email", "Email address", "email", "email")}
               {field("password", "Password", "password", tab === "login" ? "current-password" : "new-password")}
               {tab === "signup" && (
                 <label style={{ display: "grid", gap: 7, color: t.ink, fontSize: "0.84rem", fontWeight: 700 }}>

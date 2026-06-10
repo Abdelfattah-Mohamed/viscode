@@ -595,7 +595,8 @@ export default function AppPage({
       />
 
       {/* Main layout: resizable split on desktop, stacked on mobile */}
-      <div
+      <main
+        id="main-content"
         ref={mainScrollRef}
         style={{
           flex: 1,
@@ -1099,7 +1100,7 @@ export default function AppPage({
         <div style={{ flexShrink: 0 }}>
           <SimilarProblems currentId={selectedProblem} onSelect={handleSelectSimilar} t={t} />
         </div>
-      </div>
+      </main>
     </div>
   );
 }

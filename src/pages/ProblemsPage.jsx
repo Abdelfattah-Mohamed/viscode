@@ -180,6 +180,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
         }
       />
 
+      <main id="main-content">
       <PageContainer mobile={mobile} maxWidth={1080} paddingMobile="24px 12px 40px" paddingDesktop="36px 24px 60px">
         {/* Header */}
         <div style={{ marginBottom: 22 }}>
@@ -543,6 +544,7 @@ export default function ProblemsPage({ t, themeMode, setThemeMode, onNavigate, o
           )}
           </>}
       </PageContainer>
+      </main>
     </div>
   );
 }

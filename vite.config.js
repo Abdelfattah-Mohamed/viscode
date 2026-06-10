@@ -6,9 +6,15 @@ export default defineConfig({
   resolve: {
     alias: { "@": "/src" },
   },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./src/test/setup.js"],
+  },
   build: {
     outDir: "dist",
-    sourcemap: true,
+    // Hidden sourcemaps: useful for error tooling, not exposed in browser devtools.
+    sourcemap: "hidden",
     rollupOptions: {
       output: {
         manualChunks(id) {

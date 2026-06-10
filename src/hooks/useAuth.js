@@ -1,36 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getSupabase, PROFILES_TABLE } from "../utils/supabase";
-import { sendVerificationCode, verifyCodeWithApi, isDemoCode } from "../utils/verificationApi";
 import { isValidAvatarId } from "../data/avatars";
 import { trackEvent } from "../utils/analytics";
 
-const VERIFICATION_CODE_LENGTH = 6;
 const GOOGLE_SCRIPT_ID = "google-gsi-script";
-const ADMIN_BOOTSTRAP_USERNAME = typeof import.meta !== "undefined" && import.meta.env
-  ? String(import.meta.env.VITE_ADMIN_USERNAME || "").trim()
-  : "";
-const ADMIN_BOOTSTRAP_EMAIL = typeof import.meta !== "undefined" && import.meta.env
-  ? String(import.meta.env.VITE_ADMIN_EMAIL || "").trim().toLowerCase()
-  : "";
-const ADMIN_BOOTSTRAP_PASSWORD = typeof import.meta !== "undefined" && import.meta.env
-  ? String(import.meta.env.VITE_ADMIN_PASSWORD || "")
-  : "";
-
-function decodeGoogleJwt(credential) {
-  try {
-    const payload = credential.split(".")[1];
-    if (!payload) return null;
-    const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    return {
-      sub: decoded.sub,
-      email: decoded.email?.trim().toLowerCase() || null,
-      name: (decoded.name || decoded.given_name || "").trim() || null,
-      picture: decoded.picture || null,
-    };
-  } catch {
-    return null;
-  }
-}
 
 function loadGoogleScript() {
   if (document.getElementById(GOOGLE_SCRIPT_ID)) return Promise.resolve();
@@ -46,33 +19,6 @@ function loadGoogleScript() {
   });
 }
 
-function generateCode() {
-  return Array.from({ length: VERIFICATION_CODE_LENGTH }, () => Math.floor(Math.random() * 10)).join("");
-}
-
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password + ":viscode-salt-2025");
-  const buf = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-function profileToRow(profile, passwordHash) {
-  const now = new Date().toISOString();
-  const hasAvatarId = isValidAvatarId(profile.avatarId);
-  const avatarUrl = hasAvatarId ? `avatar:${profile.avatarId}` : (profile.picture || null);
-  const row = {
-    email: profile.email || null,
-    username: profile.username || "User",
-    avatar_url: avatarUrl,
-    provider: profile.isGoogle ? "google" : "email",
-    google_sub: profile.sub || null,
-    updated_at: now,
-  };
-  if (passwordHash !== undefined) row.password_hash = passwordHash;
-  return row;
-}
-
 function rowToProfile(row) {
   if (!row) return null;
   const avatarUrl = row.avatar_url;
@@ -84,86 +30,55 @@ function rowToProfile(row) {
     email: row.email ?? undefined,
     picture: isAvatarId ? undefined : avatarUrl ?? undefined,
     avatarId: validAvatarId ? parsedAvatarId : undefined,
-    sub: row.google_sub ?? undefined,
     isGoogle: row.provider === "google",
+    isAdmin: !!row.is_admin,
     createdAt: row.created_at,
   };
 }
 
-async function upsertProfile(profile, passwordHash) {
-  const sb = getSupabase();
-  if (!sb || profile.isGuest) return;
-  const row = profileToRow(profile, passwordHash);
-  await sb.from(PROFILES_TABLE).upsert(row, { onConflict: "email" });
-}
-
-async function fetchProfileFromDb(profile) {
-  const sb = getSupabase();
-  if (!sb || !profile) return null;
-  let row = null;
-  if (profile.email) {
-    const { data } = await sb.from(PROFILES_TABLE).select("*").eq("email", profile.email).maybeSingle();
-    row = data;
-  }
-  if (!row && profile.sub) {
-    const { data } = await sb.from(PROFILES_TABLE).select("*").eq("google_sub", profile.sub).maybeSingle();
-    row = data;
-  }
-  return row ? rowToProfile(row) : null;
-}
-
-async function findUserInDb(username) {
-  const sb = getSupabase();
-  if (!sb) return null;
-  const { data } = await sb.from(PROFILES_TABLE).select("*").eq("username", username).maybeSingle();
-  return data;
-}
-
-async function findUserByEmailInDb(email) {
-  const sb = getSupabase();
-  if (!sb) return null;
-  const { data } = await sb.from(PROFILES_TABLE).select("*").eq("email", email.toLowerCase()).maybeSingle();
-  return data;
-}
-
-async function bootstrapAdminAccount() {
-  if (!ADMIN_BOOTSTRAP_USERNAME || !ADMIN_BOOTSTRAP_EMAIL || !ADMIN_BOOTSTRAP_PASSWORD) return;
-  const profile = {
-    username: ADMIN_BOOTSTRAP_USERNAME,
-    email: ADMIN_BOOTSTRAP_EMAIL,
-    createdAt: new Date().toISOString(),
-    avatarId: 1,
+function authUserFallbackProfile(authUser) {
+  const meta = authUser.user_metadata || {};
+  const username =
+    meta.username || meta.name || meta.full_name || authUser.email?.split("@")[0] || "User";
+  return {
+    username,
+    email: authUser.email ?? undefined,
+    picture: meta.avatar_url || meta.picture || undefined,
+    isGoogle: authUser.app_metadata?.provider === "google",
+    isAdmin: false,
+    createdAt: authUser.created_at,
   };
+}
 
+/** Ensure a profiles row exists for the signed-in auth user; returns the app profile. */
+async function loadOrCreateProfile(sb, authUser) {
+  const fallback = authUserFallbackProfile(authUser);
   try {
-    const existingRaw = localStorage.getItem(`vc:user:${ADMIN_BOOTSTRAP_USERNAME}`);
-    if (!existingRaw) {
-      localStorage.setItem(
-        `vc:user:${ADMIN_BOOTSTRAP_USERNAME}`,
-        JSON.stringify({ password: ADMIN_BOOTSTRAP_PASSWORD, profile })
-      );
-      localStorage.setItem(`vc:email:${ADMIN_BOOTSTRAP_EMAIL}`, ADMIN_BOOTSTRAP_USERNAME);
-    } else {
-      const existing = JSON.parse(existingRaw);
-      if (existing?.profile?.email) {
-        localStorage.setItem(`vc:email:${String(existing.profile.email).toLowerCase()}`, ADMIN_BOOTSTRAP_USERNAME);
-      } else {
-        localStorage.setItem(`vc:email:${ADMIN_BOOTSTRAP_EMAIL}`, ADMIN_BOOTSTRAP_USERNAME);
-      }
-    }
-  } catch {
-    // Ignore localStorage failures.
-  }
+    const { data: row } = await sb
+      .from(PROFILES_TABLE)
+      .select("*")
+      .eq("id", authUser.id)
+      .maybeSingle();
+    if (row) return { ...rowToProfile(row), id: authUser.id };
 
-  try {
-    const inDb = await findUserByEmailInDb(ADMIN_BOOTSTRAP_EMAIL);
-    if (!inDb) {
-      const pwHash = await hashPassword(ADMIN_BOOTSTRAP_PASSWORD);
-      await upsertProfile(profile, pwHash);
-    }
+    // First sign-in without DB trigger: create the row (RLS allows inserting own row).
+    const insertRow = {
+      id: authUser.id,
+      email: authUser.email?.toLowerCase() || null,
+      username: fallback.username,
+      avatar_url: fallback.picture || "avatar:1",
+      provider: fallback.isGoogle ? "google" : "email",
+    };
+    const { data: created } = await sb
+      .from(PROFILES_TABLE)
+      .insert(insertRow)
+      .select("*")
+      .maybeSingle();
+    if (created) return { ...rowToProfile(created), id: authUser.id };
   } catch {
-    // Ignore DB bootstrap failures; local auth remains available.
+    // Fall through to metadata-only profile.
   }
+  return { ...fallback, id: authUser.id, avatarId: fallback.avatarId ?? 1 };
 }
 
 export function useAuth() {
@@ -171,127 +86,124 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [pendingVerification, setPendingVerification] = useState(null);
   const [pendingReset, setPendingReset] = useState(null);
+  const userRef = useRef(null);
+  userRef.current = user;
 
   useEffect(() => {
-    (async () => {
-      try {
-        await bootstrapAdminAccount();
-        const raw = localStorage.getItem("vc:session");
-        if (raw) {
-          const local = JSON.parse(raw);
-          const fromDb = await fetchProfileFromDb(local);
-          setUser(fromDb ? { ...local, ...fromDb } : local);
-        }
-      } catch (_) {}
+    const sb = getSupabase();
+    if (!sb) {
       setLoading(false);
-    })();
+      return;
+    }
+
+    let cancelled = false;
+
+    const hydrate = async (session) => {
+      if (cancelled) return;
+      if (!session?.user) {
+        // Keep guest sessions; clear signed-in users.
+        if (!userRef.current?.isGuest) setUser(null);
+        setLoading(false);
+        return;
+      }
+      const profile = await loadOrCreateProfile(sb, session.user);
+      if (!cancelled) {
+        setUser(profile);
+        setPendingVerification(null);
+        setLoading(false);
+      }
+    };
+
+    sb.auth.getSession().then(({ data }) => hydrate(data?.session));
+
+    const { data: sub } = sb.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setPendingReset({ recovery: true });
+        setLoading(false);
+        return;
+      }
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        hydrate(session);
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      sub?.subscription?.unsubscribe();
+    };
   }, []);
 
   const signup = async (username, email, password) => {
-    const normalizedEmail = email.trim().toLowerCase();
-
     const sb = getSupabase();
-    if (sb) {
-      const byUsername = await findUserInDb(username);
-      if (byUsername) return { error: "Username already taken" };
-      const byEmail = await findUserByEmailInDb(normalizedEmail);
-      if (byEmail) return { error: "Email already registered" };
-    } else {
-      try {
-        const existing = localStorage.getItem(`vc:user:${username}`);
-        if (existing) return { error: "Username already taken" };
-        const existingEmail = localStorage.getItem(`vc:email:${normalizedEmail}`);
-        if (existingEmail) return { error: "Email already registered" };
-      } catch (_) {}
-    }
+    if (!sb) return { error: "Cloud auth is not configured. Continue as guest instead." };
+    const normalizedEmail = email.trim().toLowerCase();
+    trackEvent("signup_started", { method: "email" });
 
-    trackEvent("signup_started", { method: "email", hasPassword: !!password });
-    const code = generateCode();
-    const sendResult = await sendVerificationCode(normalizedEmail, code);
-    setPendingVerification({
-      username,
+    const { data, error } = await sb.auth.signUp({
       email: normalizedEmail,
       password,
-      code,
-      clientVerify: !!sendResult.clientVerify,
-      demoHint: sendResult.demo,
-      sendError: sendResult.ok ? null : sendResult.error,
+      options: { data: { username: username.trim() } },
     });
-    return {
-      ok: true,
-      needVerification: true,
-      email: email.trim(),
-      sendFailed: !sendResult.ok,
-      demoHint: sendResult.demo,
-      sendError: sendResult.error,
-    };
-  };
-
-  const verifyEmail = async (code) => {
-    if (!pendingVerification) return { error: "No pending verification" };
-    const normalized = String(code).replace(/\D/g, "").slice(0, VERIFICATION_CODE_LENGTH);
-
-    let accepted = false;
-    if (pendingVerification.clientVerify) {
-      accepted = normalized === pendingVerification.code;
-      if (!accepted) return { error: "Invalid code. Please check and try again." };
-    } else {
-      const apiResult = await verifyCodeWithApi(pendingVerification.email, normalized);
-      accepted = apiResult.ok || (isDemoCode(normalized) && (apiResult.demo || !getSupabase()));
-      if (!accepted) return { error: apiResult.error || "Invalid or expired code" };
+    if (error) {
+      if (/already registered/i.test(error.message)) return { error: "Email already registered" };
+      return { error: error.message };
     }
 
-    const { username, email, password } = pendingVerification;
-    const profile = { username, email, createdAt: new Date().toISOString(), avatarId: 1 };
-    const pwHash = await hashPassword(password);
+    if (data?.session) {
+      // Email confirmation disabled in project settings — signed in immediately.
+      trackEvent("signup_completed", { method: "email" });
+      return { ok: true };
+    }
 
-    localStorage.setItem(`vc:user:${username}`, JSON.stringify({ password, profile }));
-    localStorage.setItem(`vc:email:${email}`, username);
-    localStorage.setItem("vc:session", JSON.stringify(profile));
-    setPendingVerification(null);
-    setUser(profile);
-    upsertProfile(profile, pwHash);
-    trackEvent("signup_completed", { method: "email" });
+    // Confirmation email sent by Supabase Auth.
+    setPendingVerification({ email: normalizedEmail });
+    return { ok: true, needVerification: true, email: normalizedEmail };
+  };
+
+  const resendConfirmation = async () => {
+    const sb = getSupabase();
+    if (!sb || !pendingVerification?.email) return { error: "Nothing to resend" };
+    const { error } = await sb.auth.resend({ type: "signup", email: pendingVerification.email });
+    if (error) return { error: error.message };
     return { ok: true };
   };
 
   const cancelVerification = () => setPendingVerification(null);
 
-  const login = async (username, password) => {
-    let data;
-    try {
-      const raw = localStorage.getItem(`vc:user:${username}`);
-      if (raw) data = JSON.parse(raw);
-    } catch (_) {}
-
-    if (data) {
-      if (data.password !== password) return { error: "Incorrect password" };
-      localStorage.setItem("vc:session", JSON.stringify(data.profile));
-      setUser(data.profile);
-      upsertProfile(data.profile);
-      trackEvent("login_succeeded", { method: "local_cache" });
-      return { ok: true };
+  const login = async (email, password) => {
+    const sb = getSupabase();
+    if (!sb) return { error: "Cloud auth is not configured. Continue as guest instead." };
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    if (error) {
+      if (/email not confirmed/i.test(error.message)) {
+        setPendingVerification({ email: email.trim().toLowerCase() });
+        return { error: "Please confirm your email first — check your inbox." };
+      }
+      if (/invalid login credentials/i.test(error.message)) {
+        return { error: "Incorrect email or password" };
+      }
+      return { error: error.message };
     }
-
-    const row = await findUserInDb(username);
-    if (!row) return { error: "User not found" };
-    if (!row.password_hash) return { error: "Account requires password reset" };
-
-    const pwHash = await hashPassword(password);
-    if (pwHash !== row.password_hash) return { error: "Incorrect password" };
-
-    const profile = rowToProfile(row);
-    localStorage.setItem(`vc:user:${username}`, JSON.stringify({ password, profile }));
-    if (profile.email) localStorage.setItem(`vc:email:${profile.email.toLowerCase()}`, username);
-    localStorage.setItem("vc:session", JSON.stringify(profile));
-    setUser(profile);
-    trackEvent("login_succeeded", { method: "password_db" });
+    if (data?.user) trackEvent("login_succeeded", { method: "password" });
     return { ok: true };
   };
 
-  const logout = () => {
-    localStorage.removeItem("vc:session");
+  const logout = async () => {
+    const sb = getSupabase();
     setUser(null);
+    if (sb) {
+      try {
+        await sb.auth.signOut();
+      } catch {
+        // Session already gone.
+      }
+    }
   };
 
   const loginAsGuest = () => {
@@ -299,32 +211,17 @@ export function useAuth() {
     trackEvent("login_guest");
   };
 
-  const googleClientId = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const googleClientId =
+    typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   const handleGoogleCredential = async (credential) => {
-    const payload = decodeGoogleJwt(credential);
-    if (!payload || !payload.email) {
-      return;
-    }
-    const username = payload.name || payload.email.split("@")[0] || "User";
-    const profile = {
-      username,
-      email: payload.email,
-      picture: payload.picture || undefined,
-      sub: payload.sub,
-      isGoogle: true,
-      createdAt: new Date().toISOString(),
-    };
-    const existing = await fetchProfileFromDb(profile);
-    if (existing) {
-      profile.username = existing.username;
-      profile.avatarId = existing.avatarId;
-      if (existing.picture) profile.picture = existing.picture;
-    }
-    localStorage.setItem("vc:session", JSON.stringify(profile));
-    setUser(profile);
-    upsertProfile(profile);
-    trackEvent("signup_completed", { method: "google" });
+    const sb = getSupabase();
+    if (!sb) return;
+    const { error } = await sb.auth.signInWithIdToken({
+      provider: "google",
+      token: credential,
+    });
+    if (!error) trackEvent("signup_completed", { method: "google" });
   };
 
   const initGoogleButton = (containerEl, isSignUp = false) => {
@@ -345,49 +242,55 @@ export function useAuth() {
           text: isSignUp ? "signup_with" : "signin_with",
           width: 320,
         });
-      } catch (_) {}
+      } catch {
+        // GIS unavailable — email auth still works.
+      }
     });
   };
 
-  const updateProfile = (updates) => {
-    if (!user) return;
-    const next = { ...user, ...updates };
+  const updateProfile = async (updates) => {
+    const current = userRef.current;
+    if (!current || current.isGuest) return;
+    const next = { ...current, ...updates };
     if (Object.prototype.hasOwnProperty.call(updates, "avatarId")) {
       // Choosing an in-app avatar should take precedence over a stale remote image URL.
       next.picture = undefined;
     }
     setUser(next);
+
+    const sb = getSupabase();
+    if (!sb || !current.id) return;
+    const row = { updated_at: new Date().toISOString() };
+    if (updates.username) row.username = updates.username;
+    if (Object.prototype.hasOwnProperty.call(updates, "avatarId") && isValidAvatarId(updates.avatarId)) {
+      row.avatar_url = `avatar:${updates.avatarId}`;
+    }
     try {
-      localStorage.setItem("vc:session", JSON.stringify(next));
-      if (user.username && !user.isGuest) {
-        const raw = localStorage.getItem(`vc:user:${user.username}`);
-        if (raw) {
-          const data = JSON.parse(raw);
-          data.profile = next;
-          localStorage.setItem(`vc:user:${user.username}`, JSON.stringify(data));
-        }
-      }
-      upsertProfile(next);
-    } catch (_) {}
+      await sb.from(PROFILES_TABLE).update(row).eq("id", current.id);
+    } catch {
+      // Profile update is best-effort; local state already reflects the change.
+    }
   };
 
   const deleteAccount = async (currentUser) => {
     if (!currentUser) return { error: "Not signed in" };
     if (currentUser.isGuest) {
-      logout();
+      setUser(null);
       return { ok: true };
     }
-    const username = currentUser.username;
-    const email = currentUser.email ? currentUser.email.toLowerCase() : null;
+    const sb = getSupabase();
+    if (!sb) return { error: "Cloud auth is not configured" };
     try {
-      const sb = getSupabase();
-      if (sb && email) {
-        await sb.from(PROFILES_TABLE).delete().eq("email", email);
+      // Edge Function deletes the auth user (and profiles row via cascade).
+      const { data, error } = await sb.functions.invoke("delete-account", { body: {} });
+      if (error || data?.error) {
+        // Fallback: remove the profile row; auth user removal requires the function.
+        if (currentUser.id) {
+          await sb.from(PROFILES_TABLE).delete().eq("id", currentUser.id);
+        }
       }
-      if (email) localStorage.removeItem(`vc:email:${email}`);
-      localStorage.removeItem(`vc:user:${username}`);
-      localStorage.removeItem("vc:session");
-    } catch (e) {
+      await sb.auth.signOut();
+    } catch {
       return { error: "Failed to delete account" };
     }
     setUser(null);
@@ -395,69 +298,23 @@ export function useAuth() {
   };
 
   const requestPasswordReset = async (email) => {
+    const sb = getSupabase();
+    if (!sb) return { error: "Cloud auth is not configured" };
     const normalizedEmail = email.trim().toLowerCase();
-
-    let username = null;
-    try { username = localStorage.getItem(`vc:email:${normalizedEmail}`); } catch (_) {}
-
-    if (!username) {
-      const row = await findUserByEmailInDb(normalizedEmail);
-      if (!row) return { error: "No account found with that email" };
-      username = row.username;
-    }
-
-    const code = generateCode();
-    const sendResult = await sendVerificationCode(normalizedEmail, code);
-    setPendingReset({
-      email: normalizedEmail,
-      username,
-      code,
-      clientVerify: !!sendResult.clientVerify,
-      demoHint: sendResult.demo,
-      sendError: sendResult.ok ? null : sendResult.error,
-      codeVerified: false,
+    const { error } = await sb.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: window.location.origin,
     });
-    return { ok: true, sendFailed: !sendResult.ok, demoHint: sendResult.demo };
-  };
-
-  const verifyResetCode = async (code) => {
-    if (!pendingReset) return { error: "No pending reset" };
-    const normalized = String(code).replace(/\D/g, "").slice(0, VERIFICATION_CODE_LENGTH);
-
-    let accepted = false;
-    if (pendingReset.clientVerify) {
-      accepted = normalized === pendingReset.code;
-      if (!accepted) return { error: "Invalid code. Please check and try again." };
-    } else {
-      const apiResult = await verifyCodeWithApi(pendingReset.email, normalized);
-      accepted = apiResult.ok || (isDemoCode(normalized) && (apiResult.demo || !getSupabase()));
-      if (!accepted) return { error: apiResult.error || "Invalid or expired code" };
-    }
-
-    setPendingReset(prev => ({ ...prev, codeVerified: true }));
+    if (error) return { error: error.message };
+    setPendingReset({ email: normalizedEmail, linkSent: true });
     return { ok: true };
   };
 
   const confirmPasswordReset = async (newPassword) => {
-    if (!pendingReset?.codeVerified) return { error: "Code not verified" };
-    const pwHash = await hashPassword(newPassword);
-
-    try {
-      const raw = localStorage.getItem(`vc:user:${pendingReset.username}`);
-      if (raw) {
-        const data = JSON.parse(raw);
-        data.password = newPassword;
-        localStorage.setItem(`vc:user:${pendingReset.username}`, JSON.stringify(data));
-      }
-    } catch (_) {}
-
     const sb = getSupabase();
-    if (sb) {
-      await sb.from(PROFILES_TABLE)
-        .update({ password_hash: pwHash, updated_at: new Date().toISOString() })
-        .eq("email", pendingReset.email);
-    }
-
+    if (!sb) return { error: "Cloud auth is not configured" };
+    if (!pendingReset?.recovery) return { error: "Open the reset link from your email first" };
+    const { error } = await sb.auth.updateUser({ password: newPassword });
+    if (error) return { error: error.message };
     setPendingReset(null);
     return { ok: true };
   };
@@ -468,7 +325,7 @@ export function useAuth() {
     user,
     loading,
     signup,
-    verifyEmail,
+    resendConfirmation,
     cancelVerification,
     pendingVerification,
     login,
@@ -480,7 +337,6 @@ export function useAuth() {
     deleteAccount,
     pendingReset,
     requestPasswordReset,
-    verifyResetCode,
     confirmPasswordReset,
     cancelReset,
   };

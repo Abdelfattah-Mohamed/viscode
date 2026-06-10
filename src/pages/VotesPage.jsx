@@ -1,123 +1,40 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import NavBar from "../components/ui/NavBar";
 import PageContainer from "../components/ui/PageContainer";
 import AccountMenuChip from "../components/ui/AccountMenuChip";
 import { Card } from "../components/ui/Card";
 import Button from "../components/ui/Button";
+import { getSupabase } from "../utils/supabase";
 import { trackEvent } from "../utils/analytics";
 
 const STORAGE_KEY = "viscode-content-votes-v1";
+const REQUESTS_TABLE = "content_requests";
+const VOTES_TABLE = "content_votes";
+
+/* ── Local fallback (used only when Supabase is not configured) ── */
 
 const SEED_ITEMS = [
-  {
-    id: "lc-146-lru-cache",
-    title: "Add LeetCode 146: LRU Cache",
-    category: "LeetCode Problem",
-    description: "Include a full visualizer for doubly linked list + hash map interactions.",
-    votes: 6,
-    createdAt: "2026-05-01T10:00:00.000Z",
-  },
-  {
-    id: "algo-kmp",
-    title: "Add KMP string matching algorithm",
-    category: "Algorithm Topic",
-    description: "Show prefix table construction and matching traversal step by step.",
-    votes: 4,
-    createdAt: "2026-05-02T12:00:00.000Z",
-  },
-  {
-    id: "lc-208-trie",
-    title: "Add LeetCode 208: Implement Trie (Prefix Tree)",
-    category: "LeetCode Problem",
-    description: "Visualize node insertion, prefix traversal, and word-end markers.",
-    votes: 9,
-    createdAt: "2026-05-03T08:40:00.000Z",
-  },
-  {
-    id: "lc-295-median-stream",
-    title: "Add LeetCode 295: Find Median from Data Stream",
-    category: "LeetCode Problem",
-    description: "Show max-heap/min-heap balancing and median updates per insertion.",
-    votes: 11,
-    createdAt: "2026-05-03T14:20:00.000Z",
-  },
-  {
-    id: "algo-dijkstra",
-    title: "Add Dijkstra shortest path walkthrough",
-    category: "Algorithm Topic",
-    description: "Step through priority queue pops, relax operations, and distance table.",
-    votes: 7,
-    createdAt: "2026-05-04T09:15:00.000Z",
-  },
-  {
-    id: "lc-124-binary-tree-max-path",
-    title: "Add LeetCode 124: Binary Tree Maximum Path Sum",
-    category: "LeetCode Problem",
-    description: "Explain gain propagation from children and global best path updates.",
-    votes: 8,
-    createdAt: "2026-05-04T17:55:00.000Z",
-  },
-  {
-    id: "algo-union-find",
-    title: "Add Union-Find (DSU) fundamentals module",
-    category: "Algorithm Topic",
-    description: "Demonstrate path compression and union by rank with evolving parent arrays.",
-    votes: 5,
-    createdAt: "2026-05-05T10:10:00.000Z",
-  },
-  {
-    id: "lc-23-merge-k-lists",
-    title: "Add LeetCode 23: Merge k Sorted Lists",
-    category: "LeetCode Problem",
-    description: "Compare heap-based merge against divide-and-conquer merge process.",
-    votes: 10,
-    createdAt: "2026-05-05T13:35:00.000Z",
-  },
-  {
-    id: "lc-76-min-window-substring",
-    title: "Add LeetCode 76: Minimum Window Substring",
-    category: "LeetCode Problem",
-    description: "Detailed left/right window movement with frequency map state changes.",
-    votes: 12,
-    createdAt: "2026-05-05T18:05:00.000Z",
-  },
-  {
-    id: "algo-toposort",
-    title: "Add Topological Sort (Kahn + DFS) comparison",
-    category: "Algorithm Topic",
-    description: "Show indegree queue flow and contrast with DFS postorder approach.",
-    votes: 6,
-    createdAt: "2026-05-06T09:00:00.000Z",
-  },
+  { id: "lc-146-lru-cache", title: "Add LeetCode 146: LRU Cache", category: "LeetCode Problem", description: "Include a full visualizer for doubly linked list + hash map interactions.", votes: 6, createdAt: "2026-05-01T10:00:00.000Z" },
+  { id: "algo-kmp", title: "Add KMP string matching algorithm", category: "Algorithm Topic", description: "Show prefix table construction and matching traversal step by step.", votes: 4, createdAt: "2026-05-02T12:00:00.000Z" },
+  { id: "lc-208-trie", title: "Add LeetCode 208: Implement Trie (Prefix Tree)", category: "LeetCode Problem", description: "Visualize node insertion, prefix traversal, and word-end markers.", votes: 9, createdAt: "2026-05-03T08:40:00.000Z" },
+  { id: "lc-76-min-window-substring", title: "Add LeetCode 76: Minimum Window Substring", category: "LeetCode Problem", description: "Detailed left/right window movement with frequency map state changes.", votes: 12, createdAt: "2026-05-05T18:05:00.000Z" },
+  { id: "algo-toposort", title: "Add Topological Sort (Kahn + DFS) comparison", category: "Algorithm Topic", description: "Show indegree queue flow and contrast with DFS postorder approach.", votes: 6, createdAt: "2026-05-06T09:00:00.000Z" },
 ];
 
-function readItems() {
-  const sanitize = (list) =>
-    (Array.isArray(list) ? list : []).filter((item) => {
-      const title = String(item?.title || "").toLowerCase();
-      const category = String(item?.category || "").toLowerCase();
-      if (title.includes("system design")) return false;
-      if (category.includes("system design")) return false;
-      return true;
-    });
-  const mergeWithSeeds = (list) => {
-    const existing = Array.isArray(list) ? list : [];
-    const existingIds = new Set(existing.map((item) => item.id));
-    const toAdd = SEED_ITEMS.filter((item) => !existingIds.has(item.id));
-    return sanitize([...existing, ...toAdd]);
-  };
+function readLocalItems() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return sanitize(SEED_ITEMS);
+    if (!raw) return [...SEED_ITEMS];
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return sanitize(SEED_ITEMS);
-    return mergeWithSeeds(parsed);
+    if (!Array.isArray(parsed)) return [...SEED_ITEMS];
+    const ids = new Set(parsed.map((x) => x.id));
+    return [...parsed, ...SEED_ITEMS.filter((x) => !ids.has(x.id))];
   } catch {
-    return sanitize(SEED_ITEMS);
+    return [...SEED_ITEMS];
   }
 }
 
-function saveItems(items) {
+function saveLocalItems(items) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   } catch {
@@ -125,7 +42,7 @@ function saveItems(items) {
   }
 }
 
-function toId(text) {
+function toLocalId(text) {
   return String(text || "")
     .trim()
     .toLowerCase()
@@ -135,18 +52,54 @@ function toId(text) {
 }
 
 export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLogout, username, user, mobile }) {
-  const [items, setItems] = useState(() => readItems());
+  const sb = getSupabase();
+  const isGuest = !user || user.isGuest;
+  const userId = !isGuest ? user?.id : null;
+  const isAdmin = !!user?.isAdmin;
+
+  const [items, setItems] = useState(() => (sb ? [] : readLocalItems()));
+  const [votedIds, setVotedIds] = useState(() => new Set());
+  const [loading, setLoading] = useState(!!sb);
+  const [notice, setNotice] = useState(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("LeetCode Problem");
   const [description, setDescription] = useState("");
   const [search, setSearch] = useState("");
-  const [votedIds, setVotedIds] = useState(() => new Set());
-  const adminEmails = String(import.meta.env.VITE_ADMIN_EMAILS || "")
-    .split(",")
-    .map((x) => x.trim().toLowerCase())
-    .filter(Boolean);
-  const currentEmail = String(user?.email || "").trim().toLowerCase();
-  const isAdmin = adminEmails.includes(currentEmail) || String(username || "").trim().toLowerCase() === "admin";
+
+  const refetch = useCallback(async () => {
+    if (!sb) return;
+    setLoading(true);
+    try {
+      const [{ data: requests }, ownVotes] = await Promise.all([
+        sb
+          .from(REQUESTS_TABLE)
+          .select(`id, title, category, description, already_added, created_at, ${VOTES_TABLE}(count)`)
+          .order("created_at", { ascending: false }),
+        userId
+          ? sb.from(VOTES_TABLE).select("request_id").eq("user_id", userId)
+          : Promise.resolve({ data: [] }),
+      ]);
+      const mapped = (requests || []).map((r) => ({
+        id: r.id,
+        title: r.title,
+        category: r.category,
+        description: r.description,
+        alreadyAdded: !!r.already_added,
+        createdAt: r.created_at,
+        votes: r[VOTES_TABLE]?.[0]?.count ?? 0,
+      }));
+      setItems(mapped);
+      setVotedIds(new Set((ownVotes?.data || []).map((v) => v.request_id)));
+    } catch {
+      setNotice({ type: "error", text: "Couldn't load requests. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  }, [sb, userId]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -159,51 +112,104 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
     return [...list].sort((a, b) => b.votes - a.votes || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [items, search]);
 
-  const createRequest = () => {
+  const requireAccount = () => {
+    setNotice({ type: "info", text: "Sign in with an account to vote and suggest content." });
+    return isGuest;
+  };
+
+  const createRequest = async () => {
     const cleanedTitle = title.trim();
     if (!cleanedTitle) return;
-    const idBase = toId(cleanedTitle) || `request-${Date.now()}`;
+    setNotice(null);
+
+    if (sb) {
+      if (isGuest && requireAccount()) return;
+      const { data: created, error } = await sb
+        .from(REQUESTS_TABLE)
+        .insert({
+          title: cleanedTitle,
+          category,
+          description: description.trim() || "No extra description provided.",
+          created_by: userId,
+        })
+        .select("id")
+        .maybeSingle();
+      if (error || !created?.id) {
+        setNotice({ type: "error", text: "Couldn't submit the request. Please try again." });
+        return;
+      }
+      await sb.from(VOTES_TABLE).insert({ request_id: created.id, user_id: userId });
+      trackEvent("content_request_created", { requestId: created.id, category });
+      setTitle("");
+      setDescription("");
+      refetch();
+      return;
+    }
+
+    // Local fallback
+    const idBase = toLocalId(cleanedTitle) || `request-${Date.now()}`;
     const id = items.some((x) => x.id === idBase) ? `${idBase}-${Date.now()}` : idBase;
     const next = [
       ...items,
-      {
-        id,
-        title: cleanedTitle,
-        category,
-        description: description.trim() || "No extra description provided.",
-        votes: 1,
-        createdAt: new Date().toISOString(),
-      },
+      { id, title: cleanedTitle, category, description: description.trim() || "No extra description provided.", votes: 1, createdAt: new Date().toISOString() },
     ];
     setItems(next);
-    saveItems(next);
+    saveLocalItems(next);
     setVotedIds((prev) => new Set(prev).add(id));
     trackEvent("content_request_created", { requestId: id, category });
     setTitle("");
     setDescription("");
   };
 
-  const vote = (id) => {
+  const vote = async (id) => {
+    setNotice(null);
+    if (sb) {
+      if (isGuest && requireAccount()) return;
+      const hasVoted = votedIds.has(id);
+      // Optimistic toggle
+      setVotedIds((prev) => {
+        const next = new Set(prev);
+        if (hasVoted) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      setItems((prev) => prev.map((item) => (item.id === id ? { ...item, votes: item.votes + (hasVoted ? -1 : 1) } : item)));
+      const { error } = hasVoted
+        ? await sb.from(VOTES_TABLE).delete().eq("request_id", id).eq("user_id", userId)
+        : await sb.from(VOTES_TABLE).insert({ request_id: id, user_id: userId });
+      if (error) refetch();
+      else if (!hasVoted) trackEvent("content_request_voted", { requestId: id });
+      return;
+    }
+
+    // Local fallback (no unvote)
     if (votedIds.has(id)) return;
     const next = items.map((item) => (item.id === id ? { ...item, votes: item.votes + 1 } : item));
     setItems(next);
-    saveItems(next);
+    saveLocalItems(next);
     setVotedIds((prev) => new Set(prev).add(id));
     trackEvent("content_request_voted", { requestId: id });
   };
 
-  const markAlreadyAdded = (id) => {
-    const next = items.map((item) => {
-      if (item.id !== id) return item;
-      const currentlyAdded = !!item.alreadyAdded;
-      return {
-        ...item,
-        alreadyAdded: !currentlyAdded,
-        addedAt: !currentlyAdded ? new Date().toISOString() : null,
-      };
-    });
+  const markAlreadyAdded = async (id) => {
+    const current = items.find((x) => x.id === id);
+    if (!current) return;
+    const nextValue = !current.alreadyAdded;
+
+    if (sb) {
+      const { error } = await sb.from(REQUESTS_TABLE).update({ already_added: nextValue }).eq("id", id);
+      if (error) {
+        setNotice({ type: "error", text: "Only admins can mark requests as added." });
+        return;
+      }
+      setItems((prev) => prev.map((item) => (item.id === id ? { ...item, alreadyAdded: nextValue } : item)));
+      trackEvent("content_request_marked_added", { requestId: id });
+      return;
+    }
+
+    const next = items.map((item) => (item.id === id ? { ...item, alreadyAdded: nextValue } : item));
     setItems(next);
-    saveItems(next);
+    saveLocalItems(next);
     trackEvent("content_request_marked_added", { requestId: id });
   };
 
@@ -230,6 +236,7 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
         }
       />
 
+      <main id="main-content">
       <PageContainer mobile={mobile} maxWidth={1000} paddingMobile="24px 12px 40px" paddingDesktop="44px 24px 56px">
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: mobile ? 24 : 34 }}>
@@ -243,6 +250,13 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
             Request any LeetCode problem or algorithm topic. The most-voted requests get prioritized in upcoming releases.
           </p>
         </div>
+
+        {notice && (
+          <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${notice.type === "error" ? t.red : t.blue}66`, background: (notice.type === "error" ? t.red : t.blue) + "12", color: notice.type === "error" ? t.red : t.ink, fontSize: "0.88rem", display: "flex", justifyContent: "space-between", gap: 10 }}>
+            <span>{notice.text}</span>
+            <button onClick={() => setNotice(null)} style={{ background: "none", border: "none", color: t.inkMuted, cursor: "pointer", padding: 0 }} aria-label="Dismiss">✕</button>
+          </div>
+        )}
 
         {/* Submit a request */}
         <Card t={t} style={{ padding: mobile ? "16px" : "18px 20px", marginBottom: 22 }}>
@@ -293,7 +307,11 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
         </div>
 
         <div style={{ display: "grid", gap: 10 }}>
-          {filtered.length === 0 ? (
+          {loading ? (
+            <Card t={t} style={{ padding: 24 }}>
+              <p style={{ margin: 0, textAlign: "center", color: t.inkMuted }}>Loading requests…</p>
+            </Card>
+          ) : filtered.length === 0 ? (
             <Card t={t} style={{ padding: 24 }}>
               <p style={{ margin: 0, textAlign: "center", color: t.inkMuted }}>
                 No requests match your search. Be the first to suggest one above.
@@ -308,7 +326,7 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
                     {/* Vote control */}
                     <button
                       onClick={() => vote(item.id)}
-                      disabled={voted}
+                      aria-pressed={voted}
                       style={{
                         flexShrink: 0,
                         width: 58,
@@ -322,10 +340,10 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
                         border: `1.5px solid ${voted ? t.blue : t.border}`,
                         background: voted ? t.blue + "16" : t.surfaceAlt,
                         color: voted ? t.blue : t.ink,
-                        cursor: voted ? "default" : "pointer",
+                        cursor: "pointer",
                         transition: "all 0.15s ease",
                       }}
-                      title={voted ? "You voted" : "Upvote"}
+                      title={voted ? "Remove your vote" : "Upvote"}
                     >
                       <span style={{ fontSize: "0.9rem", lineHeight: 1 }}>▲</span>
                       <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1.05rem", fontWeight: 800, lineHeight: 1.1 }}>
@@ -387,6 +405,7 @@ export default function VotesPage({ t, themeMode, setThemeMode, onNavigate, onLo
           )}
         </div>
       </PageContainer>
+      </main>
     </div>
   );
 }

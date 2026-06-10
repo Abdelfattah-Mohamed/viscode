@@ -53,6 +53,7 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
         }
       />
 
+      <main id="main-content">
       {/* Hero */}
       <PageContainer mobile={mobile} maxWidth={760} paddingMobile="40px 16px 32px" paddingDesktop="72px 24px 48px">
         <div style={{ textAlign: "center" }}>
@@ -212,7 +213,17 @@ export default function HomePage({ t, themeMode, setThemeMode, onNavigate, onLog
             </Button>
           )}
         </div>
+        <nav aria-label="Legal" style={{ marginTop: 28, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
+          {[["terms", "Terms"], ["privacy", "Privacy"], ["refunds", "Refunds"]].map(([id, label]) => (
+            <button key={id} onClick={() => onNavigate(id)}
+              style={{ background: "none", border: "none", color: t.inkMuted, fontSize: "0.82rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+              {label}
+            </button>
+          ))}
+          <span style={{ color: t.inkMuted, fontSize: "0.82rem" }}>© {new Date().getFullYear()} VisCode</span>
+        </nav>
       </div>
+      </main>
     </div>
   );
 }

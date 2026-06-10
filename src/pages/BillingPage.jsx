@@ -343,7 +343,7 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
         }
       />
 
-      <div style={{ flex: 1, maxWidth: 1040, margin: "0 auto", padding: mobile ? "24px 16px 48px" : "44px 24px 64px", width: "100%" }}>
+      <main id="main-content" style={{ flex: 1, maxWidth: 1040, margin: "0 auto", padding: mobile ? "24px 16px 48px" : "44px 24px 64px", width: "100%" }}>
         {message && (
           <div
             style={{
@@ -572,7 +572,15 @@ export default function BillingPage({ user, t, themeMode, setThemeMode, onNaviga
             Home
           </Button>
         </div>
-      </div>
+        <nav aria-label="Legal" style={{ marginTop: 18, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
+          {[["terms", "Terms of Service"], ["privacy", "Privacy Policy"], ["refunds", "Refund Policy"]].map(([id, label]) => (
+            <button key={id} onClick={() => onNavigate(id)}
+              style={{ background: "none", border: "none", color: t.inkMuted, fontSize: "0.82rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+              {label}
+            </button>
+          ))}
+        </nav>
+      </main>
     </div>
   );
 }

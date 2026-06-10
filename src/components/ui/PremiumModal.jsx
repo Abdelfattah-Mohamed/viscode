@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Button from "./Button";
 import { DIFF_COLOR, CAT_ICON } from "../../data/problems";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 const PRO_PERKS = [
   { icon: "🔓", text: "Unlock every problem category" },
@@ -9,6 +10,8 @@ const PRO_PERKS = [
 ];
 
 export default function PremiumModal({ t, mobile, problem, onClose, onUpgrade }) {
+  const dialogRef = useFocusTrap(!!problem);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -45,6 +48,7 @@ export default function PremiumModal({ t, mobile, problem, onClose, onUpgrade })
         @keyframes vc-modal-pop { from { opacity: 0; transform: translateY(10px) scale(0.97) } to { opacity: 1; transform: none } }
       `}</style>
       <div
+        ref={dialogRef}
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "min(460px, 100%)",

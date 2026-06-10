@@ -2924,8 +2924,7 @@ export function generateHouseRobberIISteps(input) {
 }
 
 export function generateUniquePathsSteps(input) {
-  let m = 0;
-  let n = 0;
+  let m, n;
   if (Array.isArray(input?.nums) && input.nums.length >= 2) {
     const nums = input.nums.map(Number);
     m = Math.max(0, nums[0] ?? 0);
