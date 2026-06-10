@@ -80,10 +80,100 @@ update public.profiles set is_admin = true where email = 'you@example.com';
 
 ## 7. Deploy the frontend (Vercel)
 
-- Import the repo in Vercel (SPA rewrites already in `vercel.json`).
-- Set env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
-  `VITE_GOOGLE_CLIENT_ID`, `VITE_ANALYTICS_ENDPOINT`.
-- GitHub Actions now runs lint + tests + build as a quality gate only.
+Vercel hosts the React app. Supabase Edge Functions (steps 3–4) stay on
+Supabase — only the static frontend goes to Vercel.
+
+### 7a. First-time setup (Vercel Dashboard)
+
+1. Go to [vercel.com](https://vercel.com) → sign in with GitHub.
+2. Click **Add New… → Project**.
+3. Import `Abdelfattah-Mohamed/viscode` (or your fork).
+4. On the **Configure Project** screen, confirm these settings:
+
+| Setting | Value |
+|---------|-------|
+| Framework Preset | **Vite** (auto-detected) |
+| Root Directory | `.` (repo root) |
+| Build Command | `npm run build` (default) |
+| Output Directory | `dist` (default for Vite) |
+| Install Command | `npm install` (default) |
+
+5. **Do not deploy yet** — add environment variables first (next section).
+6. Click **Deploy**. Vercel builds on every push to `main`.
+
+`vercel.json` already rewrites all routes to `index.html` so client-side
+routing works (`/billing`, `/problem/two-sum`, etc.).
+
+### 7b. Environment variables (Vercel → Project → Settings → Environment Variables)
+
+Add each variable for **Production** (and **Preview** if you want PR previews
+to work with auth/billing). Copy values from your local `.env` or the sources
+below.
+
+| Variable | Required | Where to get it | Example |
+|----------|----------|-----------------|---------|
+| `VITE_SUPABASE_URL` | Yes | Supabase → **Project Settings → API → Project URL** | `https://faguedpduasxsuwnmmct.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Yes | Supabase → **Project Settings → API → anon public** | `eyJhbGciOiJIUzI1NiIs…` |
+| `VITE_GOOGLE_CLIENT_ID` | Optional | Google Cloud Console → **Credentials → OAuth client ID (Web)** | `123…apps.googleusercontent.com` |
+| `VITE_ANALYTICS_ENDPOINT` | Optional | Your deployed `track-event` function URL | `https://faguedpduasxsuwnmmct.supabase.co/functions/v1/track-event` |
+| `SITE_URL` | Recommended | Your production domain (used when generating `sitemap.xml` at build time) | `https://viscode.dev` |
+
+Notes:
+
+- Only variables prefixed with `VITE_` are exposed to the browser. Never put
+  Stripe secret keys or the Supabase **service role** key here.
+- After changing env vars, go to **Deployments → … → Redeploy** so the new
+  values are baked into the build.
+- `SITE_URL` is read by `scripts/generate-sitemap.mjs` during `npm run build`.
+  Without it, the sitemap defaults to `https://viscode.dev`.
+
+### 7c. Custom domain (optional)
+
+1. Vercel → Project → **Settings → Domains**.
+2. Add `viscode.dev` (or your domain) and follow the DNS instructions.
+3. Vercel provisions HTTPS automatically once DNS propagates.
+
+After the domain is live, update these **outside** Vercel:
+
+- **Supabase** → Authentication → **URL Configuration**:
+  - **Site URL** = `https://viscode.dev`
+  - **Redirect URLs** — add `https://viscode.dev` (keep `http://localhost:5173`)
+- **Google Cloud Console** → OAuth client → **Authorized JavaScript origins**:
+  - add `https://viscode.dev`
+
+### 7d. Verify the deployment
+
+Open your Vercel URL and check:
+
+| Check | How |
+|-------|-----|
+| Home page loads | `/` shows the hero and problem list |
+| Client routing | `/billing`, `/problems`, `/terms` load without 404 |
+| Sign up / sign in | Email or Google auth completes |
+| Billing checkout | Subscribe redirects to Stripe (step 6 test matrix) |
+| Sitemap | `https://your-domain/sitemap.xml` returns XML |
+| OG image | `https://your-domain/og-image.jpg` loads |
+
+### 7e. CI vs Vercel (what runs where)
+
+| System | Trigger | What it does |
+|--------|---------|--------------|
+| **GitHub Actions** (`.github/workflows/ci.yml`) | Every push / PR | `lint` → `validate:problems` → `test` → `build` (quality gate only) |
+| **Vercel** | Every push to `main` | `npm install` → `npm run build` → deploy `dist/` |
+
+GitHub Actions does **not** deploy the site. If CI fails, fix it before merging
+to `main` so Vercel doesn't deploy a broken build.
+
+### 7f. Common Vercel build failures
+
+| Error | Fix |
+|-------|-----|
+| `ERESOLVE could not resolve` on `npm install` | Ensure `@eslint/js` is `^9.x` (matches `eslint@^9`) in `package.json` |
+| Blank page after deploy | Check browser console for missing `VITE_SUPABASE_*` env vars |
+| Auth works locally but not on Vercel | Add production URL to Supabase redirect URLs (7c) |
+| Google sign-in fails on production | Add production origin to Google OAuth + Supabase Google provider |
+| Billing "Profile not found" | Sign in (not guest); run `MIGRATION-AUTH.sql` if profiles table is empty |
+| Wrong URLs in sitemap | Set `SITE_URL` env var in Vercel and redeploy |
 
 ## 8. Final switches before public launch
 
