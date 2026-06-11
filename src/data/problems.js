@@ -1,4 +1,5 @@
 import { SORTING_PROBLEMS, SORTING_PROB_LIST, SORTING_ORDER } from "./sortingProblems.js";
+import { BLIND75_MISSING_PROBLEMS, BLIND75_MISSING_PROB_LIST, BLIND75_MISSING_ORDER } from "./blind75MissingProblems.js";
 
 export const LANG_META = {
   cpp:        { label: "C++",        iconBg: "#00599c", iconColor: "#fff"     },
@@ -31,6 +32,7 @@ export const CAT_ICON = {
   "Heap":                 "📦",
   "Sorting":              "📊",
   "Famous Algorithms":   "⭐",
+  "Tries":               "🔤",
 };
 
 export const PROBLEMS = {
@@ -1007,6 +1009,7 @@ export const PROBLEMS = {
 };
 
 Object.assign(PROBLEMS, SORTING_PROBLEMS);
+Object.assign(PROBLEMS, BLIND75_MISSING_PROBLEMS);
 
 const FAMOUS_ALGO_EXPLANATION_BOOST = {
   "bellman-ford": [
@@ -1273,6 +1276,9 @@ function normalizeIntervalList(values, field) {
 }
 
 function makeSmallCase(problem) {
+  if (problem.title === "Construct Binary Tree from Preorder and Inorder") {
+    return withFields(problem.defaultInput || {}, problem.inputFields || []);
+  }
   if (problem.title === "Valid Sudoku") {
     const values = withFields(problem.defaultInput || {}, problem.inputFields || []);
     const g = Array.isArray(values.grid) ? values.grid.map((x) => Number(x) || 0) : [];
@@ -1315,6 +1321,9 @@ function makeSmallCase(problem) {
 
 function makeAlternateCase(problem) {
   const values = withFields(problem.defaultInput || {}, problem.inputFields || []);
+  if (problem.title === "Construct Binary Tree from Preorder and Inorder") {
+    return withFields(problem.defaultInput || {}, problem.inputFields || []);
+  }
   if (problem.title === "Valid Sudoku") {
     const g = Array.isArray(values.grid) ? values.grid.map((x) => Number(x) || 0) : [];
     while (g.length < 81) g.push(0);
@@ -1811,6 +1820,168 @@ PROBLEMS["min-rotated-sorted"].examples[2] = {
   values: { nums: [8, 9, 10, 2, 3, 4, 5, 6, 7] },
 };
 
+PROBLEMS["validate-binary-search-tree"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: "root = [5,1,4,null,null,3,6]",
+  output: "false",
+  note: "Node 4 is the right child of 5 but 4 < 5 — violates the parent bound.",
+  values: { root: [5, 1, 4, null, null, 3, 6] },
+};
+
+PROBLEMS["validate-binary-search-tree"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "root = [10,5,15,null,null,6,20]",
+  output: "false",
+  note: "Node 6 sits in the right subtree of 10 but 6 < 10 — a deeper ancestor-bound violation.",
+  values: { root: [10, 5, 15, null, null, 6, 20] },
+};
+
+PROBLEMS["minimum-window-substring"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: 's = "a", t = "a"',
+  output: '"a"',
+  note: "The entire string is already the minimum window when s and t are one character.",
+  values: { s: "a", t: "a" },
+};
+
+PROBLEMS["minimum-window-substring"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: 's = "a", t = "aa"',
+  output: '""',
+  note: "t needs two 'a' characters but s only has one — no valid window exists.",
+  values: { s: "a", t: "aa" },
+};
+
+PROBLEMS["binary-tree-level-order-traversal"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: "root = [1]",
+  output: "[[1]]",
+  note: "A single-node tree produces one level with one value.",
+  values: { root: [1] },
+};
+
+PROBLEMS["binary-tree-level-order-traversal"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "root = [1,2,3,4,5,6,7]",
+  output: "[[1],[2,3],[4,5,6,7]]",
+  note: "A complete three-level tree — each BFS pass drains one full level.",
+  values: { root: [1, 2, 3, 4, 5, 6, 7] },
+};
+
+PROBLEMS["kth-smallest-element-in-a-bst"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: "root = [3,1,4,null,2], k = 3",
+  output: "3",
+  note: "Inorder order is 1, 2, 3, 4 — the 3rd smallest is 3.",
+  values: { root: [3, 1, 4, null, null, 2], k: 3 },
+};
+
+PROBLEMS["kth-smallest-element-in-a-bst"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "root = [5,3,8,1,4,7,9], k = 4",
+  output: "5",
+  note: "Deeper BST; inorder is 1, 3, 4, 5, 7, 8, 9 — k = 4 lands on the root value.",
+  values: { root: [5, 3, 8, 1, 4, 7, 9], k: 4 },
+};
+
+PROBLEMS["construct-binary-tree-from-preorder-and-inorder-traversal"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: "preorder = [1,2], inorder = [2,1]",
+  output: "[1,null,2]",
+  note: "Root is 1; inorder left slice is empty so 2 becomes the right child.",
+  values: { preorder: [1, 2], inorder: [2, 1] },
+};
+
+PROBLEMS["construct-binary-tree-from-preorder-and-inorder-traversal"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "preorder = [1,2,3], inorder = [2,1,3]",
+  output: "[1,2,3]",
+  note: "Root 1 splits inorder into left [2] and right [3], giving a tree with both children.",
+  values: { preorder: [1, 2, 3], inorder: [2, 1, 3] },
+};
+
+PROBLEMS["binary-tree-maximum-path-sum"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: "root = [1,2,3]",
+  output: "6",
+  note: "Best path arches through the root: 2 → 1 → 3 sums to 6.",
+  values: { root: [1, 2, 3] },
+};
+
+PROBLEMS["binary-tree-maximum-path-sum"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: "root = [-3]",
+  output: "-3",
+  note: "Single-node tree — the only path is the node itself.",
+  values: { root: [-3] },
+};
+
+PROBLEMS["implement-trie-prefix-tree"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: 's = "insert cat, insert car, search cat, search cap, startsWith ca"',
+  output: "true, false, true",
+  note: "Two words share prefix 'ca'; search distinguishes full words from prefixes.",
+  values: { s: "insert cat, insert car, search cat, search cap, startsWith ca" },
+};
+
+PROBLEMS["implement-trie-prefix-tree"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: 's = "insert hello, startsWith hell, search hell, search hello"',
+  output: "true, false, true",
+  note: "'hell' is a prefix but was never inserted as a complete word.",
+  values: { s: "insert hello, startsWith hell, search hell, search hello" },
+};
+
+PROBLEMS["design-add-and-search-words-data-structure"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: 's = "addWord day, addWord bay, addWord may, search .ay"',
+  output: "true",
+  note: "The wildcard '.' matches the first letter of day, bay, or may.",
+  values: { s: "addWord day, addWord bay, addWord may, search .ay" },
+};
+
+PROBLEMS["design-add-and-search-words-data-structure"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: 's = "addWord a, addWord ab, search .b, search xyz"',
+  output: "true, false",
+  note: "'.b' matches 'ab'; 'xyz' was never added and has no wildcard match.",
+  values: { s: "addWord a, addWord ab, search .b, search xyz" },
+};
+
+PROBLEMS["word-search-ii"].examples[1] = {
+  id: "example-2",
+  label: "Example 2",
+  input: 'board = "a,b,c,d", rows = 2, words = "ab,bd"',
+  output: '["ab","bd"]',
+  note: "Small 2×2 grid — 'ab' across the top row, 'bd' down the right column.",
+  values: { board: "a,b,c,d", rows: 2, words: "ab,bd" },
+};
+
+PROBLEMS["word-search-ii"].examples[2] = {
+  id: "example-3",
+  label: "Example 3",
+  input: 'board = "a,b,c,d", rows = 2, words = "ac,db,xyz"',
+  output: '["ac","db"]',
+  note: "'ac' and 'db' are on the board; 'xyz' cannot be formed from adjacent cells.",
+  values: { board: "a,b,c,d", rows: 2, words: "ac,db,xyz" },
+};
+
 // ── Blind 75 order (LeetCode) from https://dev.to/jaiminbariya/leetcode-blind-75-49mp ──
 const BLIND_75_ORDER = [
   "two-sum", "best-time-stock", "contains-duplicate", "product-except-self", "max-subarray", "max-product-subarray",
@@ -1825,6 +1996,7 @@ const BLIND_75_ORDER = [
   "longest-substring-no-repeat", "longest-repeating-char-replacement", "valid-anagram", "group-anagrams", "valid-parentheses",
   "valid-palindrome", "longest-palindromic-substring", "palindromic-substrings", "encode-decode-strings",
   "max-depth-tree", "same-tree", "invert-tree", "serialize-deserialize-btree", "subtree-of-another-tree", "lca-of-bst",
+  ...BLIND75_MISSING_ORDER,
 ];
 
 // ── Problem list for browse/search (Blind 75 order first, then the rest) ───────────────────────────────────────
@@ -1919,6 +2091,7 @@ const PROB_LIST_RAW = [
   { id: "fenwick-tree",      title: "Fenwick Tree (BIT)",       difficulty: "Medium", category: "Famous Algorithms", desc: "Binary Indexed Tree: prefix sum and point update in O(log n).", tags: ["data-structure", "prefix-sum", "segment-tree"] },
   { id: "segment-tree",      title: "Segment Tree",             difficulty: "Medium", category: "Famous Algorithms", desc: "Range queries and updates in O(log n).", tags: ["data-structure", "range-query"] },
   { id: "knapsack-01",       title: "0/1 Knapsack",             difficulty: "Medium", category: "Famous Algorithms", desc: "Max value with weight limit; each item at most once. DP.", tags: ["dp", "knapsack"] },
+  ...BLIND75_MISSING_PROB_LIST,
 ];
 
 const FAMOUS_ALGO_ORDER = [

@@ -9,6 +9,22 @@
  * so the same tree is [1, null, 2, null, null, 3].
  */
 
+function countNonNull(arr) {
+  return arr.filter((v) => v !== null && v !== undefined).length;
+}
+
+/**
+ * Normalize a tree array to complete index layout (child at 2i+1 / 2i+2).
+ * Accepts either LeetCode BFS serialization or an already-complete array.
+ * InputEditor stores complete format; applying leetcodeToComplete again drops nodes.
+ */
+export function ensureCompleteTree(raw) {
+  if (!raw?.length || raw[0] === null || raw[0] === undefined) return [];
+  const converted = leetcodeToComplete(raw);
+  if (countNonNull(raw) > countNonNull(converted)) return raw;
+  return converted;
+}
+
 export function leetcodeToComplete(lc) {
   if (!lc || !lc.length || lc[0] === null) return [];
 

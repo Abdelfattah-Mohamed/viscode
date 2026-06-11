@@ -4,7 +4,9 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
   const isSetMatrixZeroes = problemId === "set-matrix-zeroes";
   const isSpiralMatrix = problemId === "spiral-matrix";
   const isRotateImage = problemId === "rotate-image";
-  const isWordSearch = problemId === "word-search";
+  const isWordSearch = problemId === "word-search" || problemId === "word-search-ii";
+  const isWordSearchII = problemId === "word-search-ii";
+  const { foundWords = [], searchWord = "", words: wordList = [] } = stepState;
   const isNumberOfIslands = problemId === "number-of-islands";
   const isMaxAreaOfIsland = problemId === "max-area-of-island";
   const isIslandFamily = isNumberOfIslands || isMaxAreaOfIsland;
@@ -167,15 +169,15 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
           </div>
         </div>
       )}
-      {isWordSearch && word && (
+      {isWordSearch && (word || isWordSearchII) && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", border: `1.5px solid ${t.border}`, borderRadius: 14, background: t.surfaceAlt }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontFamily: "'Caveat',cursive", fontSize: "1.18rem", fontWeight: 800, color: t.ink, lineHeight: 1 }}>
-                Word search board
+                {isWordSearchII ? "Word Search II" : "Word search board"}
               </div>
               <div style={{ marginTop: 4, fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", color: t.inkMuted }}>
-                DFS tries each cell, marks the current path, then backtracks.
+                {isWordSearchII ? "Trie + DFS finds multiple words on the board." : "DFS tries each cell, marks the current path, then backtracks."}
               </div>
             </div>
             <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: done ? t.green : t.blue, background: (done ? t.green : t.blue) + "18", border: `1.25px solid ${(done ? t.green : t.blue)}66`, borderRadius: 999, padding: "5px 10px" }}>
@@ -183,9 +185,26 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
             </span>
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            {isWordSearchII && wordList?.length > 0 && (
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: t.ink, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 999, padding: "3px 8px" }}>
+                words: [{wordList.join(", ")}]
+              </span>
+            )}
+            {isWordSearchII && searchWord && (
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: t.purple, background: t.purple + "18", border: `1px solid ${t.purple}66`, borderRadius: 999, padding: "3px 8px" }}>
+                searching: {searchWord}
+              </span>
+            )}
+            {isWordSearchII && foundWords?.length > 0 && (
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: t.green, background: t.green + "18", border: `1px solid ${t.green}66`, borderRadius: 999, padding: "3px 8px" }}>
+                found: [{foundWords.join(", ")}]
+              </span>
+            )}
+            {!isWordSearchII && (
             <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: t.ink, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 999, padding: "3px 8px" }}>
               word: {word}
             </span>
+            )}
             {matched && (
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", fontWeight: 900, color: t.green, background: t.green + "18", border: `1px solid ${t.green}66`, borderRadius: 999, padding: "3px 8px" }}>
                 matched: {matched}

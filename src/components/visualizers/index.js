@@ -51,3 +51,7 @@ export { default as CharReplacementViz } from "./CharReplacementViz";
 export { default as EncodeDecodeViz } from "./EncodeDecodeViz";
 export { default as LCAOfBSTViz } from "./LCAOfBSTViz";
 export { default as SortingViz } from "./SortingViz";
+export { default as MinWindowViz } from "./MinWindowViz";
+export { default as TreeAlgoViz } from "./TreeAlgoViz";
+export { default as TreeConstructViz } from "./TreeConstructViz";
+export { default as TrieViz } from "./TrieViz";

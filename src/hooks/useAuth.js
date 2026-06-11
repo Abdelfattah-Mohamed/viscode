@@ -5,6 +5,11 @@ import { trackEvent } from "../utils/analytics";
 
 const GOOGLE_SCRIPT_ID = "google-gsi-script";
 
+function authEmailRedirectTo() {
+  if (typeof window === "undefined") return undefined;
+  return window.location.origin;
+}
+
 function loadGoogleScript() {
   if (document.getElementById(GOOGLE_SCRIPT_ID)) return Promise.resolve();
   return new Promise((resolve) => {
@@ -145,7 +150,10 @@ export function useAuth() {
     const { data, error } = await sb.auth.signUp({
       email: normalizedEmail,
       password,
-      options: { data: { username: username.trim() } },
+      options: {
+        data: { username: username.trim() },
+        emailRedirectTo: authEmailRedirectTo(),
+      },
     });
     if (error) {
       if (/already registered/i.test(error.message)) return { error: "Email already registered" };
@@ -166,7 +174,11 @@ export function useAuth() {
   const resendConfirmation = async () => {
     const sb = getSupabase();
     if (!sb || !pendingVerification?.email) return { error: "Nothing to resend" };
-    const { error } = await sb.auth.resend({ type: "signup", email: pendingVerification.email });
+    const { error } = await sb.auth.resend({
+      type: "signup",
+      email: pendingVerification.email,
+      options: { emailRedirectTo: authEmailRedirectTo() },
+    });
     if (error) return { error: error.message };
     return { ok: true };
   };

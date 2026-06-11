@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { leetcodeToComplete, completeToLeetcode } from "../../utils/treeFormat";
+import { computeTreeLayout } from "../visualizers/treeLayout";
+import TreeSvgFrame from "../visualizers/TreeSvgFrame";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 const TREE_FIELDS = new Set(["root", "subRoot", "p", "q"]);
 const INT_FIELDS = new Set(["target", "n", "m", "pos", "rows", "cols", "k", "amount"]);
-const STRING_FIELDS = new Set(["s", "t", "dict", "words", "word", "board", "preorder", "inorder"]);
+const STRING_FIELDS = new Set(["s", "t", "dict", "words", "word", "board"]);
 
 function stripBrackets(s) {
   let out = String(s ?? "").trim();
@@ -77,13 +79,11 @@ function TreePreview({ complete, t }) {
   const sketchBorder = t._resolved === "dark" ? "#8a8f98" : "#1f2937";
   const paper = t._resolved === "dark" ? "#1f2024" : "#fffdf8";
   const ink = t._resolved === "dark" ? "#f3f4f6" : "#1f2937";
-  const nodes = [];
-  for (let i = 0; i < complete.length; i += 1) {
-    if (complete[i] !== null && complete[i] !== undefined) {
-      nodes.push({ idx: i, value: complete[i] });
-    }
-  }
-  if (nodes.length === 0) {
+  const { nodes, edges, width, height, nodeR } = computeTreeLayout(complete, {
+    baseNodeR: 16, baseRowH: 48, minWidth: 160,
+  });
+
+  if (!nodes.length) {
     return (
       <div style={{ border: `2px dashed ${sketchBorder}`, borderRadius: 10, padding: 10, color: t.inkMuted, fontSize: "0.78rem", background: paper }}>
         Empty tree preview
@@ -91,60 +91,30 @@ function TreePreview({ complete, t }) {
     );
   }
 
-  const present = new Set(nodes.map((n) => n.idx));
-  const maxLevel = Math.max(...nodes.map((n) => Math.floor(Math.log2(n.idx + 1))));
-  const width = 280;
-  const levelGap = 62;
-  const top = 26;
-  const height = top * 2 + maxLevel * levelGap + 36;
-
-  const pos = new Map();
-  for (const n of nodes) {
-    const level = Math.floor(Math.log2(n.idx + 1));
-    const posInLevel = n.idx - (2 ** level - 1);
-    const countInLevel = 2 ** level;
-    const x = ((posInLevel + 1) / (countInLevel + 1)) * width;
-    const y = top + level * levelGap;
-    pos.set(n.idx, { x, y });
-  }
-
-  const edges = nodes
-    .filter((n) => n.idx > 0)
-    .map((n) => {
-      const p = Math.floor((n.idx - 1) / 2);
-      return present.has(p) ? { from: p, to: n.idx } : null;
-    })
-    .filter(Boolean);
-
   return (
-    <svg
-      width="100%"
-      viewBox={`0 0 ${width} ${height}`}
-      style={{ border: `2px solid ${sketchBorder}`, borderRadius: 10, background: paper, maxHeight: 240 }}
-    >
-      {edges.map((e, i) => (
-        <line
-          key={`e-${i}`}
-          x1={pos.get(e.from).x}
-          y1={pos.get(e.from).y}
-          x2={pos.get(e.to).x}
-          y2={pos.get(e.to).y}
-          stroke={sketchBorder}
-          strokeWidth="2"
-        />
-      ))}
-      {nodes.map((n) => {
-        const p = pos.get(n.idx);
-        return (
-          <g key={`n-${n.idx}`}>
-            <circle cx={p.x} cy={p.y} r="15" fill={paper} stroke={sketchBorder} strokeWidth="2.2" />
-            <text x={p.x} y={p.y + 4} textAnchor="middle" fontSize="11" fill={ink} fontWeight="700">
-              {String(n.value)}
+    <div style={{ border: `2px solid ${sketchBorder}`, borderRadius: 10, background: paper, maxHeight: 260 }}>
+      <TreeSvgFrame width={width} height={Math.min(height, 240)} style={{ maxHeight: 240 }}>
+        {edges.map((e, i) => (
+          <line
+            key={`e-${i}`}
+            x1={e.from.x}
+            y1={e.from.y}
+            x2={e.to.x}
+            y2={e.to.y}
+            stroke={sketchBorder}
+            strokeWidth="2"
+          />
+        ))}
+        {nodes.map((n) => (
+          <g key={`n-${n.index}`}>
+            <circle cx={n.x} cy={n.y} r={nodeR} fill={paper} stroke={sketchBorder} strokeWidth="2.2" />
+            <text x={n.x} y={n.y + 4} textAnchor="middle" fontSize={nodeR >= 12 ? 11 : 9} fill={ink} fontWeight="700">
+              {String(n.val)}
             </text>
           </g>
-        );
-      })}
-    </svg>
+        ))}
+      </TreeSvgFrame>
+    </div>
   );
 }
 

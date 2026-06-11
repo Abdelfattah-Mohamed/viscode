@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
+import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
 describe("step generators", () => {
   it("every problem has a registered step generator", () => {
@@ -44,5 +45,17 @@ describe("sorting generators produce sorted output", () => {
     const steps = SORTING_STEP_GENERATORS["maximum-gap"]({ nums: [3, 6, 9, 1] });
     const last = steps[steps.length - 1];
     expect(last.state.aux).toEqual([3]);
+  });
+});
+
+describe("construct tree steps", () => {
+  it("builds the tree incrementally in step state", () => {
+    const steps = generateConstructTreeSteps({
+      preorder: [3, 9, 20, 15, 7],
+      inorder: [9, 3, 15, 20, 7],
+    });
+    expect(steps[0].state.root).toEqual([]);
+    expect(steps[1].state.root).toEqual([3]);
+    expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
   });
 });

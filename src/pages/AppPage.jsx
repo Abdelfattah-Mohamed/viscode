@@ -14,7 +14,7 @@ import {
   PalindromeViz, ParenthesesViz, ProductViz, MaxProductViz, RobberViz,
   MissingViz, TreeDepthViz, InvertTreeViz, SameTreeViz, LinkedListViz,
   ThreeSumViz, ContainerViz, MergeListsViz, MergeKViz, IntervalsViz, CycleViz, GridViz, GraphViz, RpnViz,   DecodeWaysViz, GenerateParenthesesViz, TopKFrequentViz,   MinStackViz, MedianFinderViz, SumTwoIntegersViz,   NumberOf1BitsViz, ReverseBitsViz,   WordBreakViz, LongestCommonSubsequenceViz,   LongestIncreasingSubsequenceViz,   CombinationSumViz,   HouseRobberIIViz, UniquePathsViz, JumpGameViz, SlidingWindowViz, SubsetsViz, PermutationsViz, LongestPalindromeViz, GroupAnagramsViz,   TrappingRainWaterViz, PalindromicSubstringsViz, CharReplacementViz,   EncodeDecodeViz, LCAOfBSTViz,
-  SortingViz,
+  SortingViz, MinWindowViz, TreeAlgoViz, TreeConstructViz, TrieViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
@@ -547,6 +547,10 @@ export default function AppPage({
               {problem.visualizer === "jumpgame" && <JumpGameViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "palindromicsubstrings" && <PalindromicSubstringsViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "charreplacement" && <CharReplacementViz s={input.s ?? ""} k={input.k ?? 0} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "minwindow" && <MinWindowViz s={input.s ?? ""} target={input.t ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "treealgo" && <TreeAlgoViz root={input.root || []} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "treeconstruct" && <TreeConstructViz preorder={input.preorder} inorder={input.inorder} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "trie" && <TrieViz stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "encodedecode" && <EncodeDecodeViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "slidingwindow" && <SlidingWindowViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "subsets" && <SubsetsViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
@@ -872,6 +876,10 @@ export default function AppPage({
             {problem.visualizer === "jumpgame" && <JumpGameViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "palindromicsubstrings" && <PalindromicSubstringsViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "charreplacement" && <CharReplacementViz s={input.s ?? ""} k={input.k ?? 0} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "minwindow" && <MinWindowViz s={input.s ?? ""} target={input.t ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "treealgo" && <TreeAlgoViz root={input.root || []} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "treeconstruct" && <TreeConstructViz preorder={input.preorder} inorder={input.inorder} stepState={currentStep?.state ?? {}} t={t} />}
+            {problem.visualizer === "trie" && <TrieViz stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "encodedecode" && <EncodeDecodeViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "slidingwindow" && <SlidingWindowViz s={input.s ?? ""} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "subsets" && <SubsetsViz nums={input.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}

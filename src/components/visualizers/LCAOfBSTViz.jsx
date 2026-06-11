@@ -1,59 +1,8 @@
-import { useMemo } from "react";
-import { leetcodeToComplete } from "../../utils/treeFormat";
+import { ensureCompleteTree } from "../../utils/treeFormat";
 import TreeRoughView from "./TreeRoughView";
+import TreeSvgFrame from "./TreeSvgFrame";
+import { useTreeLayout } from "./treeLayout";
 import { EXCALIDRAW_TREE } from "./treeExcalidrawTheme";
-
-const NODE_R = 22;
-const NULL_R = 6;
-const ROW_H = 52;
-
-function getTreeWidth(arr) {
-  if (!arr || !arr.length) return 200;
-  const depth = Math.floor(Math.log2(arr.length));
-  return Math.max(200, Math.min(460, (1 << depth) * 58));
-}
-
-function useTreeLayout(arr, width) {
-  return useMemo(() => {
-    if (!arr || !arr.length) return { nodes: [], edges: [], nullMarkers: [], maxLevel: 0 };
-
-    const validSet = new Set();
-    for (let i = 0; i < arr.length; i++) {
-      if (arr[i] === null || arr[i] === undefined) continue;
-      if (i === 0 || validSet.has(Math.floor((i - 1) / 2))) validSet.add(i);
-    }
-
-    const nodes = [], nullMarkers = [], nodeMap = new Map();
-
-    for (let i = 0; i < arr.length; i++) {
-      const level = i === 0 ? 0 : Math.floor(Math.log2(i + 1));
-      const posInLevel = i - (1 << level) + 1;
-      const totalInLevel = 1 << level;
-      const x = ((posInLevel + 0.5) / totalInLevel) * width;
-      const y = level * ROW_H + NODE_R + 2;
-
-      if (validSet.has(i)) {
-        const node = { index: i, val: arr[i], level, x, y };
-        nodes.push(node);
-        nodeMap.set(i, node);
-      } else if (arr[i] === null && i > 0 && validSet.has(Math.floor((i - 1) / 2))) {
-        nullMarkers.push({ index: i, x, y, parentIdx: Math.floor((i - 1) / 2) });
-      }
-    }
-
-    nullMarkers.forEach(m => { m.parentNode = nodeMap.get(m.parentIdx); });
-
-    const edges = [];
-    nodes.forEach(n => {
-      const li = 2 * n.index + 1, ri = 2 * n.index + 2;
-      if (nodeMap.has(li)) edges.push({ from: n, to: nodeMap.get(li) });
-      if (nodeMap.has(ri)) edges.push({ from: n, to: nodeMap.get(ri) });
-    });
-
-    const maxLevel = nodes.length ? Math.max(0, ...nodes.map(n => n.level)) : 0;
-    return { nodes, edges, nullMarkers, maxLevel };
-  }, [arr, width]);
-}
 
 /** Find index of node with given value in level-order array */
 function findNodeIndex(arr, val) {
@@ -66,11 +15,12 @@ function findNodeIndex(arr, val) {
 
 export default function LCAOfBSTViz({ root = [], stepState = {}, t }) {
   const raw = Array.isArray(root) ? root : [];
-  const arr = raw.length && raw[0] != null ? leetcodeToComplete(raw) : raw;
+  const arr = ensureCompleteTree(raw);
   const { visiting, p, q, lca, done, currentVal, bothLeft, bothRight, decision, path = [] } = stepState;
 
-  const width = getTreeWidth(arr);
-  const { nodes, edges, nullMarkers, maxLevel } = useTreeLayout(arr, width);
+  const { nodes, edges, nullMarkers, width, height, nodeR } = useTreeLayout(arr, {
+    baseNodeR: 22, baseRowH: 52, minWidth: 200,
+  });
 
   const pIdx = findNodeIndex(arr, p);
   const qIdx = findNodeIndex(arr, q);
@@ -85,10 +35,10 @@ export default function LCAOfBSTViz({ root = [], stepState = {}, t }) {
     </div>
   );
 
-  const height = maxLevel * ROW_H + NODE_R * 2 + 40;
+  const labelSize = "1.1em";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center", width: "100%" }}>
       {/* Legend: p and q */}
       {(p != null || q != null) && (
         <div style={{ display: "flex", gap: 16, fontFamily: "'Caveat',cursive", fontSize: "0.95rem", fontWeight: 700 }}>
@@ -148,7 +98,7 @@ export default function LCAOfBSTViz({ root = [], stepState = {}, t }) {
         </div>
       </div>
 
-      <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ maxWidth: width, overflow: "visible" }}>
+      <TreeSvgFrame width={width} height={height}>
         <g transform="translate(0, 4)">
           <TreeRoughView
             nodes={nodes}
@@ -156,7 +106,7 @@ export default function LCAOfBSTViz({ root = [], stepState = {}, t }) {
             nullMarkers={nullMarkers}
             width={width}
             height={height}
-            nodeR={NODE_R}
+            nodeR={nodeR}
             t={t}
             getNodeStyle={(n) => {
               const isVisiting = n.index === visiting;
@@ -191,16 +141,16 @@ export default function LCAOfBSTViz({ root = [], stepState = {}, t }) {
             return (
               <g key={n.index}>
                 <text x={n.x} y={n.y} textAnchor="middle" dominantBaseline="central"
-                  style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "1.1em", fontWeight: 700, fill: t.ink }}>{n.val}</text>
+                  style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: labelSize, fontWeight: 700, fill: t.ink }}>{n.val}</text>
                 {label && (
-                  <text x={n.x} y={n.y + NODE_R + 10} textAnchor="middle"
+                  <text x={n.x} y={n.y + nodeR + 10} textAnchor="middle"
                     style={{ fontFamily: "'Caveat',cursive", fontSize: "0.7em", fontWeight: 700, fill: isLCA ? t.green : (isP ? t.blue : isQ ? t.purple : t.yellow) }}>{label}</text>
                 )}
               </g>
             );
           })}
         </g>
-      </svg>
+      </TreeSvgFrame>
 
       {/* Result panel */}
       {lca != null && (

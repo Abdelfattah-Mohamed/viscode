@@ -209,6 +209,10 @@ export default function AuthScreen({ onAuth, t, themeMode }) {
           We sent a confirmation link to <strong style={{ color: t.ink }}>{pending.email}</strong>.
           Click the link in the email, then sign in.
         </p>
+        <p style={{ margin: 0, color: t.inkMuted, fontSize: "0.82rem", lineHeight: 1.5 }}>
+          Check spam and Promotions. If nothing arrives after a few minutes, the Supabase project
+          needs custom SMTP configured (see <code style={{ fontSize: "0.8rem" }}>docs/GO-LIVE.md</code> §2).
+        </p>
         {successMsg && (
           <div style={{ padding: "8px 12px", background: t.green + "1f", border: `1.5px solid ${t.green}`, borderRadius: 8, color: t.green, fontSize: "0.85rem", fontWeight: 700 }}>
             {successMsg}

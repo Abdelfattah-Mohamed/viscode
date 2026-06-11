@@ -19,6 +19,25 @@ Everything code-side is done. The steps below need the project owner's accounts
 - Auth → URL Configuration: Site URL = production domain; add
   `http://localhost:5173` to additional redirect URLs.
 
+### 2a. Custom SMTP (required for real confirmation emails)
+
+Supabase’s built-in mailer is for testing only. Signup/resend APIs succeed, but
+emails often **never arrive** for real users until you configure SMTP.
+
+1. Create a sender at [Resend](https://resend.com) (or SendGrid / AWS SES).
+2. Supabase → **Project Settings → Authentication → SMTP Settings**:
+   - Enable custom SMTP
+   - Host: `smtp.resend.com`, port `465`, username `resend`, password = your Resend API key
+   - Sender email: a verified domain address (e.g. `noreply@viscode.dev`)
+3. Auth → **Rate limits**: raise signup/reset email limits if needed.
+4. Auth → **Logs**: after a test signup, confirm a `mail.send` event with no error.
+
+**Unblock yourself right now (no email):** Auth → Users → open the user →
+**Confirm user** (or temporarily turn off **Confirm email** under Providers → Email).
+
+**Local dev:** `supabase start` captures mail in Inbucket at `http://127.0.0.1:54324`
+— that only applies locally, not the hosted project.
+
 ## 3. Edge Functions
 
 ```bash

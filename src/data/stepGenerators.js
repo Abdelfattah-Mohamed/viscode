@@ -1,8 +1,9 @@
 // Step generators produce an array of animation steps for each problem.
 // Each step: { stepType, description, state }
 
-import { leetcodeToComplete } from "../utils/treeFormat.js";
+import { ensureCompleteTree } from "../utils/treeFormat.js";
 import { SORTING_STEP_GENERATORS } from "./sortingStepGenerators.js";
+import { BLIND75_MISSING_STEP_GENERATORS } from "./blind75MissingStepGenerators.js";
 
 export function generateTwoSumSteps({ nums, target }) {
   const steps = [], map = {};
@@ -3725,7 +3726,7 @@ export function generateAlienDictionarySteps(input) {
 
 export function generateLCAOfBSTSteps(input) {
   const raw = Array.isArray(input?.root) ? input.root : [];
-  const arr = raw.length && raw[0] != null ? leetcodeToComplete(raw) : raw;
+  const arr = ensureCompleteTree(raw);
   const pVal = input?.p;
   const qVal = input?.q;
   const p = (Array.isArray(pVal) ? pVal[0] : pVal) ?? 2;
@@ -4547,4 +4548,5 @@ export const STEP_GENERATORS = {
   "segment-tree":            generateSegmentTreeSteps,
   "knapsack-01": generateKnapsackSteps,
   ...SORTING_STEP_GENERATORS,
+  ...BLIND75_MISSING_STEP_GENERATORS,
 };
