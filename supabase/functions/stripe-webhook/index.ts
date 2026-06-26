@@ -113,9 +113,10 @@ Deno.serve(async (req) => {
         };
         if (!sub?.id) break;
         const priceId = sub.items?.data?.[0]?.price?.id;
-        const planId = priceId ? planIdFromPriceId(priceId) : "pro";
+        const subscriptionDeleted = event.type === "customer.subscription.deleted";
+        const planId = subscriptionDeleted ? "free" : priceId ? planIdFromPriceId(priceId) : "pro";
         const status =
-          event.type === "customer.subscription.deleted"
+          subscriptionDeleted
             ? "canceled"
             : sub.status === "active" || sub.status === "trialing"
               ? sub.status
