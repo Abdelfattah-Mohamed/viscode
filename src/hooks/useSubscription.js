@@ -6,6 +6,7 @@ import {
   BILLING_PLANS_TABLE,
 } from "../utils/supabase";
 import { mergeBillingPlansFromDb } from "../data/billingPlans";
+import { isSubscriptionEntitled } from "../utils/entitlements";
 
 const PLAN_CACHE_TTL_MS = 5 * 60 * 1000;
 let plansCache = {
@@ -171,11 +172,7 @@ export function useSubscription(user) {
     refetch();
   }, [refetch]);
 
-  const isPro =
-    plan?.id === "pro_weekly" ||
-    plan?.id === "pro" ||
-    plan?.id === "pro_yearly" ||
-    plan?.id === "lifetime";
+  const isPro = isSubscriptionEntitled(subscription);
   const planName = plan?.name || "Free";
   const nextBillingDate = subscription?.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString(undefined, {
