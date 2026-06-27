@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 const STORAGE_KEY = "viscode-learning-progress-v1";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -7,9 +7,17 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function readState() {
+function storageKeyForUser(user) {
+  if (user && !user.isGuest) {
+    const identity = user.id || user.email?.toLowerCase?.();
+    if (identity) return `${STORAGE_KEY}:${encodeURIComponent(identity)}`;
+  }
+  return `${STORAGE_KEY}:guest`;
+}
+
+function readState(storageKey) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed : null;
@@ -18,9 +26,9 @@ function readState() {
   }
 }
 
-function writeState(state) {
+function writeState(storageKey, state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
     // Ignore storage failures.
   }
@@ -78,12 +86,31 @@ function upsertReviewItem(queue, problemId, dueAt, reason) {
 }
 
 export function useLearningProgress(user) {
-  const [state, setState] = useState(() => mergeDefaults(readState()));
+  const storageKey = storageKeyForUser(user);
+  const [scopedState, setScopedState] = useState(() => ({
+    storageKey,
+    value: mergeDefaults(readState(storageKey)),
+  }));
+  const state = scopedState.value;
   const isGuest = !user || user.isGuest;
 
+  useLayoutEffect(() => {
+    setScopedState((prev) =>
+      prev.storageKey === storageKey ? prev : { storageKey, value: mergeDefaults(readState(storageKey)) }
+    );
+  }, [storageKey]);
+
   useEffect(() => {
-    writeState(state);
-  }, [state]);
+    if (scopedState.storageKey !== storageKey) return;
+    writeState(storageKey, scopedState.value);
+  }, [scopedState, storageKey]);
+
+  const setState = useCallback((updater) => {
+    setScopedState((prev) => ({
+      ...prev,
+      value: typeof updater === "function" ? updater(prev.value) : updater,
+    }));
+  }, []);
 
   const updateOnboarding = useCallback((payload) => {
     setState((prev) => ({
@@ -94,7 +121,7 @@ export function useLearningProgress(user) {
         completed: true,
       },
     }));
-  }, []);
+  }, [setState]);
 
   const ensureReferralCode = useCallback((username) => {
     setState((prev) => {
@@ -109,7 +136,7 @@ export function useLearningProgress(user) {
         },
       };
     });
-  }, []);
+  }, [setState]);
 
   const trackProblemStart = useCallback((problemId) => {
     if (!problemId) return;
@@ -131,7 +158,7 @@ export function useLearningProgress(user) {
         lifecycle: { ...prev.lifecycle, lastVisitAt: new Date().toISOString() },
       };
     });
-  }, []);
+  }, [setState]);
 
   const trackProblemCompletion = useCallback((problemId, payload = {}) => {
     if (!problemId) return;
@@ -185,7 +212,7 @@ export function useLearningProgress(user) {
         reviewQueue,
       };
     });
-  }, []);
+  }, [setState]);
 
   const markMastered = useCallback((problemId) => {
     if (!problemId) return;
@@ -206,7 +233,7 @@ export function useLearningProgress(user) {
         },
       };
     });
-  }, []);
+  }, [setState]);
 
   const completeReview = useCallback((problemId) => {
     if (!problemId) return;
@@ -214,7 +241,7 @@ export function useLearningProgress(user) {
       ...prev,
       reviewQueue: prev.reviewQueue.filter((item) => item.problemId !== problemId),
     }));
-  }, []);
+  }, [setState]);
 
   const applyReferral = useCallback(() => {
     setState((prev) => ({
@@ -225,7 +252,7 @@ export function useLearningProgress(user) {
         referralBonusMonths: prev.growth.referralBonusMonths + 1,
       },
     }));
-  }, []);
+  }, [setState]);
 
   const dueReviewItems = useMemo(() => {
     const nowTs = Date.now();
