@@ -86,7 +86,7 @@ function upsertReviewItem(queue, problemId, dueAt, reason) {
 }
 
 export function useLearningProgress(user) {
-  const storageKey = useMemo(() => storageKeyForUser(user), [user?.email, user?.id, user?.isGuest]);
+  const storageKey = storageKeyForUser(user);
   const [scopedState, setScopedState] = useState(() => ({
     storageKey,
     value: mergeDefaults(readState(storageKey)),
@@ -121,7 +121,7 @@ export function useLearningProgress(user) {
         completed: true,
       },
     }));
-  }, []);
+  }, [setState]);
 
   const ensureReferralCode = useCallback((username) => {
     setState((prev) => {
@@ -136,7 +136,7 @@ export function useLearningProgress(user) {
         },
       };
     });
-  }, []);
+  }, [setState]);
 
   const trackProblemStart = useCallback((problemId) => {
     if (!problemId) return;
@@ -158,7 +158,7 @@ export function useLearningProgress(user) {
         lifecycle: { ...prev.lifecycle, lastVisitAt: new Date().toISOString() },
       };
     });
-  }, []);
+  }, [setState]);
 
   const trackProblemCompletion = useCallback((problemId, payload = {}) => {
     if (!problemId) return;
@@ -212,7 +212,7 @@ export function useLearningProgress(user) {
         reviewQueue,
       };
     });
-  }, []);
+  }, [setState]);
 
   const markMastered = useCallback((problemId) => {
     if (!problemId) return;
@@ -233,7 +233,7 @@ export function useLearningProgress(user) {
         },
       };
     });
-  }, []);
+  }, [setState]);
 
   const completeReview = useCallback((problemId) => {
     if (!problemId) return;
@@ -241,7 +241,7 @@ export function useLearningProgress(user) {
       ...prev,
       reviewQueue: prev.reviewQueue.filter((item) => item.problemId !== problemId),
     }));
-  }, []);
+  }, [setState]);
 
   const applyReferral = useCallback(() => {
     setState((prev) => ({
@@ -252,7 +252,7 @@ export function useLearningProgress(user) {
         referralBonusMonths: prev.growth.referralBonusMonths + 1,
       },
     }));
-  }, []);
+  }, [setState]);
 
   const dueReviewItems = useMemo(() => {
     const nowTs = Date.now();
