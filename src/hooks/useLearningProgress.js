@@ -7,9 +7,17 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function readState() {
+function storageKeyForUser(user) {
+  if (!user || user.isGuest) return null;
+  const identity = user.id || user.email;
+  if (!identity) return null;
+  return `${STORAGE_KEY}:${encodeURIComponent(String(identity).trim().toLowerCase())}`;
+}
+
+function readState(storageKey) {
+  if (!storageKey) return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed : null;
@@ -18,9 +26,10 @@ function readState() {
   }
 }
 
-function writeState(state) {
+function writeState(storageKey, state) {
+  if (!storageKey) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
     // Ignore storage failures.
   }
@@ -78,12 +87,20 @@ function upsertReviewItem(queue, problemId, dueAt, reason) {
 }
 
 export function useLearningProgress(user) {
-  const [state, setState] = useState(() => mergeDefaults(readState()));
+  const storageKey = storageKeyForUser(user);
+  const [state, setState] = useState(() => mergeDefaults(readState(storageKey)));
+  const [loadedStorageKey, setLoadedStorageKey] = useState(storageKey);
   const isGuest = !user || user.isGuest;
 
   useEffect(() => {
-    writeState(state);
-  }, [state]);
+    setState(mergeDefaults(readState(storageKey)));
+    setLoadedStorageKey(storageKey);
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (loadedStorageKey !== storageKey) return;
+    writeState(storageKey, state);
+  }, [loadedStorageKey, state, storageKey]);
 
   const updateOnboarding = useCallback((payload) => {
     setState((prev) => ({
