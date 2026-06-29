@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import { STEP_GENERATORS, generateInvertTreeSteps } from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
@@ -57,5 +57,20 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("invert tree steps", () => {
+  it("uses source indices while reading and mirrored indices while building", () => {
+    const steps = generateInvertTreeSteps({ root: [4, 2, 7, 1, 3, 6, 9] });
+    const visitLeft = steps.find((step) => step.stepType === "visit" && step.description.includes("node 1"));
+    const placeLeft = steps.find((step) => step.stepType === "swap" && step.description.includes("mirrored index 2"));
+
+    expect(visitLeft.state.view).toBe("source");
+    expect(visitLeft.state.visiting).toBe(1);
+    expect(visitLeft.state.inverted[2]).toBeNull();
+    expect(placeLeft.state.view).toBe("inverted");
+    expect(placeLeft.state.visiting).toBe(2);
+    expect(placeLeft.state.inverted[2]).toBe(2);
   });
 });

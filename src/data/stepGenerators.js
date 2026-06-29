@@ -484,17 +484,17 @@ export function generateInvertTreeSteps({ root }) {
 
   function mirror(srcIdx, dstIdx) {
     if (srcIdx >= arr.length || arr[srcIdx] === null || arr[srcIdx] === undefined || dstIdx >= inverted.length) {
-      steps.push({ stepType: "base", description: `Node ${srcIdx} is null/out of bounds`, state: { visiting: dstIdx, swapped: [...swapped], inverted: [...inverted], done: false } });
+      steps.push({ stepType: "base", description: `Node ${srcIdx} is null/out of bounds`, state: { visiting: srcIdx, view: "source", swapped: [...swapped], inverted: [...inverted], done: false } });
       return;
     }
 
-    steps.push({ stepType: "visit", description: `Visit node ${srcIdx} (value=${arr[srcIdx]})`, state: { visiting: dstIdx, swapped: [...swapped], inverted: [...inverted], done: false } });
+    steps.push({ stepType: "visit", description: `Visit node ${srcIdx} (value=${arr[srcIdx]})`, state: { visiting: srcIdx, view: "source", swapped: [...swapped], inverted: [...inverted], done: false } });
     inverted[dstIdx] = arr[srcIdx];
     swapped.push(dstIdx);
 
-    steps.push({ stepType: "swap", description: `Place ${arr[srcIdx]} at mirrored index ${dstIdx}`, state: { visiting: dstIdx, swapped: [...swapped], inverted: [...inverted], done: false } });
-    steps.push({ stepType: "swap_assign", description: `Mirror children: left subtree becomes right, right subtree becomes left`, state: { visiting: dstIdx, swapped: [...swapped], inverted: [...inverted], done: false } });
-    steps.push({ stepType: "recurse", description: `Recurse into mirrored children of node ${srcIdx}`, state: { visiting: dstIdx, swapped: [...swapped], inverted: [...inverted], done: false } });
+    steps.push({ stepType: "swap", description: `Place ${arr[srcIdx]} at mirrored index ${dstIdx}`, state: { visiting: dstIdx, view: "inverted", swapped: [...swapped], inverted: [...inverted], done: false } });
+    steps.push({ stepType: "swap_assign", description: `Mirror children: left subtree becomes right, right subtree becomes left`, state: { visiting: dstIdx, view: "inverted", swapped: [...swapped], inverted: [...inverted], done: false } });
+    steps.push({ stepType: "recurse", description: `Recurse into mirrored children of node ${srcIdx}`, state: { visiting: dstIdx, view: "inverted", swapped: [...swapped], inverted: [...inverted], done: false } });
 
     mirror(2 * srcIdx + 1, 2 * dstIdx + 2);
     mirror(2 * srcIdx + 2, 2 * dstIdx + 1);
@@ -505,7 +505,7 @@ export function generateInvertTreeSteps({ root }) {
   while (trimmed.length > 0 && (trimmed[trimmed.length - 1] === null || trimmed[trimmed.length - 1] === undefined)) {
     trimmed.pop();
   }
-  steps.push({ stepType: "done", description: "✅ Tree inverted!", state: { visiting: -1, swapped: [...swapped], inverted: trimmed, done: true } });
+  steps.push({ stepType: "done", description: "✅ Tree inverted!", state: { visiting: -1, view: "inverted", swapped: [...swapped], inverted: trimmed, done: true } });
   return steps;
 }
 
