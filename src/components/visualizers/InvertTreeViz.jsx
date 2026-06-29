@@ -6,12 +6,15 @@ import { EXCALIDRAW_TREE } from "./treeExcalidrawTheme";
 
 export default function InvertTreeViz({ root = [], stepState = {}, t }) {
   const { visiting, swapped = [], inverted, serialized, tokenIdx, done } = stepState;
+  const isSourceView = stepState.view === "source";
   const hasInvertedNodes =
     Array.isArray(inverted) && inverted.some((v) => v !== null && v !== undefined);
-  const arr = hasInvertedNodes ? inverted : (Array.isArray(root) ? root : []);
+  const arr = isSourceView
+    ? (Array.isArray(root) ? root : [])
+    : (hasInvertedNodes ? inverted : (Array.isArray(root) ? root : []));
   const hasSerializedString = typeof serialized === "string" && serialized.length > 0;
 
-  const swappedSet = useMemo(() => new Set(swapped), [swapped]);
+  const swappedSet = useMemo(() => new Set(isSourceView ? [] : swapped), [isSourceView, swapped]);
 
   const { nodes, edges, nullMarkers, width, height, nodeR } = useTreeLayout(arr);
 
@@ -29,6 +32,18 @@ export default function InvertTreeViz({ root = [], stepState = {}, t }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, alignItems: "center", width: "100%" }}>
+      <div style={{
+        padding: "4px 12px",
+        borderRadius: 999,
+        border: `1.5px solid ${t.border}55`,
+        background: t.surfaceAlt,
+        color: t.inkMuted,
+        fontFamily: "'Caveat',cursive",
+        fontSize: "0.95rem",
+        fontWeight: 700,
+      }}>
+        {isSourceView ? "Reading original tree" : "Building inverted tree"}
+      </div>
       <TreeSvgFrame width={width} height={height}>
         <g transform="translate(0, 4)">
           <TreeRoughView
