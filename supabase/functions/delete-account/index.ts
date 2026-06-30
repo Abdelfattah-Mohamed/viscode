@@ -3,6 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
+const STRIPE_API_BASE = "https://api.stripe.com/v1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +17,18 @@ function jsonResponse(body: object, status: number) {
     status,
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
+}
+
+async function cancelStripeSubscription(subscriptionId: string) {
+  const res = await fetch(`${STRIPE_API_BASE}/subscriptions/${encodeURIComponent(subscriptionId)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
+  });
+  const data = await res.json();
+  if (data?.error && data.error?.code !== "resource_missing") {
+    return data.error?.message || "Failed to cancel Stripe subscription";
+  }
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -34,6 +48,26 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const { data: subRow, error: subError } = await admin
+      .from("user_subscriptions")
+      .select("stripe_subscription_id")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    if (subError) {
+      console.error("delete-account subscription lookup error:", subError);
+      return jsonResponse({ error: "Failed to verify billing state" }, 500);
+    }
+    if (subRow?.stripe_subscription_id) {
+      if (!STRIPE_SECRET_KEY) {
+        return jsonResponse({ error: "Stripe is not configured (STRIPE_SECRET_KEY missing)" }, 503);
+      }
+      const stripeError = await cancelStripeSubscription(subRow.stripe_subscription_id);
+      if (stripeError) {
+        console.error("delete-account stripe cancel error:", stripeError);
+        return jsonResponse({ error: stripeError }, 502);
+      }
+    }
+
     const { error: deleteError } = await admin.auth.admin.deleteUser(userData.user.id);
     if (deleteError) {
       console.error("delete-account error:", deleteError);

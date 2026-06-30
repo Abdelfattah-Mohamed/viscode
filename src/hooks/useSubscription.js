@@ -8,6 +8,14 @@ import {
 import { mergeBillingPlansFromDb } from "../data/billingPlans";
 
 const PLAN_CACHE_TTL_MS = 5 * 60 * 1000;
+const PRO_PLAN_IDS = new Set(["pro_weekly", "pro", "pro_yearly", "lifetime"]);
+const ACTIVE_ENTITLEMENT_STATUSES = new Set(["active", "trialing"]);
+
+export function hasActiveProEntitlement(subscription, plan) {
+  if (!PRO_PLAN_IDS.has(plan?.id)) return false;
+  return ACTIVE_ENTITLEMENT_STATUSES.has(subscription?.status);
+}
+
 let plansCache = {
   at: 0,
   plans: null,
@@ -171,11 +179,7 @@ export function useSubscription(user) {
     refetch();
   }, [refetch]);
 
-  const isPro =
-    plan?.id === "pro_weekly" ||
-    plan?.id === "pro" ||
-    plan?.id === "pro_yearly" ||
-    plan?.id === "lifetime";
+  const isPro = hasActiveProEntitlement(subscription, plan);
   const planName = plan?.name || "Free";
   const nextBillingDate = subscription?.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString(undefined, {
