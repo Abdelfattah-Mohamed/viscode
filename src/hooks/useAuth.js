@@ -296,10 +296,7 @@ export function useAuth() {
       // Edge Function deletes the auth user (and profiles row via cascade).
       const { data, error } = await sb.functions.invoke("delete-account", { body: {} });
       if (error || data?.error) {
-        // Fallback: remove the profile row; auth user removal requires the function.
-        if (currentUser.id) {
-          await sb.from(PROFILES_TABLE).delete().eq("id", currentUser.id);
-        }
+        return { error: data?.error || error?.message || "Failed to delete account" };
       }
       await sb.auth.signOut();
     } catch {
