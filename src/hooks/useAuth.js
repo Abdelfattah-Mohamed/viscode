@@ -55,6 +55,20 @@ function authUserFallbackProfile(authUser) {
   };
 }
 
+async function extractEdgeFunctionError(error, fallback) {
+  if (!error) return fallback;
+  const context = error.context;
+  if (context) {
+    try {
+      const body = await context.json();
+      if (body?.error) return body.error;
+    } catch {
+      // Non-JSON function errors still fall through to the Supabase message.
+    }
+  }
+  return error.message || fallback;
+}
+
 /** Ensure a profiles row exists for the signed-in auth user; returns the app profile. */
 async function loadOrCreateProfile(sb, authUser) {
   const fallback = authUserFallbackProfile(authUser);
@@ -295,15 +309,15 @@ export function useAuth() {
     try {
       // Edge Function deletes the auth user (and profiles row via cascade).
       const { data, error } = await sb.functions.invoke("delete-account", { body: {} });
-      if (error || data?.error) {
-        // Fallback: remove the profile row; auth user removal requires the function.
-        if (currentUser.id) {
-          await sb.from(PROFILES_TABLE).delete().eq("id", currentUser.id);
-        }
-      }
+      if (error) return { error: await extractEdgeFunctionError(error, "Failed to delete account") };
+      if (data?.error) return { error: data.error };
+    } catch (e) {
+      return { error: e?.message || "Failed to delete account" };
+    }
+    try {
       await sb.auth.signOut();
     } catch {
-      return { error: "Failed to delete account" };
+      // The auth user may already be gone; clear local state after confirmed deletion.
     }
     setUser(null);
     return { ok: true };
