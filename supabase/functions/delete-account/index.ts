@@ -17,6 +17,13 @@ function jsonResponse(body: object, status: number) {
   });
 }
 
+async function deleteEmailScopedRows(admin: ReturnType<typeof createClient>, email: string) {
+  for (const table of ["user_problem_notes", "user_problem_flags"]) {
+    const { error } = await admin.from(table).delete().eq("email", email);
+    if (error) throw error;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
@@ -34,6 +41,11 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const normalizedEmail = userData.user.email?.trim().toLowerCase();
+    if (normalizedEmail) {
+      await deleteEmailScopedRows(admin, normalizedEmail);
+    }
+
     const { error: deleteError } = await admin.auth.admin.deleteUser(userData.user.id);
     if (deleteError) {
       console.error("delete-account error:", deleteError);
