@@ -74,8 +74,11 @@ npx supabase secrets set STRIPE_PRICE_LIFETIME=price_1T6NJv2ca6Cu26tRrf2GF7pk
    - Copy the signing secret:
 
 ```bash
-npx supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_WFlboT3lOK7KAYtrD8CKx5wsU0OHgf1j
+npx supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_your_webhook_signing_secret
 ```
+
+Never commit a real webhook signing secret. If a live value is exposed in git,
+rotate it in Stripe and Supabase before relying on webhook signature checks.
 
 ## 5. Make yourself admin
 
