@@ -71,6 +71,10 @@ export function generateMinWindowSteps(input) {
     });
   };
   push("init", `Need counts from t="${t}"; expand right, shrink left when window is valid`);
+  if (!t.length) {
+    push("done", "Empty target string → minimum window is \"\"", { done: true });
+    return steps;
+  }
   for (let r = 0; r < s.length; r++) {
     const ch = s[r];
     have[ch] = (have[ch] || 0) + 1;
