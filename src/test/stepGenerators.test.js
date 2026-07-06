@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
 import { STEP_GENERATORS } from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
-import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
+import { generateConstructTreeSteps, generateMinWindowSteps } from "../data/blind75MissingStepGenerators";
 
 describe("step generators", () => {
   it("every problem has a registered step generator", () => {
@@ -57,5 +57,16 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("minimum window steps", () => {
+  it("terminates with an empty answer when t is empty", () => {
+    const steps = generateMinWindowSteps({ s: "ABC", t: "" });
+    const last = steps[steps.length - 1];
+    expect(steps.length).toBe(2);
+    expect(last.stepType).toBe("done");
+    expect(last.state.bestWindow).toBe("");
+    expect(last.state.done).toBe(true);
   });
 });

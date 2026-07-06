@@ -42,6 +42,11 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
   const rotatePhaseLabel = phase === "transpose" ? "Transpose" : phase === "reverse" ? "Reverse rows" : done ? "Complete" : "Prepare rotation";
   const wordPhaseLabel = done ? "Complete" : matched ? `Matched ${matched.length}/${word.length}` : "Find start";
   const islandPhaseLabel = done ? "Complete" : (current ? "Scanning / DFS" : "Initialize");
+  const displayCellValue = (val) => {
+    if (!isWordSearch) return val;
+    if (val === 35) return "#";
+    return typeof val === "number" && val >= 65 && val <= 122 ? String.fromCharCode(val) : val;
+  };
 
   const markerBadge = (label, color, bg) => (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", fontWeight: 800, color: t.inkMuted }}>
@@ -468,7 +473,7 @@ export default function GridViz({ stepState = {}, input, problemId, t }) {
                   transition: "all 0.18s ease",
                 }}
               >
-                {problemId === "word-search" ? (val === 35 ? "#" : (typeof val === "number" && val >= 65 && val <= 122 ? String.fromCharCode(val) : (typeof val === "number" && val >= 97 && val <= 122 ? String.fromCharCode(val) : val))) : val}
+                {displayCellValue(val)}
               </div>
             );
           }),
