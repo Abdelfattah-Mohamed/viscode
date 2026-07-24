@@ -71,6 +71,12 @@ export function generateMinWindowSteps(input) {
     });
   };
   push("init", `Need counts from t="${t}"; expand right, shrink left when window is valid`);
+  if (!t.length) {
+    // Empty t makes required=0, so formed===required stays true and the shrink loop
+    // emits O(n²) steps for long s — freeze the tab. Short-circuit to the empty answer.
+    push("done", "Empty target string → minimum window is \"\"", { done: true });
+    return steps;
+  }
   for (let r = 0; r < s.length; r++) {
     const ch = s[r];
     have[ch] = (have[ch] || 0) + 1;
