@@ -7,6 +7,8 @@ import { useFocusTrap } from "../../hooks/useFocusTrap";
 const TREE_FIELDS = new Set(["root", "subRoot", "p", "q"]);
 const INT_FIELDS = new Set(["target", "n", "m", "pos", "rows", "cols", "k", "amount"]);
 const STRING_FIELDS = new Set(["s", "t", "dict", "words", "word", "board"]);
+const MATRIX_MAX_DIM = 20;
+const LCS_PREVIEW_MAX_LEN = 40;
 
 function stripBrackets(s) {
   let out = String(s ?? "").trim();
@@ -63,12 +65,16 @@ function parseEdgeLines(raw, tupleSize = 2) {
   return edges;
 }
 
+function clampMatrixDim(value, fallback = 1) {
+  return Math.min(MATRIX_MAX_DIM, Math.max(1, Number(value) || fallback));
+}
+
 function toGridModel(input, field = "grid") {
   const raw = field === "board"
     ? String(input.board || "").split(",").map((x) => x.trim()).filter(Boolean)
     : Array.isArray(input.grid) ? input.grid.map((x) => Number(x) || 0) : [];
-  const rows = Math.max(1, Number(input.rows) || 1);
-  const cols = Math.max(1, Math.ceil(raw.length / rows) || 1);
+  const rows = clampMatrixDim(input.rows, 1);
+  const cols = clampMatrixDim(Math.ceil(raw.length / rows) || 1, 1);
   const cells = Array.from({ length: rows }, (_, r) =>
     Array.from({ length: cols }, (_, c) => String(raw[r * cols + c] ?? (field === "board" ? "" : 0)))
   );
@@ -263,8 +269,8 @@ function buildInitialDraft(input, fields, visualizer, weightedGraphInput = false
 }
 
 function buildLcsMatrixPreview(text1, text2) {
-  const a = String(text1 ?? "");
-  const b = String(text2 ?? "");
+  const a = String(text1 ?? "").slice(0, LCS_PREVIEW_MAX_LEN);
+  const b = String(text2 ?? "").slice(0, LCS_PREVIEW_MAX_LEN);
   const t1 = a.split("");
   const t2 = b.split("");
   const rows = t1.length + 1;
@@ -386,8 +392,8 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
         next[field] = leetcodeToComplete(trimTrailingNulls(parseTreeTokens(sourceDraft[field])));
       } else if (kind === "matrix") {
         const gridModel = sourceDraft[field];
-        let rows = Math.max(1, Number(gridModel?.rows) || 1);
-        let cols = Math.max(1, Number(gridModel?.cols) || 1);
+        let rows = clampMatrixDim(gridModel?.rows, 1);
+        let cols = clampMatrixDim(gridModel?.cols, 1);
         const cells = Array.isArray(gridModel?.cells) ? gridModel.cells : [];
         const flat = [];
         for (let r = 0; r < rows; r += 1) {
@@ -460,8 +466,8 @@ export default function InputEditor({ input, fields, onChange, onReset, t, probl
   const updateGridMeta = (field, key, value) => {
     setDraft((prev) => {
       const current = prev[field] || { rows: 1, cols: 1, cells: [["0"]] };
-      const rows = key === "rows" ? Math.max(1, Number(value) || 1) : current.rows;
-      const cols = key === "cols" ? Math.max(1, Number(value) || 1) : current.cols;
+      const rows = key === "rows" ? clampMatrixDim(value, 1) : clampMatrixDim(current.rows, 1);
+      const cols = key === "cols" ? clampMatrixDim(value, 1) : clampMatrixDim(current.cols, 1);
       const nextCells = Array.from({ length: rows }, (_, r) =>
         Array.from({ length: cols }, (_, c) => String(current.cells?.[r]?.[c] ?? "0"))
       );
