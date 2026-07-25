@@ -38,13 +38,16 @@ alter table public.profiles
 drop policy if exists "profiles_select" on public.profiles;
 create policy "profiles_select" on public.profiles for select using (auth.uid() = id);
 drop policy if exists "profiles_insert" on public.profiles;
-create policy "profiles_insert" on public.profiles for insert with check (auth.uid() = id);
+create policy "profiles_insert" on public.profiles
+  for insert with check (auth.uid() = id and is_admin = false);
 drop policy if exists "profiles_update" on public.profiles;
-create policy "profiles_update" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
-revoke update on public.profiles from anon, authenticated;
+create policy "profiles_update" on public.profiles
+  for update using (auth.uid() = id) with check (auth.uid() = id);
+revoke insert, update, delete on public.profiles from anon, authenticated;
+grant insert (id, email, username, avatar_url, provider, created_at, updated_at) on public.profiles to authenticated;
 grant update (username, avatar_url, updated_at) on public.profiles to authenticated;
 drop policy if exists "profiles_delete" on public.profiles;
-create policy "profiles_delete" on public.profiles for delete using (auth.uid() = id);
+-- No client-side deletes: service role (Auth cascade / Edge Functions) only.
 
 -- flags
 drop policy if exists "flags_select" on public.user_problem_flags;

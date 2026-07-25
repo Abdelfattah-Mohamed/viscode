@@ -40,19 +40,21 @@ create policy "profiles_select" on public.profiles
 
 drop policy if exists "profiles_insert" on public.profiles;
 create policy "profiles_insert" on public.profiles
-  for insert with check (auth.uid() = id);
+  for insert with check (auth.uid() = id and is_admin = false);
 
 drop policy if exists "profiles_update" on public.profiles;
 create policy "profiles_update" on public.profiles
   for update using (auth.uid() = id) with check (auth.uid() = id);
 
 -- Users can edit their display fields but never grant themselves admin.
-revoke update on public.profiles from anon, authenticated;
+-- Account deletion must go through the delete-account Edge Function (service role);
+-- client DELETE would cascade-wipe billing rows while Auth/Stripe can remain.
+revoke insert, update, delete on public.profiles from anon, authenticated;
+grant insert (id, email, username, avatar_url, provider, created_at, updated_at) on public.profiles to authenticated;
 grant update (username, avatar_url, updated_at) on public.profiles to authenticated;
 
 drop policy if exists "profiles_delete" on public.profiles;
-create policy "profiles_delete" on public.profiles
-  for delete using (auth.uid() = id);
+-- No client-side deletes: service role (Auth cascade / Edge Functions) only.
 
 -- Auto-create a profile row when a new auth user signs up.
 create or replace function public.handle_new_user()

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import { STEP_GENERATORS, generateCoinChangeSteps, generateUniquePathsSteps } from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
@@ -57,5 +57,21 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("degenerate custom inputs stay bounded", () => {
+  it("caps coin-change amount so huge inputs cannot OOM the tab", () => {
+    const steps = generateCoinChangeSteps({ nums: [1], amount: 20000 });
+    expect(steps.length).toBeLessThan(2000);
+    expect(steps.some((s) => /capped/i.test(s.description))).toBe(true);
+    expect(steps[steps.length - 1].state.amount).toBe(200);
+  });
+
+  it("caps unique-paths dimensions", () => {
+    const steps = generateUniquePathsSteps({ m: 120, n: 120 });
+    expect(steps.length).toBeLessThan(5000);
+    expect(steps[steps.length - 1].state.m).toBe(40);
+    expect(steps[steps.length - 1].state.n).toBe(40);
   });
 });

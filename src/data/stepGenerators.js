@@ -1178,9 +1178,11 @@ export function generateFindMinRotatedSteps(input) {
   return steps;
 }
 
+const KNAPSACK_MAX_CAPACITY = 200;
+
 export function generateKnapsackSteps(input) {
   const weights = Array.isArray(input?.nums) ? input.nums.map(Number).filter((w) => !isNaN(w) && w > 0) : [2, 3, 4, 5];
-  const W = Math.max(0, Number(input?.target) ?? 8);
+  const W = Math.min(KNAPSACK_MAX_CAPACITY, Math.max(0, Number(input?.target) ?? 8));
   const rawValues = Array.isArray(input?.val)
     ? input.val
     : Array.isArray(input?.values)
@@ -1855,13 +1857,25 @@ function stubWithNumsTarget(input) {
   return steps;
 }
 
+const COIN_CHANGE_MAX_AMOUNT = 200;
+
 export function generateCoinChangeSteps(input) {
   const coins = Array.isArray(input?.nums) ? input.nums.map(Number).filter(c => c > 0) : [1, 2, 5];
-  const amount = Math.max(0, Number(input?.amount) ?? 11);
+  const rawAmount = Math.max(0, Number(input?.amount) ?? 11);
+  // Cap amount: each cell emits multiple steps that clone `dp`, so large amounts OOM/freeze the tab.
+  const amount = Math.min(rawAmount, COIN_CHANGE_MAX_AMOUNT);
   const steps = [];
   const inf = amount + 1;
   const dp = Array(amount + 1).fill(inf);
   dp[0] = 0;
+
+  if (rawAmount > COIN_CHANGE_MAX_AMOUNT) {
+    steps.push({
+      stepType: "init",
+      description: `Amount ${rawAmount} capped to ${COIN_CHANGE_MAX_AMOUNT} for visualization`,
+      state: { dp: [...dp], coins, amount, i: 0, coinIdx: -1, highlight: [], inf },
+    });
+  }
 
   steps.push({
     stepType: "init",
@@ -2924,6 +2938,8 @@ export function generateHouseRobberIISteps(input) {
   return steps;
 }
 
+const UNIQUE_PATHS_MAX_DIM = 40;
+
 export function generateUniquePathsSteps(input) {
   let m, n;
   if (Array.isArray(input?.nums) && input.nums.length >= 2) {
@@ -2934,6 +2950,8 @@ export function generateUniquePathsSteps(input) {
     m = Math.max(0, Number(input?.m) ?? 0);
     n = Math.max(0, Number(input?.n) ?? 0);
   }
+  m = Math.min(m, UNIQUE_PATHS_MAX_DIM);
+  n = Math.min(n, UNIQUE_PATHS_MAX_DIM);
   const steps = [];
   const snapshot = (matrix) => matrix.map((row) => [...row]);
   if (m === 0 || n === 0) {
