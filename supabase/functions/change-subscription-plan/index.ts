@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveProfileFromRequest } from "../_shared/profile.ts";
+import {
+  assertSubscriptionOwnedByProfile,
+  stripeGet,
+} from "../_shared/stripeOwnership.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -33,13 +37,6 @@ function jsonResponse(body: object, status: number) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json", ...corsHeaders },
-  });
-}
-
-function stripeGet(path: string) {
-  return fetch(`${STRIPE_API_BASE}${path}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
   });
 }
 
@@ -130,16 +127,21 @@ Deno.serve(async (req) => {
     const targetPriceId = PRICE_BY_PLAN[targetPlanId];
     if (!targetPriceId) return jsonResponse({ error: "Target price is not configured" }, 503);
 
-    const stripeSubRes = await stripeGet(`/subscriptions/${subRow.stripe_subscription_id}`);
-    const stripeSubData = await stripeSubRes.json();
-    if (stripeSubData?.error) {
-      return jsonResponse({ error: stripeSubData.error?.message || "Failed to load Stripe subscription" }, 502);
-    }
+    const owned = await assertSubscriptionOwnedByProfile(
+      subRow.stripe_subscription_id,
+      profile,
+      STRIPE_SECRET_KEY
+    );
+    if (!owned.ok) return jsonResponse({ error: owned.error }, owned.status);
+    const stripeSubData = owned.subscription;
 
-    const itemId = stripeSubData?.items?.data?.[0]?.id as string | undefined;
+    const items = stripeSubData?.items as
+      | { data?: Array<{ id?: string; price?: { recurring?: { interval?: string } } }> }
+      | undefined;
+    const itemId = items?.data?.[0]?.id;
     if (!itemId) return jsonResponse({ error: "Subscription item not found in Stripe" }, 502);
 
-    const currentInterval = stripeSubData?.items?.data?.[0]?.price?.recurring?.interval as string | undefined;
+    const currentInterval = items?.data?.[0]?.price?.recurring?.interval;
 
     const targetInterval =
       targetPlanId === "pro_weekly"
@@ -175,7 +177,7 @@ Deno.serve(async (req) => {
 
     const latestInvoiceId = invoiceIdFromSubscriptionUpdate(updateData);
     if (latestInvoiceId) {
-      const invoiceRes = await stripeGet(`/invoices/${latestInvoiceId}`);
+      const invoiceRes = await stripeGet(`/invoices/${latestInvoiceId}`, STRIPE_SECRET_KEY);
       const invoiceData = await invoiceRes.json();
       if (!invoiceData?.error) {
         chargeInfo = {

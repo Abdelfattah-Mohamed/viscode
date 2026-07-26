@@ -84,6 +84,33 @@ Deno.serve(async (req) => {
     }
 
     const isLifetime = planId === "lifetime";
+
+    const { data: existingSub, error: existingSubError } = await supabase
+      .from("user_subscriptions")
+      .select("plan_id, status, stripe_subscription_id")
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    if (existingSubError) return jsonResponse({ error: existingSubError.message }, 500);
+
+    const hasActiveRecurring =
+      !!existingSub?.stripe_subscription_id &&
+      (existingSub.status === "active" || existingSub.status === "trialing");
+
+    // Prevent a second live Stripe subscription. Lifetime upgrades are allowed;
+    // the webhook cancels the prior recurring sub after payment succeeds.
+    if (!isLifetime && hasActiveRecurring) {
+      return jsonResponse(
+        {
+          error:
+            "You already have an active subscription. Use Upgrade on the Billing page instead of starting a new checkout.",
+        },
+        400
+      );
+    }
+    if (isLifetime && existingSub?.plan_id === "lifetime" && existingSub.status === "active") {
+      return jsonResponse({ error: "Lifetime access is already active on this account." }, 400);
+    }
+
     const priceId =
       planId === "lifetime"
         ? STRIPE_PRICE_LIFETIME
@@ -114,6 +141,9 @@ Deno.serve(async (req) => {
       // Ensure Stripe creates a Customer for one-time payments so we can
       // refund / link charges later.
       body["customer_creation"] = "always";
+      if (existingSub?.stripe_subscription_id) {
+        body["metadata[prior_stripe_subscription_id]"] = existingSub.stripe_subscription_id;
+      }
     }
 
     const sessionRes = await stripePost("/checkout/sessions", body);

@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveProfileFromRequest } from "../_shared/profile.ts";
+import { assertSubscriptionOwnedByProfile } from "../_shared/stripeOwnership.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -69,6 +70,13 @@ Deno.serve(async (req) => {
     if (subRow.cancel_at_period_end) {
       return jsonResponse({ ok: true }, 200);
     }
+
+    const owned = await assertSubscriptionOwnedByProfile(
+      subRow.stripe_subscription_id,
+      profile,
+      STRIPE_SECRET_KEY
+    );
+    if (!owned.ok) return jsonResponse({ error: owned.error }, owned.status);
 
     const stripeRes = await stripePost(`/subscriptions/${subRow.stripe_subscription_id}`, {
       cancel_at_period_end: "true",
