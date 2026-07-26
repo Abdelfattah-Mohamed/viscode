@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveProfileFromRequest } from "../_shared/profile.ts";
+import { assertSubscriptionOwnedByProfile } from "../_shared/stripeOwnership.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -33,13 +34,6 @@ function jsonResponse(body: object, status: number) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json", ...corsHeaders },
-  });
-}
-
-function stripeGet(path: string) {
-  return fetch(`${STRIPE_API_BASE}${path}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
   });
 }
 
@@ -117,20 +111,32 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Target plan must be higher than current plan" }, 400);
     }
 
-    const stripeSubRes = await stripeGet(`/subscriptions/${subRow.stripe_subscription_id}`);
-    const stripeSubData = await stripeSubRes.json();
-    if (stripeSubData?.error) {
-      return jsonResponse({ error: stripeSubData.error?.message || "Failed to load Stripe subscription" }, 502);
-    }
+    const owned = await assertSubscriptionOwnedByProfile(
+      subRow.stripe_subscription_id,
+      profile,
+      STRIPE_SECRET_KEY
+    );
+    if (!owned.ok) return jsonResponse({ error: owned.error }, owned.status);
+    const stripeSubData = owned.subscription;
 
-    const subscriptionItemId = stripeSubData?.items?.data?.[0]?.id as string | undefined;
+    const subscriptionItemId = (
+      stripeSubData?.items as { data?: Array<{ id?: string }> } | undefined
+    )?.data?.[0]?.id;
     if (!subscriptionItemId) return jsonResponse({ error: "Subscription item not found in Stripe" }, 502);
+
+    const stripeCustomerId =
+      typeof stripeSubData?.customer === "string"
+        ? stripeSubData.customer
+        : (stripeSubData?.customer as { id?: string } | undefined)?.id || subRow.stripe_customer_id;
+    if (!stripeCustomerId) {
+      return jsonResponse({ error: "No Stripe customer found for this subscription" }, 400);
+    }
 
     const origin = req.headers.get("origin") || "http://localhost:5173";
     const returnUrl = `${origin}/billing?upgraded=true`;
 
     const portalRes = await stripePost("/billing_portal/sessions", {
-      customer: subRow.stripe_customer_id,
+      customer: stripeCustomerId,
       return_url: returnUrl,
       "flow_data[type]": "subscription_update_confirm",
       "flow_data[after_completion][type]": "redirect",

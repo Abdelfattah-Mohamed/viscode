@@ -212,11 +212,21 @@ drop policy if exists "subscriptions_select" on public.user_subscriptions;
 create policy "subscriptions_select" on public.user_subscriptions
   for select using (auth.uid() = user_id);
 
--- Users may only self-provision the free plan; paid plans are written by
--- Edge Functions (service role) after verified Stripe events.
+-- Users may only self-provision a clean free row. Stripe IDs must stay null so
+-- clients cannot attach another account's subscription and drive cancel/upgrade
+-- Edge Functions against it (IDOR). Paid fields are written by service role only.
 drop policy if exists "subscriptions_insert" on public.user_subscriptions;
 create policy "subscriptions_insert" on public.user_subscriptions
-  for insert with check (auth.uid() = user_id and plan_id = 'free');
+  for insert with check (
+    auth.uid() = user_id
+    and plan_id = 'free'
+    and status = 'active'
+    and stripe_customer_id is null
+    and stripe_subscription_id is null
+  );
+
+revoke insert on public.user_subscriptions from anon, authenticated;
+grant insert (user_id, plan_id, status, updated_at) on public.user_subscriptions to authenticated;
 
 drop policy if exists "subscriptions_update" on public.user_subscriptions;
 -- No client-side updates: cancel/resume/upgrade all go through Edge Functions.
