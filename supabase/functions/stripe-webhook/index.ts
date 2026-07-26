@@ -49,19 +49,38 @@ function planIdFromPriceId(priceId: string): string {
   return "pro";
 }
 
-async function cancelStripeSubscription(subscriptionId: string): Promise<void> {
-  if (!STRIPE_SECRET_KEY || !subscriptionId) return;
+async function cancelStripeSubscription(
+  subscriptionId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!STRIPE_SECRET_KEY) {
+    return { ok: false, error: "STRIPE_SECRET_KEY not configured" };
+  }
+  if (!subscriptionId) return { ok: true };
   try {
     const res = await fetch(`${STRIPE_API_BASE}/subscriptions/${subscriptionId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
     });
     const data = await res.json();
+    // Already-canceled / missing subs are fine — nothing left to bill.
     if (data?.error) {
-      console.error("Failed to cancel prior subscription:", subscriptionId, data.error);
+      const code = data.error?.code || data.error?.type || "";
+      const message = String(data.error?.message || "");
+      if (
+        code === "resource_missing" ||
+        /no such subscription/i.test(message) ||
+        /already canceled/i.test(message)
+      ) {
+        return { ok: true };
+      }
+      return { ok: false, error: message || "Failed to cancel prior subscription" };
     }
+    return { ok: true };
   } catch (e) {
-    console.error("Failed to cancel prior subscription:", subscriptionId, e);
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Failed to cancel prior subscription",
+    };
   }
 }
 
@@ -124,7 +143,8 @@ Deno.serve(async (req) => {
         if (isLifetime) {
           // Cancel the prior recurring subscription so Lifetime upgrades do not
           // keep charging. Prefer the id stamped on the Checkout session; fall
-          // back to whatever is still stored on the user's row.
+          // back to whatever is still stored on the user's row. Fail closed so
+          // Stripe retries instead of leaving an orphaned billable subscription.
           let priorSubId = session.metadata?.prior_stripe_subscription_id || null;
           if (!priorSubId) {
             const { data: prior } = await supabase
@@ -135,7 +155,11 @@ Deno.serve(async (req) => {
             priorSubId = prior?.stripe_subscription_id || null;
           }
           if (priorSubId) {
-            await cancelStripeSubscription(priorSubId);
+            const canceled = await cancelStripeSubscription(priorSubId);
+            if (!canceled.ok) {
+              console.error("Lifetime upgrade blocked; prior sub cancel failed:", canceled.error);
+              return jsonResponse({ error: canceled.error }, 500);
+            }
           }
         }
 

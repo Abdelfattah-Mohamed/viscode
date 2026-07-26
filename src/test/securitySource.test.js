@@ -69,5 +69,7 @@ describe("lifetime upgrade and duplicate checkout guards", () => {
     expect(src).toMatch(/payment_status/);
     expect(src).toMatch(/no_payment_required/);
     expect(src).toMatch(/method:\s*"DELETE"/);
+    expect(src).toMatch(/Lifetime upgrade blocked; prior sub cancel failed/);
+    expect(src).toMatch(/return jsonResponse\(\{ error: canceled\.error \}, 500\)/);
   });
 });
