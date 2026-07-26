@@ -3,6 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
+const STRIPE_API_BASE = "https://api.stripe.com/v1";
 
 function jsonResponse(body: object, status: number) {
   return new Response(JSON.stringify(body), {
@@ -47,6 +49,22 @@ function planIdFromPriceId(priceId: string): string {
   return "pro";
 }
 
+async function cancelStripeSubscription(subscriptionId: string): Promise<void> {
+  if (!STRIPE_SECRET_KEY || !subscriptionId) return;
+  try {
+    const res = await fetch(`${STRIPE_API_BASE}/subscriptions/${subscriptionId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
+    });
+    const data = await res.json();
+    if (data?.error) {
+      console.error("Failed to cancel prior subscription:", subscriptionId, data.error);
+    }
+  } catch (e) {
+    console.error("Failed to cancel prior subscription:", subscriptionId, e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -79,13 +97,48 @@ Deno.serve(async (req) => {
           mode?: string;
           customer?: string;
           subscription?: string;
+          payment_status?: string;
           client_reference_id?: string;
-          metadata?: { profile_id?: string; plan_id?: string };
+          metadata?: {
+            profile_id?: string;
+            plan_id?: string;
+            prior_stripe_subscription_id?: string;
+          };
         };
         const profileId = session?.metadata?.profile_id || session?.client_reference_id;
         if (!profileId) break;
+
+        // Do not grant entitlement before payment settles (async methods, etc.).
+        const paymentStatus = session?.payment_status;
+        if (
+          paymentStatus &&
+          paymentStatus !== "paid" &&
+          paymentStatus !== "no_payment_required"
+        ) {
+          break;
+        }
+
         const planId = (session.metadata?.plan_id as string) || "pro";
         const isLifetime = planId === "lifetime" || session?.mode === "payment";
+
+        if (isLifetime) {
+          // Cancel the prior recurring subscription so Lifetime upgrades do not
+          // keep charging. Prefer the id stamped on the Checkout session; fall
+          // back to whatever is still stored on the user's row.
+          let priorSubId = session.metadata?.prior_stripe_subscription_id || null;
+          if (!priorSubId) {
+            const { data: prior } = await supabase
+              .from("user_subscriptions")
+              .select("stripe_subscription_id")
+              .eq("user_id", profileId)
+              .maybeSingle();
+            priorSubId = prior?.stripe_subscription_id || null;
+          }
+          if (priorSubId) {
+            await cancelStripeSubscription(priorSubId);
+          }
+        }
+
         await supabase.from("user_subscriptions").upsert(
           {
             user_id: profileId,
