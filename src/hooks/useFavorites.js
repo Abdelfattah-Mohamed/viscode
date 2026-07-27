@@ -29,6 +29,8 @@ export function useFavorites(user) {
   const email = user?.email?.toLowerCase() || null;
   const isGuest = !user || user.isGuest;
   const emailRef = useRef(email);
+  // Bumped on toggle so an in-flight server hydrate cannot clobber a local write.
+  const hydrateSeqRef = useRef(0);
   emailRef.current = email;
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export function useFavorites(user) {
     }
 
     let cancelled = false;
+    const seq = ++hydrateSeqRef.current;
     const local = loadLocal(email);
     setFavorites(local.favorite);
     setFlagged(local.flagged);
@@ -51,7 +54,8 @@ export function useFavorites(user) {
         .from(FLAGS_TABLE)
         .select("problem_id, flag_type")
         .eq("email", email);
-      if (cancelled || !data) return;
+      // Ignore stale responses after unmount, email change, or a toggle during fetch.
+      if (cancelled || seq !== hydrateSeqRef.current || !data) return;
       const fav = data.filter(r => r.flag_type === "favorite").map(r => r.problem_id);
       const flg = data.filter(r => r.flag_type === "flagged").map(r => r.problem_id);
       setFavorites(fav);
@@ -64,6 +68,8 @@ export function useFavorites(user) {
 
   const toggle = useCallback((problemId, type) => {
     if (!emailRef.current) return;
+    // Invalidate any in-flight hydrate so it cannot overwrite this write + localStorage.
+    hydrateSeqRef.current += 1;
     const setter = type === "favorite" ? setFavorites : setFlagged;
     const otherKey = type === "favorite" ? "flagged" : "favorite";
 
