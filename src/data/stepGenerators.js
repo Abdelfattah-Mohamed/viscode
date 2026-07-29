@@ -2166,11 +2166,23 @@ export function generatePalindromicSubstringsSteps(input) {
   return steps;
 }
 
+const SUBSETS_MAX_N = 8;
+
 export function generateSubsetsSteps(input) {
-  const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : [];
+  const rawNums = Array.isArray(input?.nums) ? input.nums.map(Number) : [];
+  // Cap length: each backtrack step clones `res` (2^n subsets) → large n OOM/freezes the tab.
+  const nums = rawNums.slice(0, SUBSETS_MAX_N);
   const steps = [];
   const res = [];
   const path = [];
+
+  if (rawNums.length > SUBSETS_MAX_N) {
+    steps.push({
+      stepType: "init",
+      description: `Input length ${rawNums.length} capped to ${SUBSETS_MAX_N} for visualization`,
+      state: { nums: [...nums], i: 0, j: -1, path: [], res: [], action: "Capped input" },
+    });
+  }
 
   steps.push({
     stepType: "init",
@@ -2228,12 +2240,24 @@ export function generateSubsetsSteps(input) {
   return steps;
 }
 
+const PERMUTATIONS_MAX_N = 5;
+
 export function generatePermutationsSteps(input) {
-  const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : [];
+  const rawNums = Array.isArray(input?.nums) ? input.nums.map(Number) : [];
+  // Cap length: each step clones growing `res` (n! permutations) → n≥6 OOM/freezes the tab.
+  const nums = rawNums.slice(0, PERMUTATIONS_MAX_N);
   const steps = [];
   const res = [];
   const arr = [...nums];
   const n = arr.length;
+
+  if (rawNums.length > PERMUTATIONS_MAX_N) {
+    steps.push({
+      stepType: "init",
+      description: `Input length ${rawNums.length} capped to ${PERMUTATIONS_MAX_N} for visualization`,
+      state: { nums: [...arr], start: 0, i: -1, res: [], action: "Capped input" },
+    });
+  }
 
   steps.push({
     stepType: "init",
@@ -2790,11 +2814,26 @@ export function generateLongestIncreasingSubsequenceSteps(input) {
   return steps;
 }
 
+const COMBINATION_SUM_MAX_TARGET = 20;
+const COMBINATION_SUM_MAX_CANDIDATES = 8;
+
 export function generateCombinationSumSteps(input) {
-  const c = Array.isArray(input?.nums) ? input.nums.map(Number) : (input?.nums != null ? [Number(input.nums)] : []);
-  const target = Number(input?.target) ?? 0;
+  const rawC = Array.isArray(input?.nums)
+    ? input.nums.map(Number)
+    : (input?.nums != null ? [Number(input.nums)] : []);
+  const c = rawC.filter((x) => Number.isFinite(x) && x > 0).slice(0, COMBINATION_SUM_MAX_CANDIDATES);
+  const rawTarget = Number(input?.target) ?? 0;
+  // Cap target/candidates: small coins + large target explodes the backtracking tree and clones `res` each step.
+  const target = Math.min(Math.max(0, rawTarget), COMBINATION_SUM_MAX_TARGET);
   const steps = [];
   const res = [];
+  if (rawTarget > COMBINATION_SUM_MAX_TARGET || rawC.length > COMBINATION_SUM_MAX_CANDIDATES) {
+    steps.push({
+      stepType: "init",
+      description: `Input capped for visualization (target≤${COMBINATION_SUM_MAX_TARGET}, ≤${COMBINATION_SUM_MAX_CANDIDATES} candidates)`,
+      state: { c: [...c], target, t: target, start: 0, path: [], res: [], done: false },
+    });
+  }
   steps.push({
     stepType: "init",
     description: `combinationSum(candidates, ${target}) — res=[], path=[], call backtrack(c, ${target}, 0, path, res)`,
@@ -3018,10 +3057,21 @@ export function generateJumpGameSteps(input) {
   return steps;
 }
 
+const PARENTHESES_MAX_N = 6;
+
 export function generateParenthesesSteps(input) {
-  const n = Math.max(0, Number(input?.n) ?? 0);
+  const rawN = Math.max(0, Number(input?.n) ?? 0);
+  // Cap n: each step clones the growing `results` list (Catalan growth) → n≥8 OOM/freezes the tab.
+  const n = Math.min(rawN, PARENTHESES_MAX_N);
   const steps = [];
   const results = [];
+  if (rawN > PARENTHESES_MAX_N) {
+    steps.push({
+      stepType: "init",
+      description: `n=${rawN} capped to ${PARENTHESES_MAX_N} for visualization`,
+      state: { n, open: 0, close: 0, path: "", results: [] },
+    });
+  }
   steps.push({ stepType: "init", description: `Generate all valid parentheses for n=${n}`, state: { n, open: 0, close: 0, path: "", results: [] } });
   function backtrack(open, close, path) {
     if (path.length === 2 * n) {
