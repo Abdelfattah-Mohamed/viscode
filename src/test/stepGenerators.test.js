@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import {
+  STEP_GENERATORS,
+  generateParenthesesSteps,
+  generatePermutationsSteps,
+  generateSubsetsSteps,
+  generateCombinationSumSteps,
+} from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
@@ -57,5 +63,39 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("backtracking generators reject unbounded Pro custom inputs", () => {
+  it("caps generate-parentheses n so Catalan growth cannot OOM the tab", () => {
+    const steps = generateParenthesesSteps({ n: 12 });
+    expect(steps.some((s) => /capped/i.test(s.description))).toBe(true);
+    expect(steps[steps.length - 1].state.n).toBe(6);
+    expect(steps.length).toBeLessThan(2000);
+  });
+
+  it("caps permutations input length", () => {
+    const steps = generatePermutationsSteps({ nums: [1, 2, 3, 4, 5, 6, 7, 8] });
+    expect(steps.some((s) => /capped/i.test(s.description))).toBe(true);
+    expect(steps[steps.length - 1].state.nums).toEqual([1, 2, 3, 4, 5]);
+    expect(steps.length).toBeLessThan(5000);
+  });
+
+  it("caps subsets input length", () => {
+    const steps = generateSubsetsSteps({ nums: Array.from({ length: 20 }, (_, i) => i + 1) });
+    expect(steps.some((s) => /capped/i.test(s.description))).toBe(true);
+    expect(steps[steps.length - 1].state.nums).toHaveLength(8);
+    expect(steps.length).toBeLessThan(4000);
+  });
+
+  it("caps combination-sum target and candidate count", () => {
+    const steps = generateCombinationSumSteps({
+      nums: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      target: 50,
+    });
+    expect(steps.some((s) => /capped/i.test(s.description))).toBe(true);
+    expect(steps[steps.length - 1].state.target).toBe(15);
+    expect(steps[steps.length - 1].state.c).toHaveLength(6);
+    expect(steps.length).toBeLessThan(8000);
   });
 });
