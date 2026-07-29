@@ -94,8 +94,8 @@ describe("backtracking generators reject unbounded Pro custom inputs", () => {
       target: 50,
     });
     expect(steps.some((s) => /capped/i.test(s.description))).toBe(true);
-    expect(steps[steps.length - 1].state.target).toBe(20);
-    expect(steps[steps.length - 1].state.c).toHaveLength(8);
-    expect(steps.length).toBeLessThan(20000);
+    expect(steps[steps.length - 1].state.target).toBe(15);
+    expect(steps[steps.length - 1].state.c).toHaveLength(6);
+    expect(steps.length).toBeLessThan(8000);
   });
 });

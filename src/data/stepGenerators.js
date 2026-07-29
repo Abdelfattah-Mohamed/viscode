@@ -2814,8 +2814,8 @@ export function generateLongestIncreasingSubsequenceSteps(input) {
   return steps;
 }
 
-const COMBINATION_SUM_MAX_TARGET = 20;
-const COMBINATION_SUM_MAX_CANDIDATES = 8;
+const COMBINATION_SUM_MAX_TARGET = 15;
+const COMBINATION_SUM_MAX_CANDIDATES = 6;
 
 export function generateCombinationSumSteps(input) {
   const rawC = Array.isArray(input?.nums)
