@@ -1,4 +1,11 @@
-import { ensureCompleteTree } from "../utils/treeFormat.js";
+import {
+  ensureCompleteTree,
+  MAX_COMPLETE_TREE_LEN,
+  TreeLayoutTooLargeError,
+} from "../utils/treeFormat.js";
+
+/** Construct-tree snapshots use complete layout (~2^n slots when skewed). */
+export const MAX_CONSTRUCT_TREE_NODES = 12;
 
 function parseBoard(input) {
   const flat = String(input?.board ?? "").split(/[,\s]+/).filter(Boolean);
@@ -30,6 +37,9 @@ function treeNodeToComplete(node) {
   if (!node) return [];
   const result = [];
   const set = (idx, val) => {
+    if (idx > MAX_COMPLETE_TREE_LEN) {
+      throw new TreeLayoutTooLargeError(idx);
+    }
     while (result.length <= idx) result.push(null);
     result[idx] = val;
   };
@@ -188,6 +198,22 @@ export function generateKthSmallestBSTSteps(input) {
 export function generateConstructTreeSteps(input) {
   const preorder = Array.isArray(input?.preorder) ? [...input.preorder] : [3, 9, 20, 15, 7];
   const inorder = Array.isArray(input?.inorder) ? [...input.inorder] : [9, 3, 15, 20, 7];
+  if (preorder.length > MAX_CONSTRUCT_TREE_NODES || inorder.length > MAX_CONSTRUCT_TREE_NODES) {
+    return [
+      {
+        stepType: "done",
+        description: `Input capped at ${MAX_CONSTRUCT_TREE_NODES} nodes (got preorder=${preorder.length}, inorder=${inorder.length}). Skewed trees expand to O(2^n) layout slots and can crash the tab.`,
+        state: {
+          preorder: preorder.slice(0, MAX_CONSTRUCT_TREE_NODES),
+          inorder: inorder.slice(0, MAX_CONSTRUCT_TREE_NODES),
+          built: [],
+          root: [],
+          visiting: -1,
+          done: true,
+        },
+      },
+    ];
+  }
   const steps = [];
   const built = [];
   let treeRoot = null;
@@ -210,31 +236,49 @@ export function generateConstructTreeSteps(input) {
     });
   };
 
-  push("init", "Pick root from preorder[0], split inorder, recurse", { preL: 0, preR: preorder.length - 1, inL: 0, inR: inorder.length - 1 });
+  try {
+    push("init", "Pick root from preorder[0], split inorder, recurse", { preL: 0, preR: preorder.length - 1, inL: 0, inR: inorder.length - 1 });
 
-  function build(preL, preR, inL, inR, parent, side) {
-    if (preL > preR || inL > inR) return;
-    const rootVal = preorder[preL];
-    const rootIdx = inorder.indexOf(rootVal, inL);
-    if (rootIdx < inL || rootIdx > inR) return;
+    function build(preL, preR, inL, inR, parent, side) {
+      if (preL > preR || inL > inR) return;
+      const rootVal = preorder[preL];
+      const rootIdx = inorder.indexOf(rootVal, inL);
+      if (rootIdx < inL || rootIdx > inR) return;
 
-    const node = { val: rootVal, left: null, right: null };
-    if (!treeRoot) treeRoot = node;
-    else if (parent && side === "left") parent.left = node;
-    else if (parent && side === "right") parent.right = node;
+      const node = { val: rootVal, left: null, right: null };
+      if (!treeRoot) treeRoot = node;
+      else if (parent && side === "left") parent.left = node;
+      else if (parent && side === "right") parent.right = node;
 
-    built.push(rootVal);
-    push("pick_root", `Root = ${rootVal} (preorder[${preL}])`, { preL, preR, inL, inR, rootVal, rootIdx, highlightPre: preL, highlightIn: rootIdx });
+      built.push(rootVal);
+      push("pick_root", `Root = ${rootVal} (preorder[${preL}])`, { preL, preR, inL, inR, rootVal, rootIdx, highlightPre: preL, highlightIn: rootIdx });
 
-    const leftSize = rootIdx - inL;
-    push("split", `Left size=${leftSize}, right size=${inR - rootIdx}`, { preL, preR, inL, inR, rootVal, rootIdx });
-    build(preL + 1, preL + leftSize, inL, rootIdx - 1, node, "left");
-    build(preL + leftSize + 1, preR, rootIdx + 1, inR, node, "right");
+      const leftSize = rootIdx - inL;
+      push("split", `Left size=${leftSize}, right size=${inR - rootIdx}`, { preL, preR, inL, inR, rootVal, rootIdx });
+      build(preL + 1, preL + leftSize, inL, rootIdx - 1, node, "left");
+      build(preL + leftSize + 1, preR, rootIdx + 1, inR, node, "right");
+    }
+
+    build(0, preorder.length - 1, 0, inorder.length - 1);
+    push("done", `✓ Built tree: [${treeNodeToComplete(treeRoot).join(", ")}]`, { done: true });
+    return steps;
+  } catch (err) {
+    if (!(err instanceof TreeLayoutTooLargeError)) throw err;
+    return [
+      {
+        stepType: "done",
+        description: err.message,
+        state: {
+          preorder,
+          inorder,
+          built: [...built],
+          root: [],
+          visiting: -1,
+          done: true,
+        },
+      },
+    ];
   }
-
-  build(0, preorder.length - 1, 0, inorder.length - 1);
-  push("done", `✓ Built tree: [${treeNodeToComplete(treeRoot).join(", ")}]`, { done: true });
-  return steps;
 }
 
 // ── 6. Binary Tree Maximum Path Sum ───────────────────────────────────────

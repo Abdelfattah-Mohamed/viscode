@@ -58,4 +58,25 @@ describe("construct tree steps", () => {
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
   });
+
+  it("rejects oversized inputs that would OOM on skewed complete layouts", () => {
+    const n = 20;
+    const preorder = Array.from({ length: n }, (_, i) => i + 1);
+    const inorder = [...preorder];
+    const steps = generateConstructTreeSteps({ preorder, inorder });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].stepType).toBe("done");
+    expect(steps[0].description).toMatch(/capped at 12/);
+    expect(Math.max(...steps.map((s) => (s.state.root || []).length))).toBeLessThanOrEqual(4095);
+  });
+
+  it("keeps left-skewed trees within the node cap layout budget", () => {
+    const n = 12;
+    const preorder = Array.from({ length: n }, (_, i) => i + 1);
+    const inorder = [...preorder];
+    const steps = generateConstructTreeSteps({ preorder, inorder });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].stepType).toBe("done");
+    expect(steps[steps.length - 1].state.root.length).toBeLessThanOrEqual(4095);
+  });
 });
