@@ -9,8 +9,26 @@
  * so the same tree is [1, null, 2, null, null, 3].
  */
 
+/** Hard cap on complete-layout length. Skewed n-node trees need ~2^n slots. */
+export const MAX_COMPLETE_TREE_LEN = 4095;
+
+export class TreeLayoutTooLargeError extends RangeError {
+  constructor(index) {
+    super(
+      `Tree too deep for visualization (complete index ${index} > ${MAX_COMPLETE_TREE_LEN})`
+    );
+    this.name = "TreeLayoutTooLargeError";
+  }
+}
+
 function countNonNull(arr) {
   return arr.filter((v) => v !== null && v !== undefined).length;
+}
+
+function assertCompleteIndex(idx) {
+  if (idx > MAX_COMPLETE_TREE_LEN) {
+    throw new TreeLayoutTooLargeError(idx);
+  }
 }
 
 /**
@@ -20,6 +38,9 @@ function countNonNull(arr) {
  */
 export function ensureCompleteTree(raw) {
   if (!raw?.length || raw[0] === null || raw[0] === undefined) return [];
+  if (raw.length > MAX_COMPLETE_TREE_LEN + 1) {
+    throw new TreeLayoutTooLargeError(raw.length - 1);
+  }
   const converted = leetcodeToComplete(raw);
   if (countNonNull(raw) > countNonNull(converted)) return raw;
   return converted;
@@ -31,6 +52,7 @@ export function leetcodeToComplete(lc) {
   const result = [];
 
   function set(idx, val) {
+    assertCompleteIndex(idx);
     while (result.length <= idx) result.push(null);
     result[idx] = val;
   }
