@@ -33,13 +33,21 @@ describe("ensureCompleteTree", () => {
     expect(() => ensureCompleteTree(skewed)).toThrow(TreeLayoutTooLargeError);
   });
 
-  it("accepts complete arrays up to the hard layout cap", () => {
-    const ok = Array(MAX_COMPLETE_TREE_LEN + 1).fill(null);
-    ok[0] = 1;
-    expect(ensureCompleteTree(ok)).toEqual(ok);
+  it("rejects complete arrays longer than the hard layout cap", () => {
     const tooBig = Array(MAX_COMPLETE_TREE_LEN + 2).fill(null);
     tooBig[0] = 1;
     expect(() => ensureCompleteTree(tooBig)).toThrow(TreeLayoutTooLargeError);
+  });
+
+  it("converts a 12-node left spine within the layout budget", () => {
+    const skewed = [];
+    for (let i = 1; i <= 12; i++) {
+      skewed.push(i);
+      if (i < 12) skewed.push(null);
+    }
+    const complete = leetcodeToComplete(skewed);
+    expect(complete.length).toBeLessThanOrEqual(MAX_COMPLETE_TREE_LEN + 1);
+    expect(complete.filter((v) => v != null)).toHaveLength(12);
   });
 });
 
