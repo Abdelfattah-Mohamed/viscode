@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
-import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
+import { STEP_GENERATORS, generateLongestCommonSubsequenceSteps } from "../data/stepGenerators";
+import { SORTING_STEP_GENERATORS, countingSortSteps } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
 describe("step generators", () => {
@@ -57,5 +57,31 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("visualizer input caps", () => {
+  it("caps LCS string lengths so huge inputs cannot OOM the tab", () => {
+    const s = "a".repeat(80);
+    const t = "a".repeat(80);
+    const steps = generateLongestCommonSubsequenceSteps({ s, t });
+    expect(steps.some((step) => /capped/i.test(step.description))).toBe(true);
+    expect(steps[steps.length - 1].state.t1).toHaveLength(40);
+    expect(steps[steps.length - 1].state.t2).toHaveLength(40);
+    expect(steps.length).toBeLessThan(5000);
+  });
+
+  it("rejects counting-sort ranges that would OOM from Θ(k²) count snapshots", () => {
+    const steps = countingSortSteps({ nums: [0, 5000] });
+    expect(steps.length).toBeLessThan(5);
+    expect(steps.some((step) => /exceeds visualization cap/i.test(step.description))).toBe(true);
+    expect(steps[steps.length - 1].stepType).toBe("done");
+  });
+
+  it("still sorts counting-sort within the allowed range", () => {
+    const steps = countingSortSteps({ nums: [4, 2, 2, 8, 3, 3, 1] });
+    const last = steps[steps.length - 1];
+    expect(last.stepType).toBe("done");
+    expect(last.state.nums).toEqual([1, 2, 2, 3, 3, 4, 8]);
   });
 });

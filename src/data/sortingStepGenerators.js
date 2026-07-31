@@ -185,6 +185,9 @@ export function iterativeMergeSortSteps(input) {
   return steps;
 }
 
+/** Max shifted key (max − min). Prefix-sum steps clone count[] twice per key → Θ(k²) memory. */
+const COUNTING_SORT_MAX_RANGE = 256;
+
 export function countingSortSteps(input) {
   const nums = numsOf(input);
   const steps = [];
@@ -195,9 +198,22 @@ export function countingSortSteps(input) {
     return steps;
   }
   const minV = Math.min(...nums);
+  const maxV = Math.max(...nums);
+  if (!Number.isFinite(minV) || !Number.isFinite(maxV)) {
+    push(steps, "done", "Input contains non-finite values; cannot run counting sort.", nums, { done: true, sortedLeft: 0 });
+    return steps;
+  }
   const offset = minV < 0 ? minV : 0;
   const keys = nums.map((x) => x - offset);
   const maxK = Math.max(...keys);
+  // Reject wide ranges: each prefix step clones count[0..maxK], so sparse [0, 5000] OOMs the tab.
+  if (!Number.isFinite(maxK) || maxK < 0 || maxK > COUNTING_SORT_MAX_RANGE) {
+    push(steps, "done", `Key range ${maxK + 1} exceeds visualization cap of ${COUNTING_SORT_MAX_RANGE + 1} (max − min). Use a smaller integer span.`, nums, {
+      done: true,
+      sortedLeft: 0,
+    });
+    return steps;
+  }
   const count = Array(maxK + 1).fill(0);
   push(steps, "loop", "Count occurrences of shifted keys.", nums, { aux: count.slice(), auxLabel: "count[]" });
   for (let i = 0; i < n; i++) {
