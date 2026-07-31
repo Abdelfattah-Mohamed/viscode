@@ -2663,9 +2663,14 @@ export function generateWordBreakSteps(input) {
   return steps;
 }
 
+const LCS_MAX_LEN = 40;
+
 export function generateLongestCommonSubsequenceSteps(input) {
-  const t1 = input?.s != null ? String(input.s).trim() : "";
-  const t2 = input?.t != null ? String(input.t).trim() : "";
+  const rawT1 = input?.s != null ? String(input.s).trim() : "";
+  const rawT2 = input?.t != null ? String(input.t).trim() : "";
+  // Cap lengths: each cell emits steps that clone the full (m+1)×(n+1) DP matrix → large strings OOM/freeze the tab.
+  const t1 = rawT1.slice(0, LCS_MAX_LEN);
+  const t2 = rawT2.slice(0, LCS_MAX_LEN);
   const m = t1.length;
   const n = t2.length;
   if (!m || !n) {
@@ -2677,6 +2682,13 @@ export function generateLongestCommonSubsequenceSteps(input) {
   }
   const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
   const steps = [];
+  if (rawT1.length > LCS_MAX_LEN || rawT2.length > LCS_MAX_LEN) {
+    steps.push({
+      stepType: "init",
+      description: `Strings capped to ${LCS_MAX_LEN} chars for visualization`,
+      state: { t1: t1.split(""), t2: t2.split(""), dp: dp.map(r => [...r]), i: 0, j: 0, phase: "init" },
+    });
+  }
   steps.push({
     stepType: "init",
     description: `dp[0..${m}][0..${n}] = 0`,
