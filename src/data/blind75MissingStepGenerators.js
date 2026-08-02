@@ -1,5 +1,11 @@
 import { ensureCompleteTree } from "../utils/treeFormat.js";
 
+/** Match Word Search I visualization budget (avoid circular import with stepGenerators). */
+const MAX_WORD_SEARCH_CELLS = 25;
+const MAX_WORD_SEARCH_WORD_LEN = 6;
+/** Keep Word Search II word lists small — each word retries DFS from every cell. */
+export const MAX_WORD_SEARCH_II_WORDS = 8;
+
 function parseBoard(input) {
   const flat = String(input?.board ?? "").split(/[,\s]+/).filter(Boolean);
   const rows = Number(input?.rows) || 1;
@@ -352,6 +358,29 @@ export function generateWordSearchIISteps(input) {
   if (!R) {
     push("done", "Empty board", { visited: [], current: null, word: "", matched: "", done: true });
     return steps;
+  }
+
+  if (R * C > MAX_WORD_SEARCH_CELLS) {
+    return [{
+      stepType: "init",
+      description: `Board capped for visualization (max ${MAX_WORD_SEARCH_CELLS} cells; got ${R}×${C}). Use a smaller board.`,
+      state: { grid: [], words, foundWords: [], visited: [], current: null, word: "", matched: "", done: true, capped: true },
+    }];
+  }
+  if (words.length > MAX_WORD_SEARCH_II_WORDS) {
+    return [{
+      stepType: "init",
+      description: `Word list capped for visualization (max ${MAX_WORD_SEARCH_II_WORDS} words; got ${words.length}).`,
+      state: { grid: [], words, foundWords: [], visited: [], current: null, word: "", matched: "", done: true, capped: true },
+    }];
+  }
+  const longest = words.reduce((m, w) => Math.max(m, w.length), 0);
+  if (longest > MAX_WORD_SEARCH_WORD_LEN) {
+    return [{
+      stepType: "init",
+      description: `Words capped for visualization (max length ${MAX_WORD_SEARCH_WORD_LEN}; got ${longest}). Shorten the words.`,
+      state: { grid: [], words, foundWords: [], visited: [], current: null, word: "", matched: "", done: true, capped: true },
+    }];
   }
 
   push("init", `Trie + DFS for [${words.join(", ")}]`, { visited: Array(R).fill(0).map(() => Array(C).fill(false)), current: null, word: "", matched: "" });
