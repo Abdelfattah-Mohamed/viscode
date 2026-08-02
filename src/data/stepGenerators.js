@@ -1622,6 +1622,10 @@ export function generateSetMatrixZeroesSteps(input) {
   return steps;
 }
 
+/** Visualization budget: DFS step clones explode on dense boards + long words. */
+export const MAX_WORD_SEARCH_CELLS = 25;
+export const MAX_WORD_SEARCH_WORD_LEN = 6;
+
 function parseWordSearchBoard(input) {
   const boardStr = input?.board;
   const gridArr = input?.grid;
@@ -1644,6 +1648,14 @@ function parseWordSearchBoard(input) {
   return buildGrid2D(flat, rows);
 }
 
+function wordSearchCappedSteps(word, reason) {
+  return [{
+    stepType: "init",
+    description: reason,
+    state: { grid: [], visited: [], current: null, word, matched: "", done: true, capped: true },
+  }];
+}
+
 export function generateWordSearchSteps(input) {
   if (!input || (input.board == null && input.grid == null) || input.rows == null) {
     return [
@@ -1656,6 +1668,18 @@ export function generateWordSearchSteps(input) {
   const word = String(input.word ?? "AB").toUpperCase();
   const R = grid.length;
   const C = grid[0].length;
+  if (R * C > MAX_WORD_SEARCH_CELLS) {
+    return wordSearchCappedSteps(
+      word,
+      `Board capped for visualization (max ${MAX_WORD_SEARCH_CELLS} cells; got ${R}×${C}). Use a smaller board.`
+    );
+  }
+  if (word.length > MAX_WORD_SEARCH_WORD_LEN) {
+    return wordSearchCappedSteps(
+      word,
+      `Word capped for visualization (max length ${MAX_WORD_SEARCH_WORD_LEN}; got ${word.length}). Shorten the word.`
+    );
+  }
   const steps = [];
   const VISITED = 35;
 
