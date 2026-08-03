@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import {
+  STEP_GENERATORS,
+  generateCountingBitsSteps,
+  generateDecodeWaysSteps,
+  generateWordBreakSteps,
+  MAX_COUNTING_BITS_N,
+  MAX_DECODE_WAYS_LEN,
+  MAX_WORD_BREAK_LEN,
+} from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
@@ -57,5 +65,50 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("visualizer input caps", () => {
+  it("rejects counting-bits n that would OOM from Θ(n²) ans snapshots", () => {
+    const steps = generateCountingBitsSteps({ n: 5000 });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].description).toMatch(/exceeds visualization cap/i);
+    expect(steps[0].state.capped).toBe(true);
+  });
+
+  it("still computes counting-bits within the allowed range", () => {
+    const steps = generateCountingBitsSteps({ n: 5 });
+    const last = steps[steps.length - 1];
+    expect(last.stepType).toBe("done");
+    expect(last.state.nums).toEqual([0, 1, 1, 2, 1, 2]);
+    expect(MAX_COUNTING_BITS_N).toBeGreaterThanOrEqual(5);
+  });
+
+  it("rejects word-break strings that would OOM from Θ(n³) step clones", () => {
+    const steps = generateWordBreakSteps({ s: "a".repeat(250), dict: "b" });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].description).toMatch(/exceeds visualization cap/i);
+    expect(steps[0].state.capped).toBe(true);
+  });
+
+  it("still solves word-break within the allowed length", () => {
+    const steps = generateWordBreakSteps({ s: "leetcode", dict: "leet,code" });
+    const last = steps[steps.length - 1];
+    expect(last.state.dp[last.state.dp.length - 1]).toBe(true);
+    expect(MAX_WORD_BREAK_LEN).toBeGreaterThanOrEqual("leetcode".length);
+  });
+
+  it("rejects decode-ways strings that would OOM from Θ(n²) dp snapshots", () => {
+    const steps = generateDecodeWaysSteps({ s: "1".repeat(2000) });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].description).toMatch(/exceeds visualization cap/i);
+    expect(steps[0].state.capped).toBe(true);
+  });
+
+  it("still decodes within the allowed length", () => {
+    const steps = generateDecodeWaysSteps({ s: "12" });
+    const last = steps[steps.length - 1];
+    expect(last.state.dp[2]).toBe(2);
+    expect(MAX_DECODE_WAYS_LEN).toBeGreaterThanOrEqual(2);
   });
 });

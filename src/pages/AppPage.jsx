@@ -17,7 +17,7 @@ import {
   SortingViz, MinWindowViz, TreeAlgoViz, TreeConstructViz, TrieViz,
 } from "../components/visualizers";
 import { PROBLEMS, LANG_META, DIFF_COLOR } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import { STEP_GENERATORS, MAX_COUNTING_BITS_N } from "../data/stepGenerators";
 import { useStepPlayer } from "../hooks/useStepPlayer";
 import { useProblemNotes } from "../hooks/useProblemNotes";
 import { submitFeedback, trackEvent } from "../utils/analytics";
@@ -500,7 +500,7 @@ export default function AppPage({
               </div>
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: "8px 20px 20px", fontSize: `${whiteboardFontScale}rem` }}>
-              {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : selectedProblem === "coin-change" ? (currentStep?.state?.dp ?? (() => { const a = Math.max(0, Number(input?.amount) ?? 11); const d = Array(a + 1).fill(a + 1); d[0] = 0; return d; })()) : selectedProblem === "knapsack-01" ? (currentStep?.state?.dp ?? Array((Number(input?.target) ?? 8) + 1).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : selectedProblem === "coin-change" || selectedProblem === "knapsack-01" ? "dp" : undefined} problemId={selectedProblem} />}
+              {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, Math.min(MAX_COUNTING_BITS_N, Number(input.n) || 0) + 1)).fill(0)) : selectedProblem === "coin-change" ? (currentStep?.state?.dp ?? (() => { const a = Math.max(0, Number(input?.amount) ?? 11); const d = Array(a + 1).fill(a + 1); d[0] = 0; return d; })()) : selectedProblem === "knapsack-01" ? (currentStep?.state?.dp ?? Array((Number(input?.target) ?? 8) + 1).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : selectedProblem === "coin-change" || selectedProblem === "knapsack-01" ? "dp" : undefined} problemId={selectedProblem} />}
               {problem.visualizer === "trapping"    && <TrappingRainWaterViz heights={input.heights ?? input.nums ?? problem.defaultInput?.heights ?? problem.defaultInput?.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
               {problem.visualizer === "duplicate"   && <DuplicateViz          nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
@@ -829,7 +829,7 @@ export default function AppPage({
             </div>
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "4px 16px 16px", fontSize: `${whiteboardFontScale}rem` }}>
-            {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, (input.n ?? 0) + 1)).fill(0)) : selectedProblem === "coin-change" ? (currentStep?.state?.dp ?? (() => { const a = Math.max(0, Number(input?.amount) ?? 11); const d = Array(a + 1).fill(a + 1); d[0] = 0; return d; })()) : selectedProblem === "knapsack-01" ? (currentStep?.state?.dp ?? Array((Number(input?.target) ?? 8) + 1).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : selectedProblem === "coin-change" || selectedProblem === "knapsack-01" ? "dp" : undefined} problemId={selectedProblem} />}
+            {problem.visualizer === "array"       && <ArrayVisualizer       nums={selectedProblem === "counting-bits" ? (currentStep?.state?.nums ?? Array(Math.max(0, Math.min(MAX_COUNTING_BITS_N, Number(input.n) || 0) + 1)).fill(0)) : selectedProblem === "coin-change" ? (currentStep?.state?.dp ?? (() => { const a = Math.max(0, Number(input?.amount) ?? 11); const d = Array(a + 1).fill(a + 1); d[0] = 0; return d; })()) : selectedProblem === "knapsack-01" ? (currentStep?.state?.dp ?? Array((Number(input?.target) ?? 8) + 1).fill(0)) : (input.nums || [])}   stepState={{ ...currentStep?.state, target: input.target }} t={t} arrayLabel={selectedProblem === "counting-bits" ? "ans" : selectedProblem === "coin-change" || selectedProblem === "knapsack-01" ? "dp" : undefined} problemId={selectedProblem} />}
             {problem.visualizer === "trapping"    && <TrappingRainWaterViz heights={input.heights ?? input.nums ?? problem.defaultInput?.heights ?? problem.defaultInput?.nums ?? []} stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "consecutive" && <ConsecutiveVisualizer nums={input.nums || []}   stepState={currentStep?.state ?? {}} t={t} />}
             {problem.visualizer === "duplicate"   && <DuplicateViz          nums={input.nums || []}   stepState={currentStep?.state} t={t} />}
