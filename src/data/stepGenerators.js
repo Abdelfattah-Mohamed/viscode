@@ -1102,8 +1102,18 @@ export function generateHammingWeightSteps(input) {
   return steps;
 }
 
+/** Max n for counting-bits visualization. Each of ~2n steps clones ans[0..n] → Θ(n²) retained state. */
+export const MAX_COUNTING_BITS_N = 256;
+
 export function generateCountingBitsSteps(input) {
   const n = Math.max(0, Number(input?.n) || 0);
+  if (n > MAX_COUNTING_BITS_N) {
+    return [{
+      stepType: "done",
+      description: `n=${n} exceeds visualization cap of ${MAX_COUNTING_BITS_N}. Use a smaller n.`,
+      state: { nums: [], i: 0, highlight: [], done: true, phase: "done", capped: true },
+    }];
+  }
   const ans = Array(n + 1).fill(0);
   const steps = [];
   steps.push({ stepType: "init", description: `countBits(${n}) — ans[0..${n}] = 0`, state: { nums: [...ans], i: 0, highlight: [], phase: "init" } });
@@ -2576,9 +2586,19 @@ export function generateSearchRotatedSteps({ nums = [], target }) {
   return steps;
 }
 
+/** Max string length for decode-ways. ~2–3 steps per index each clone dp[0..n] → Θ(n²) retained state. */
+export const MAX_DECODE_WAYS_LEN = 80;
+
 export function generateDecodeWaysSteps(input) {
   const s = input?.s != null ? String(input.s).trim() : "";
   if (!s.length) return [{ stepType: "init", description: "Empty string", state: { s: "", dp: [1], i: 0, highlight: [], done: true } }];
+  if (s.length > MAX_DECODE_WAYS_LEN) {
+    return [{
+      stepType: "done",
+      description: `String length ${s.length} exceeds visualization cap of ${MAX_DECODE_WAYS_LEN}. Use a shorter digit string.`,
+      state: { s: s.split("").slice(0, 0), dp: [1], i: 0, highlight: [], contrib: null, done: true, capped: true },
+    }];
+  }
   const n = s.length;
   const dp = new Array(n + 1).fill(0);
   dp[0] = 1;
@@ -2602,6 +2622,9 @@ export function generateDecodeWaysSteps(input) {
   return steps;
 }
 
+/** Max string length for word-break. Nested i/j loops emit O(n²) steps that clone s/dp → Θ(n³) retained state. */
+export const MAX_WORD_BREAK_LEN = 40;
+
 export function generateWordBreakSteps(input) {
   const s = input?.s != null ? String(input.s).trim() : "";
   const dictStr = input?.dict != null ? String(input.dict).trim() : "";
@@ -2612,6 +2635,13 @@ export function generateWordBreakSteps(input) {
       { stepType: "init", description: "Empty string", state: { s: [], dp: [true], i: 0, j: 0, word: "", dict: wordDict, highlight: [], done: true } },
       { stepType: "done", description: "return true (empty)", state: { s: [], dp: [true], i: 0, j: 0, word: "", dict: wordDict, highlight: [], done: true } },
     ];
+  }
+  if (s.length > MAX_WORD_BREAK_LEN) {
+    return [{
+      stepType: "done",
+      description: `String length ${s.length} exceeds visualization cap of ${MAX_WORD_BREAK_LEN}. Use a shorter string.`,
+      state: { s: [], dp: [true], i: 0, j: 0, word: "", dict: wordDict, highlight: [], done: true, capped: true },
+    }];
   }
   const n = s.length;
   const dp = Array(n + 1).fill(false);
