@@ -1,8 +1,42 @@
 /** Step generators for sorting visualizer — stepTypes: init, loop, compare, visit, update, done */
 
+/**
+ * Max nums length for sorting visualizations.
+ * Quadratic sorts (bubble/selection/insertion/maximum-gap) emit Θ(n²) steps that each clone nums → Θ(n³) retained heap.
+ * Cap keeps reverse-sorted Pro custom inputs from OOMing the tab during AppPage useMemo.
+ */
+export const MAX_SORT_VIS_LEN = 128;
+
 function numsOf(input) {
   const raw = input?.nums;
   return Array.isArray(raw) ? raw.map((x) => Number(x) || 0) : [];
+}
+
+function rejectOversizedSort(n) {
+  return [
+    {
+      stepType: "done",
+      description: `Array length ${n} exceeds visualization cap of ${MAX_SORT_VIS_LEN}. Use a smaller array.`,
+      state: {
+        nums: [],
+        highlight: [],
+        sortedLeft: 0,
+        sortedRight: 0,
+        pivot: null,
+        done: true,
+        capped: true,
+      },
+    },
+  ];
+}
+
+/** Parse nums and reject oversized inputs before any per-step cloning. */
+function beginSort(input) {
+  const nums = numsOf(input);
+  if (nums.length > MAX_SORT_VIS_LEN) {
+    return { capped: true, steps: rejectOversizedSort(nums.length) };
+  }
+  return { capped: false, nums, steps: [] };
 }
 
 function snap(nums, extra = {}) {
@@ -24,8 +58,9 @@ function push(steps, stepType, description, nums, extra) {
 }
 
 export function bubbleSortSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Bubble sort: repeatedly swap adjacent out-of-order pairs.", nums, { sortedRight: n });
   if (n <= 1) {
@@ -57,8 +92,9 @@ export function bubbleSortSteps(input) {
 }
 
 export function selectionSortSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Selection sort: choose the minimum of the unsorted suffix each round.", nums, {});
   if (n <= 1) {
@@ -90,8 +126,9 @@ export function selectionSortSteps(input) {
 }
 
 export function insertionSortSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Insertion sort: expand a sorted prefix by inserting each next element.", nums, {});
   if (n <= 1) {
@@ -163,8 +200,9 @@ function mergeRange(steps, nums, l, m, r, sortedBand) {
 }
 
 export function iterativeMergeSortSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Bottom-up merge sort: merge pairs of length 1, then 2, then 4…", nums, {});
   if (n <= 1) {
@@ -186,8 +224,9 @@ export function iterativeMergeSortSteps(input) {
 }
 
 export function countingSortSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Counting sort: frequencies → prefix ranks → stable scatter back into nums.", nums, {});
   if (n <= 1) {
@@ -267,8 +306,9 @@ function siftDown(steps, nums, n, i, sortedRight) {
 }
 
 export function heapSortSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Heap sort: build max-heap, repeatedly extract max to the end.", nums, {});
   if (n <= 1) {
@@ -299,8 +339,9 @@ export function heapSortSteps(input) {
 }
 
 export function radixSortSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Radix sort (LSD, base 10) — demo expects non-negative integers.", nums, {});
   if (n <= 1) {
@@ -356,8 +397,9 @@ function knuthGaps(n) {
 }
 
 export function shellSortSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Shell sort: insertion sort with diminishing gaps (Knuth 3k+1).", nums, {});
   if (n <= 1) {
@@ -388,8 +430,9 @@ export function shellSortSteps(input) {
 }
 
 export function quickSortSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Quicksort (Lomuto): partition around pivot at end of segment.", nums, {});
   if (n <= 1) {
@@ -448,8 +491,9 @@ export function quickSortSteps(input) {
 }
 
 export function bucketSortSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Bucket sort (uniform [0,1)): distribute into buckets, sort each, concatenate.", nums, {});
   if (n <= 1) {
@@ -497,8 +541,9 @@ export function bucketSortSteps(input) {
 }
 
 export function maximumGapSteps(input) {
-  const nums = numsOf(input);
-  const steps = [];
+  const prep = beginSort(input);
+  if (prep.capped) return prep.steps;
+  const { nums, steps } = prep;
   const n = nums.length;
   push(steps, "init", "Maximum gap: sort to inspect successive differences.", nums, {});
   if (n <= 1) {
