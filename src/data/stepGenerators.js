@@ -934,6 +934,12 @@ export function generateMaxAreaOfIslandSteps({ grid: flat, rows }) {
   return steps;
 }
 
+/**
+ * Max cells for Pacific Atlantic visualization.
+ * Each BFS visit clones two R×C reachability matrices → Θ(cells²) retained heap for full flood-outs.
+ */
+export const MAX_PACIFIC_ATLANTIC_CELLS = 400;
+
 export function generatePacificAtlanticSteps(input) {
   if (!input || input.grid == null || input.rows == null) {
     return [
@@ -946,6 +952,14 @@ export function generatePacificAtlanticSteps(input) {
     return [{ stepType: "done", description: "Empty grid", state: { grid: [], pacific: [], atlantic: [], result: [], current: null, done: true } }];
   }
   const R = grid.length, C = grid[0].length;
+  const cellCount = R * C;
+  if (cellCount > MAX_PACIFIC_ATLANTIC_CELLS) {
+    return [{
+      stepType: "done",
+      description: `Grid ${R}×${C} (${cellCount} cells) exceeds visualization cap of ${MAX_PACIFIC_ATLANTIC_CELLS} cells. Use a smaller grid.`,
+      state: { grid: [], pacific: [], atlantic: [], result: [], current: null, done: true, capped: true },
+    }];
+  }
   const pacific = grid.map(row => row.map(() => false));
   const atlantic = grid.map(row => row.map(() => false));
   const steps = [];

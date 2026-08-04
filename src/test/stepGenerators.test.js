@@ -1,7 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
-import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
+import {
+  STEP_GENERATORS,
+  generatePacificAtlanticSteps,
+  MAX_PACIFIC_ATLANTIC_CELLS,
+} from "../data/stepGenerators";
+import {
+  SORTING_STEP_GENERATORS,
+  bubbleSortSteps,
+  selectionSortSteps,
+  insertionSortSteps,
+  maximumGapSteps,
+  MAX_SORT_VIS_LEN,
+} from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
 describe("step generators", () => {
@@ -57,5 +68,48 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("visualizer input caps", () => {
+  const oversizedNums = Array.from({ length: 512 }, (_, i) => 512 - i);
+
+  it.each([
+    ["bubble-sort", bubbleSortSteps],
+    ["selection-sort", selectionSortSteps],
+    ["insertion-sort", insertionSortSteps],
+    ["maximum-gap", maximumGapSteps],
+  ])("%s rejects arrays that would OOM from Θ(n³) step clones", (_id, generator) => {
+    const steps = generator({ nums: oversizedNums });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].description).toMatch(/exceeds visualization cap/i);
+    expect(steps[0].state.capped).toBe(true);
+  });
+
+  it("still sorts within the allowed length", () => {
+    const nums = [5, 3, 8, 4, 2];
+    const steps = bubbleSortSteps({ nums });
+    const last = steps[steps.length - 1];
+    expect(last.stepType).toBe("done");
+    expect(last.state.nums).toEqual([2, 3, 4, 5, 8]);
+    expect(MAX_SORT_VIS_LEN).toBeGreaterThanOrEqual(nums.length);
+  });
+
+  it("rejects pacific-atlantic grids that would OOM from per-visit matrix clones", () => {
+    const side = 60;
+    const grid = Array.from({ length: side * side }, () => 1);
+    const steps = generatePacificAtlanticSteps({ grid, rows: side });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].description).toMatch(/exceeds visualization cap/i);
+    expect(steps[0].state.capped).toBe(true);
+    expect(side * side).toBeGreaterThan(MAX_PACIFIC_ATLANTIC_CELLS);
+  });
+
+  it("still solves pacific-atlantic within the allowed cell count", () => {
+    const steps = generatePacificAtlanticSteps(PROBLEMS["pacific-atlantic"].defaultInput);
+    const last = steps[steps.length - 1];
+    expect(last.stepType).toBe("done");
+    expect(last.state.capped).not.toBe(true);
+    expect(last.state.result?.length).toBeGreaterThan(0);
   });
 });
