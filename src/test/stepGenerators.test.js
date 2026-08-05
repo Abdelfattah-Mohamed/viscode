@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import {
+  STEP_GENERATORS,
+  generateThreeSumSteps,
+  generateFloydWarshallSteps,
+  MAX_THREE_SUM_LEN,
+  MAX_FLOYD_WARSHALL_N,
+} from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
@@ -57,5 +63,47 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("OOM input caps", () => {
+  it("rejects 3Sum arrays that would OOM from Θ(n²) two-pointer step clones", () => {
+    const nums = Array.from({ length: 140 }, (_, i) => i - 70);
+    const steps = generateThreeSumSteps({ nums });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].description).toMatch(/exceeds visualization cap/);
+    expect(MAX_THREE_SUM_LEN).toBe(80);
+  });
+
+  it("still visualizes 3Sum at the length cap boundary", () => {
+    const nums = Array.from({ length: MAX_THREE_SUM_LEN }, (_, i) => i - Math.floor(MAX_THREE_SUM_LEN / 2));
+    const steps = generateThreeSumSteps({ nums });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+  });
+
+  it("rejects Floyd–Warshall graphs that would OOM from per-relax matrix clones", () => {
+    const n = 70;
+    const nums = [];
+    for (let i = 0; i < n - 1; i++) {
+      nums.push(i, i + 1, 100, i + 1, i, 100);
+    }
+    const steps = generateFloydWarshallSteps({ n, nums });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].description).toMatch(/exceeds visualization cap/);
+    expect(MAX_FLOYD_WARSHALL_N).toBe(40);
+  });
+
+  it("still visualizes Floyd–Warshall at the n cap boundary", () => {
+    const n = MAX_FLOYD_WARSHALL_N;
+    const nums = [];
+    for (let i = 0; i < n - 1; i++) {
+      nums.push(i, i + 1, 100, i + 1, i, 100);
+    }
+    const steps = generateFloydWarshallSteps({ n, nums });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
   });
 });

@@ -581,8 +581,18 @@ export function generateReverseLinkedListSteps({ head }) {
 }
 
 // ── 3Sum: sort + two pointers for each i ─────────────────────────────────
+// Cap: Θ(n²) two-pointer steps each retain nums + triples snapshots.
+export const MAX_THREE_SUM_LEN = 80;
+
 export function generateThreeSumSteps({ nums }) {
   if (!nums || nums.length < 3) return [];
+  if (nums.length > MAX_THREE_SUM_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${nums.length} exceeds visualization cap of ${MAX_THREE_SUM_LEN}. Use a smaller array.`,
+      state: { nums: [], i: -1, left: -1, right: -1, triples: [], done: true, capped: true },
+    }];
+  }
   const sorted = [...nums].sort((a, b) => a - b);
   const steps = [];
   const triples = [];
@@ -4261,12 +4271,23 @@ export function generateKruskalSteps(input) {
   return steps;
 }
 
+// Cap: each successful relax clones the full n×n dist matrix into step state.
+// Path graphs with improving multi-hop weights emit Θ(n²) relax steps → Θ(n⁴) retained memory.
+export const MAX_FLOYD_WARSHALL_N = 40;
+
 export function generateFloydWarshallSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
   const edges = buildWeightedEdgesFromNums(n, input?.nums || []);
   const steps = [];
   if (n <= 0) {
     return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], dist: [], result: "" } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], dist: [], result: "", done: true } }];
+  }
+  if (n > MAX_FLOYD_WARSHALL_N) {
+    return [{
+      stepType: "done",
+      description: `n=${n} exceeds visualization cap of ${MAX_FLOYD_WARSHALL_N}. Use a smaller graph.`,
+      state: { n: 0, edges: [], dist: [], result: "", done: true, capped: true },
+    }];
   }
   const INF = 1e8;
   const dist = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 0 : INF)));
