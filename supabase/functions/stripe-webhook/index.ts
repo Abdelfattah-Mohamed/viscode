@@ -86,7 +86,9 @@ Deno.serve(async (req) => {
         if (!profileId) break;
         const planId = (session.metadata?.plan_id as string) || "pro";
         const isLifetime = planId === "lifetime" || session?.mode === "payment";
-        await supabase.from("user_subscriptions").upsert(
+        // Supabase JS does not throw on PostgREST errors — check `error` or Stripe
+        // will ACK the event and never retry, leaving a paid user without Pro.
+        const { error: upsertError } = await supabase.from("user_subscriptions").upsert(
           {
             user_id: profileId,
             plan_id: planId,
@@ -97,6 +99,13 @@ Deno.serve(async (req) => {
           },
           { onConflict: "user_id" }
         );
+        if (upsertError) {
+          console.error("checkout.session.completed upsert failed:", upsertError);
+          return jsonResponse(
+            { error: upsertError.message || "Failed to persist subscription" },
+            500
+          );
+        }
         break;
       }
 
@@ -126,13 +135,20 @@ Deno.serve(async (req) => {
         const periodEnd = sub.current_period_end
           ? new Date(sub.current_period_end * 1000).toISOString()
           : null;
-        const { data: existing } = await supabase
+        const { data: existing, error: lookupError } = await supabase
           .from("user_subscriptions")
           .select("user_id")
           .eq("stripe_subscription_id", sub.id)
           .maybeSingle();
+        if (lookupError) {
+          console.error("subscription lookup failed:", lookupError);
+          return jsonResponse(
+            { error: lookupError.message || "Failed to load subscription" },
+            500
+          );
+        }
         if (existing?.user_id) {
-          await supabase
+          const { error: updateError } = await supabase
             .from("user_subscriptions")
             .update({
               plan_id: planId,
@@ -143,6 +159,13 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             })
             .eq("user_id", existing.user_id);
+          if (updateError) {
+            console.error("subscription update failed:", updateError);
+            return jsonResponse(
+              { error: updateError.message || "Failed to update subscription" },
+              500
+            );
+          }
         }
         break;
       }
@@ -158,13 +181,20 @@ Deno.serve(async (req) => {
           period_end?: number;
         };
         if (!invoice?.id) break;
-        const { data: subRow } = await supabase
+        const { data: subRow, error: invoiceLookupError } = await supabase
           .from("user_subscriptions")
           .select("user_id")
           .eq("stripe_customer_id", invoice.customer)
           .maybeSingle();
+        if (invoiceLookupError) {
+          console.error("invoice.paid subscription lookup failed:", invoiceLookupError);
+          return jsonResponse(
+            { error: invoiceLookupError.message || "Failed to load subscription" },
+            500
+          );
+        }
         if (subRow?.user_id) {
-          await supabase.from("billing_invoices").insert({
+          const { error: insertError } = await supabase.from("billing_invoices").insert({
             user_id: subRow.user_id,
             stripe_invoice_id: invoice.id,
             amount_cents: invoice.amount_paid ?? 0,
@@ -177,6 +207,13 @@ Deno.serve(async (req) => {
               ? new Date(invoice.period_end * 1000).toISOString()
               : null,
           });
+          if (insertError) {
+            console.error("invoice.paid insert failed:", insertError);
+            return jsonResponse(
+              { error: insertError.message || "Failed to persist invoice" },
+              500
+            );
+          }
         }
         break;
       }
