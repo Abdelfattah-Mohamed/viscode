@@ -2313,9 +2313,19 @@ function stubLinkedListSteps(input) {
   return steps;
 }
 
+/** Cap copy-list visualization: each step clones head/random/interweaved (Θ(n²) memory). */
+export const MAX_COPY_LIST_LEN = 128;
+
 export function generateCopyListRandomSteps(input) {
   const head = Array.isArray(input?.head) ? input.head.filter(v => v != null && v !== "") : [];
   const n = head.length;
+  if (n > MAX_COPY_LIST_LEN) {
+    return [{
+      stepType: "done",
+      description: `List length ${n} exceeds visualization cap of ${MAX_COPY_LIST_LEN}. Use a shorter list.`,
+      state: { head: [], phase: 0, pIdx: -1, done: true, capped: true },
+    }];
+  }
   const defaultRandom = n === 3 ? [2, 0, 1] : n === 2 ? [1, 0] : n > 0 ? Array.from({ length: n }, (_, i) => (i + 1) % n) : [];
   let random = defaultRandom;
   if (input?.random != null) {
@@ -4418,9 +4428,19 @@ export function generateUnionFindSteps(input) {
   return steps;
 }
 
+/** Cap Fenwick visualization: each update step clones the BIT array (Θ(n² log n) memory). */
+export const MAX_FENWICK_LEN = 256;
+
 export function generateFenwickTreeSteps(input) {
   const nums = Array.isArray(input?.nums) ? input.nums.map((x) => Number(x) || 0) : [];
   const n = nums.length;
+  if (n > MAX_FENWICK_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${n} exceeds visualization cap of ${MAX_FENWICK_LEN}. Use a smaller array.`,
+      state: { nums: [], highlighted: [], done: true, capped: true },
+    }];
+  }
   const bit = Array(n + 1).fill(0);
   const steps = [{ stepType: "init", description: "Fenwick tree build", state: { nums: [...bit], highlighted: [] } }];
   const update = (i, delta) => {
@@ -4435,9 +4455,19 @@ export function generateFenwickTreeSteps(input) {
   return steps;
 }
 
+/** Cap segment-tree visualization: each build step clones the 4n segment array (Θ(n²) memory). */
+export const MAX_SEGMENT_TREE_LEN = 256;
+
 export function generateSegmentTreeSteps(input) {
   const nums = Array.isArray(input?.nums) ? input.nums.map((x) => Number(x) || 0) : [];
   const n = nums.length;
+  if (n > MAX_SEGMENT_TREE_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${n} exceeds visualization cap of ${MAX_SEGMENT_TREE_LEN}. Use a smaller array.`,
+      state: { nums: [], highlighted: [], done: true, capped: true },
+    }];
+  }
   const seg = Array(Math.max(1, 4 * n)).fill(0);
   const steps = [{ stepType: "init", description: "Segment tree build", state: { nums: [...nums], highlighted: [] } }];
   function build(v, l, r) {

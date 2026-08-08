@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import {
+  STEP_GENERATORS,
+  generateCopyListRandomSteps,
+  generateFenwickTreeSteps,
+  generateSegmentTreeSteps,
+  MAX_COPY_LIST_LEN,
+  MAX_FENWICK_LEN,
+  MAX_SEGMENT_TREE_LEN,
+} from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
@@ -57,5 +65,58 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("visualization input caps for Θ(n²) step clones", () => {
+  it("rejects copy-list inputs that would OOM from per-step list clones", () => {
+    const head = Array.from({ length: MAX_COPY_LIST_LEN + 1 }, (_, i) => i);
+    const steps = generateCopyListRandomSteps({ head });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].state.done).toBe(true);
+    expect(MAX_COPY_LIST_LEN).toBe(128);
+  });
+
+  it("still visualizes copy-list at the length cap", () => {
+    const head = Array.from({ length: MAX_COPY_LIST_LEN }, (_, i) => i);
+    const steps = generateCopyListRandomSteps({ head });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+  });
+
+  it("rejects Fenwick arrays that would OOM from per-update BIT clones", () => {
+    const nums = Array.from({ length: MAX_FENWICK_LEN + 1 }, (_, i) => i % 5);
+    const steps = generateFenwickTreeSteps({ nums });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].state.done).toBe(true);
+    expect(MAX_FENWICK_LEN).toBe(256);
+  });
+
+  it("still builds Fenwick at the length cap", () => {
+    const nums = Array.from({ length: MAX_FENWICK_LEN }, (_, i) => i % 5);
+    const steps = generateFenwickTreeSteps({ nums });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+  });
+
+  it("rejects segment-tree arrays that would OOM from per-build array clones", () => {
+    const nums = Array.from({ length: MAX_SEGMENT_TREE_LEN + 1 }, (_, i) => i % 7);
+    const steps = generateSegmentTreeSteps({ nums });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].state.done).toBe(true);
+    expect(MAX_SEGMENT_TREE_LEN).toBe(256);
+  });
+
+  it("still builds segment-tree at the length cap", () => {
+    const nums = Array.from({ length: MAX_SEGMENT_TREE_LEN }, (_, i) => i % 7);
+    const steps = generateSegmentTreeSteps({ nums });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+    expect(steps[steps.length - 1].state.done).toBe(true);
   });
 });
