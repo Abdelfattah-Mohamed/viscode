@@ -140,8 +140,17 @@ export function generateBinarySearchSteps({ nums, target }) {
   return steps;
 }
 
+export const MAX_CLIMBING_STAIRS_N = 128;
+
 export function generateClimbingStairsSteps({ n }) {
   n = Math.max(1, Number(n) || 1);
+  if (n > MAX_CLIMBING_STAIRS_N) {
+    return [{
+      stepType: "done",
+      description: `n=${n} exceeds visualization cap of ${MAX_CLIMBING_STAIRS_N}. Use a smaller n.`,
+      state: { step: 0, prev2: 0, prev1: 0, curr: 0, done: true, capped: true },
+    }];
+  }
   const steps = [];
   if (n <= 2) {
     steps.push({ stepType: "base", description: `n=${n} → base case, return ${n}`, state: { step: n, prev2: n <= 1 ? 0 : 1, prev1: n, curr: n, done: true } });
@@ -4016,8 +4025,17 @@ export function generateEncodeDecodeSteps(input) {
   return steps;
 }
 
+export const MAX_COURSE_SCHEDULE_N = 100;
+
 export function generateCourseScheduleSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_COURSE_SCHEDULE_N) {
+    return [{
+      stepType: "done",
+      description: `numCourses=${n} exceeds visualization cap of ${MAX_COURSE_SCHEDULE_N}. Use fewer courses.`,
+      state: { n: 0, edges: [], nodeState: [], highlighted: [], canFinish: false, done: true, capped: true, directed: true },
+    }];
+  }
   const rawEdges = buildEdgesFromNums(n, input?.nums || []);
   // Course Schedule: [a,b] means course a depends on b → edge b→a (b is prerequisite)
   const edges = rawEdges.map(([a, b]) => [b, a]);

@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import {
+  STEP_GENERATORS,
+  generateClimbingStairsSteps,
+  generateCourseScheduleSteps,
+  MAX_CLIMBING_STAIRS_N,
+  MAX_COURSE_SCHEDULE_N,
+} from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
@@ -57,5 +63,44 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("OOM input caps", () => {
+  it("rejects climbing-stairs n that would OOM from per-step object growth", () => {
+    const steps = generateClimbingStairsSteps({ n: MAX_CLIMBING_STAIRS_N + 1 });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].state.done).toBe(true);
+    expect(MAX_CLIMBING_STAIRS_N).toBe(128);
+  });
+
+  it("still visualizes climbing-stairs at the n cap", () => {
+    const steps = generateClimbingStairsSteps({ n: MAX_CLIMBING_STAIRS_N });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+  });
+
+  it("rejects course-schedule graphs that would OOM from per-step edge/state clones", () => {
+    const n = MAX_COURSE_SCHEDULE_N + 1;
+    const nums = [];
+    for (let i = 0; i < n - 1; i++) nums.push(i + 1, i);
+    const steps = generateCourseScheduleSteps({ n, nums });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].state.done).toBe(true);
+    expect(MAX_COURSE_SCHEDULE_N).toBe(100);
+  });
+
+  it("still visualizes course-schedule at the n cap", () => {
+    const n = MAX_COURSE_SCHEDULE_N;
+    const nums = [];
+    for (let i = 0; i < n - 1; i++) nums.push(i + 1, i);
+    const steps = generateCourseScheduleSteps({ n, nums });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+    expect(steps[steps.length - 1].state.canFinish).toBe(true);
   });
 });
