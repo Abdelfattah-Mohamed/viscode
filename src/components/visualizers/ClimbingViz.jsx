@@ -1,6 +1,9 @@
+import { MAX_CLIMBING_STAIRS_N } from "../../data/stepGenerators";
+
 export default function ClimbingViz({ n, stepState = {}, t }) {
-  const { step, prev2, prev1, curr, done } = stepState;
-  const total = Math.max(1, Number(n) || 5);
+  const { step, prev2, prev1, curr, done, capped } = stepState;
+  // Clamp DOM stair count — Pro/share inputs can set huge n; uncapped Array.from OOMs the tab.
+  const total = Math.min(MAX_CLIMBING_STAIRS_N, Math.max(1, Number(n) || 5));
   const activeStep = Number.isFinite(step) ? step : -1;
   const isBaseCase = total <= 2;
 
@@ -76,7 +79,13 @@ export default function ClimbingViz({ n, stepState = {}, t }) {
         ))}
       </div>
 
-      {done && (
+      {capped && (
+        <div style={{ border: `1.5px solid ${t.border}`, borderRadius: 12, background: t.surfaceAlt, padding: "10px 12px", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.8rem", color: t.inkMuted, fontWeight: 700 }}>
+          n exceeds visualization cap of {MAX_CLIMBING_STAIRS_N}. Use a smaller n.
+        </div>
+      )}
+
+      {done && !capped && (
         <div style={{ border: `1.5px solid ${t.green}`, borderRadius: 12, background: t.green + "15", padding: "10px 12px", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.8rem", color: t.green, fontWeight: 800 }}>
           Total distinct ways to reach step {total}: {prev1}
         </div>
