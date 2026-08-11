@@ -1,6 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import {
+  STEP_GENERATORS,
+  generateProductExceptSelfSteps,
+  generateHouseRobberSteps,
+  generateJumpGameSteps,
+  generateTrappingRainWaterSteps,
+  generateMinStackSteps,
+  MAX_PRODUCT_EXCEPT_SELF_LEN,
+  MAX_HOUSE_ROBBER_LEN,
+  MAX_JUMP_GAME_LEN,
+  MAX_TRAPPING_RAIN_LEN,
+  MAX_MIN_STACK_OPS,
+} from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
@@ -57,5 +69,92 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("array / stack visualizer OOM caps", () => {
+  it("rejects product-except-self arrays that would OOM from per-step result clones", () => {
+    const nums = Array.from({ length: MAX_PRODUCT_EXCEPT_SELF_LEN + 1 }, (_, i) => i + 1);
+    const steps = generateProductExceptSelfSteps({ nums });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].state.done).toBe(true);
+    expect(MAX_PRODUCT_EXCEPT_SELF_LEN).toBe(256);
+  });
+
+  it("still visualizes product-except-self at the length cap", () => {
+    const nums = Array.from({ length: MAX_PRODUCT_EXCEPT_SELF_LEN }, (_, i) => i + 1);
+    const steps = generateProductExceptSelfSteps({ nums });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+  });
+
+  it("rejects house-robber arrays that would OOM from per-step dp clones", () => {
+    const nums = Array.from({ length: MAX_HOUSE_ROBBER_LEN + 1 }, (_, i) => (i % 7) + 1);
+    const steps = generateHouseRobberSteps({ nums });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].state.done).toBe(true);
+    expect(MAX_HOUSE_ROBBER_LEN).toBe(256);
+  });
+
+  it("still visualizes house-robber at the length cap", () => {
+    const nums = Array.from({ length: MAX_HOUSE_ROBBER_LEN }, (_, i) => (i % 7) + 1);
+    const steps = generateHouseRobberSteps({ nums });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+  });
+
+  it("rejects jump-game arrays that would OOM from per-step nums clones", () => {
+    const nums = Array.from({ length: MAX_JUMP_GAME_LEN + 1 }, () => 1);
+    const steps = generateJumpGameSteps({ nums });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].state.done).toBe(true);
+    expect(MAX_JUMP_GAME_LEN).toBe(256);
+  });
+
+  it("still visualizes jump-game at the length cap", () => {
+    const nums = Array.from({ length: MAX_JUMP_GAME_LEN }, () => 1);
+    const steps = generateJumpGameSteps({ nums });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+  });
+
+  it("rejects trapping-rain-water arrays that would OOM from per-step waterAt clones", () => {
+    const heights = Array.from({ length: MAX_TRAPPING_RAIN_LEN + 1 }, (_, i) => i % 5);
+    const steps = generateTrappingRainWaterSteps({ heights });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].state.done).toBe(true);
+    expect(MAX_TRAPPING_RAIN_LEN).toBe(256);
+  });
+
+  it("still visualizes trapping-rain-water at the length cap", () => {
+    const heights = Array.from({ length: MAX_TRAPPING_RAIN_LEN }, (_, i) => i % 5);
+    const steps = generateTrappingRainWaterSteps({ heights });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+  });
+
+  it("rejects min-stack op lists that would OOM from per-step stack clones", () => {
+    const s = Array.from({ length: MAX_MIN_STACK_OPS + 1 }, (_, i) => `push ${i}`).join(",");
+    const steps = generateMinStackSteps({ s });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].state.capped).toBe(true);
+    expect(steps[0].state.done).toBe(true);
+    expect(MAX_MIN_STACK_OPS).toBe(256);
+  });
+
+  it("still visualizes min-stack at the ops cap", () => {
+    const s = Array.from({ length: MAX_MIN_STACK_OPS }, (_, i) => `push ${i}`).join(",");
+    const steps = generateMinStackSteps({ s });
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.capped).not.toBe(true);
+    expect(steps[steps.length - 1].state.done).toBe(true);
   });
 });
