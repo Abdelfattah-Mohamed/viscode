@@ -322,10 +322,19 @@ export function generateValidParenthesesSteps({ s }) {
   return steps;
 }
 
+export const MAX_PRODUCT_EXCEPT_SELF_LEN = 256;
+
 export function generateProductExceptSelfSteps({ nums }) {
   if (!nums || !nums.length) return [];
-  const steps = [];
   const n = nums.length;
+  if (n > MAX_PRODUCT_EXCEPT_SELF_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${n} exceeds visualization cap of ${MAX_PRODUCT_EXCEPT_SELF_LEN}. Use a smaller array.`,
+      state: { i: -1, phase: "done", prefix: 0, result: [], done: true, capped: true },
+    }];
+  }
+  const steps = [];
   const result = new Array(n).fill(1);
   let prefix = 1;
 
@@ -384,10 +393,19 @@ export function generateMaxProductSubarraySteps({ nums }) {
   return steps;
 }
 
+export const MAX_HOUSE_ROBBER_LEN = 256;
+
 export function generateHouseRobberSteps({ nums }) {
   if (!nums || !nums.length) return [];
-  const steps = [];
   const n = nums.length;
+  if (n > MAX_HOUSE_ROBBER_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${n} exceeds visualization cap of ${MAX_HOUSE_ROBBER_LEN}. Use a smaller array.`,
+      state: { i: -1, dp: [], choice: null, maxRob: 0, done: true, capped: true },
+    }];
+  }
+  const steps = [];
 
   if (n === 1) {
     steps.push({ stepType: "base", description: `Only one house → rob it for ${nums[0]}`, state: { i: 0, dp: [nums[0]], choice: "rob", maxRob: nums[0], done: true } });
@@ -2979,8 +2997,17 @@ export function generateUniquePathsSteps(input) {
   return steps;
 }
 
+export const MAX_JUMP_GAME_LEN = 256;
+
 export function generateJumpGameSteps(input) {
   const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : (input?.nums != null ? [Number(input.nums)] : []);
+  if (nums.length > MAX_JUMP_GAME_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${nums.length} exceeds visualization cap of ${MAX_JUMP_GAME_LEN}. Use a smaller array.`,
+      state: { nums: [], i: -1, reach: 0, unreachable: false, done: true, capped: true },
+    }];
+  }
   const steps = [];
   let reach = 0;
   steps.push({
@@ -3043,6 +3070,8 @@ export function generateParenthesesSteps(input) {
   return steps;
 }
 
+export const MAX_MIN_STACK_OPS = 256;
+
 export function generateMinStackSteps(input) {
   const parseMinStackOps = (raw) => {
     if (typeof raw !== "string" || !raw.trim()) {
@@ -3086,6 +3115,14 @@ export function generateMinStackSteps(input) {
   const ops = opsFromString.length
     ? opsFromString
     : (input?.nums ?? []).map((x) => ({ op: "push", val: Number(x), raw: `push ${Number(x)}` }));
+
+  if (ops.length > MAX_MIN_STACK_OPS) {
+    return [{
+      stepType: "done",
+      description: `${ops.length} operations exceed visualization cap of ${MAX_MIN_STACK_OPS}. Use fewer commands.`,
+      state: { st: [], minSt: [], op: null, opVal: null, result: null, done: true, capped: true },
+    }];
+  }
 
   const steps = [];
   let st = [];
@@ -3873,12 +3910,21 @@ export function generateFindMedianSteps(input) {
   return steps;
 }
 
+export const MAX_TRAPPING_RAIN_LEN = 256;
+
 export function generateTrappingRainWaterSteps(input) {
   const height =
     Array.isArray(input?.heights) && input.heights.length ? input.heights.map(Number) :
     Array.isArray(input?.nums) ? input.nums.map(Number) :
     [];
   const n = height.length;
+  if (n > MAX_TRAPPING_RAIN_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${n} exceeds visualization cap of ${MAX_TRAPPING_RAIN_LEN}. Use a smaller array.`,
+      state: { l: 0, r: 0, leftMax: 0, rightMax: 0, water: 0, waterAt: [], done: true, capped: true },
+    }];
+  }
   const waterAt = Array(n).fill(0);
   const steps = [
     { stepType: "init", description: "Initialize l=0, r=n-1, leftMax=0, rightMax=0, water=0", state: { l: 0, r: Math.max(0, n - 1), leftMax: 0, rightMax: 0, water: 0, waterAt: [...waterAt] } },
