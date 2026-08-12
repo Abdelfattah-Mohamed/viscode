@@ -22,9 +22,20 @@ export function generateTwoSumSteps({ nums, target }) {
   return steps;
 }
 
+/** Max length for longest-consecutive visualization (per-step setArr + streak clones → Θ(n²)). */
+export const MAX_LONGEST_CONSECUTIVE_LEN = 512;
+
 export function generateLongestConsecutiveSteps({ nums }) {
+  const arr = Array.isArray(nums) ? nums : [];
+  if (arr.length > MAX_LONGEST_CONSECUTIVE_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${arr.length} exceeds visualization cap of ${MAX_LONGEST_CONSECUTIVE_LEN}. Use a smaller array.`,
+      state: { current: null, setArr: [], streakNums: [], longest: 0, done: true, capped: true },
+    }];
+  }
   const steps = [];
-  const numSet = new Set(nums);
+  const numSet = new Set(arr);
   const setArr = [...numSet].sort((a, b) => a - b);
   let longest = 0;
   steps.push({ stepType: "init_set",     description: "Build hash set — O(1) lookup, duplicates removed", state: { current: null, setArr, streakNums: [], longest: 0 } });
@@ -50,8 +61,19 @@ export function generateLongestConsecutiveSteps({ nums }) {
   return steps;
 }
 
+/** Max length for contains-duplicate visualization (per-step seen[] clones → Θ(n²)). */
+export const MAX_CONTAINS_DUPLICATE_LEN = 256;
+
 export function generateContainsDuplicateSteps({ nums }) {
   if (!nums || !nums.length) return [];
+  const n = nums.length;
+  if (n > MAX_CONTAINS_DUPLICATE_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${n} exceeds visualization cap of ${MAX_CONTAINS_DUPLICATE_LEN}. Use a smaller array.`,
+      state: { i: -1, seen: [], highlight: [], found: false, done: true, capped: true },
+    }];
+  }
   const steps = [], seen = new Set();
   steps.push({ stepType: "init", description: "Initialize empty hash set", state: { i: -1, seen: [], highlight: [], found: false } });
   for (let i = 0; i < nums.length; i++) {
@@ -292,8 +314,18 @@ export function generateValidPalindromeSteps({ s }) {
   return steps;
 }
 
+/** Max string length for valid-parentheses visualization (per-step stack clones → Θ(n²)). */
+export const MAX_VALID_PARENTHESES_LEN = 512;
+
 export function generateValidParenthesesSteps({ s }) {
   if (!s) s = "";
+  if (s.length > MAX_VALID_PARENTHESES_LEN) {
+    return [{
+      stepType: "done",
+      description: `String length ${s.length} exceeds visualization cap of ${MAX_VALID_PARENTHESES_LEN}. Use a smaller string.`,
+      state: { i: -1, char: null, stack: [], action: null, valid: null, done: true, capped: true },
+    }];
+  }
   const steps = [];
   const stack = [];
   const closeToOpen = { ")": "(", "]": "[", "}": "{" };
@@ -868,10 +900,24 @@ function cloneVisited(visited) {
   return visited.map(row => [...row]);
 }
 
+/**
+ * Max cells for island-grid visualizations.
+ * Each scan/DFS visit clones the R×C visited matrix → Θ(cells²) retained heap on all-land grids.
+ */
+export const MAX_ISLAND_GRID_CELLS = 400;
+
 export function generateNumberOfIslandsSteps({ grid: flat, rows }) {
   const grid = buildGrid2D(flat, rows);
   if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], visited: [], current: null, islandCount: 0, done: true } }];
   const R = grid.length, C = grid[0].length;
+  const cellCount = R * C;
+  if (cellCount > MAX_ISLAND_GRID_CELLS) {
+    return [{
+      stepType: "done",
+      description: `Grid ${R}×${C} (${cellCount} cells) exceeds visualization cap of ${MAX_ISLAND_GRID_CELLS} cells. Use a smaller grid.`,
+      state: { grid: [], visited: [], current: null, islandCount: 0, done: true, capped: true },
+    }];
+  }
   const visited = grid.map(row => row.map(() => false));
   const steps = [];
   let islandCount = 0;
@@ -904,6 +950,14 @@ export function generateMaxAreaOfIslandSteps({ grid: flat, rows }) {
   const grid = buildGrid2D(flat, rows);
   if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], visited: [], current: null, maxArea: 0, currentArea: 0, done: true } }];
   const R = grid.length, C = grid[0].length;
+  const cellCount = R * C;
+  if (cellCount > MAX_ISLAND_GRID_CELLS) {
+    return [{
+      stepType: "done",
+      description: `Grid ${R}×${C} (${cellCount} cells) exceeds visualization cap of ${MAX_ISLAND_GRID_CELLS} cells. Use a smaller grid.`,
+      state: { grid: [], visited: [], current: null, maxArea: 0, currentArea: 0, done: true, capped: true },
+    }];
+  }
   const visited = grid.map(row => row.map(() => false));
   const steps = [];
   let maxArea = 0;
@@ -3848,8 +3902,18 @@ export function generateSerializeDeserializeSteps(input) {
   return steps;
 }
 
+/** Max stream length for find-median visualization (per-add heap sorts + clones → Θ(n² log n)). */
+export const MAX_FIND_MEDIAN_LEN = 256;
+
 export function generateFindMedianSteps(input) {
   const nums = input?.nums || [];
+  if (nums.length > MAX_FIND_MEDIAN_LEN) {
+    return [{
+      stepType: "done",
+      description: `Stream length ${nums.length} exceeds visualization cap of ${MAX_FIND_MEDIAN_LEN}. Use a smaller stream.`,
+      state: { nums: [], lo: [], hi: [], i: -1, median: null, highlight: [], done: true, capped: true },
+    }];
+  }
   const steps = [];
   const lo = [];
   const hi = [];
