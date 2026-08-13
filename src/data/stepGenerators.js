@@ -5,19 +5,30 @@ import { ensureCompleteTree } from "../utils/treeFormat.js";
 import { SORTING_STEP_GENERATORS } from "./sortingStepGenerators.js";
 import { BLIND75_MISSING_STEP_GENERATORS } from "./blind75MissingStepGenerators.js";
 
+/** Max length for two-sum visualization (per-step hash-map clones → Θ(n²)). */
+export const MAX_TWO_SUM_LEN = 256;
+
 export function generateTwoSumSteps({ nums, target }) {
+  const arr = Array.isArray(nums) ? nums : [];
+  if (arr.length > MAX_TWO_SUM_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${arr.length} exceeds visualization cap of ${MAX_TWO_SUM_LEN}. Use a smaller array.`,
+      state: { i: -1, map: {}, highlight: [], found: false, done: true, capped: true },
+    }];
+  }
   const steps = [], map = {};
   steps.push({ stepType: "init", description: "Initialize an empty hash map", state: { i: -1, map: {}, highlight: [], found: false } });
-  for (let i = 0; i < nums.length; i++) {
-    const complement = target - nums[i];
-    steps.push({ stepType: "loop",       description: `Loop: i=${i}  →  nums[${i}]=${nums[i]}`,                         state: { i, map: { ...map }, highlight: [i], found: false } });
-    steps.push({ stepType: "complement", description: `complement = ${target} − ${nums[i]} = ${complement}`,             state: { i, map: { ...map }, highlight: [i], found: false, complement } });
+  for (let i = 0; i < arr.length; i++) {
+    const complement = target - arr[i];
+    steps.push({ stepType: "loop",       description: `Loop: i=${i}  →  nums[${i}]=${arr[i]}`,                         state: { i, map: { ...map }, highlight: [i], found: false } });
+    steps.push({ stepType: "complement", description: `complement = ${target} − ${arr[i]} = ${complement}`,             state: { i, map: { ...map }, highlight: [i], found: false, complement } });
     if (map[complement] !== undefined) {
       steps.push({ stepType: "found",    description: `✅ Found! map[${complement}]=${map[complement]} → [${map[complement]},${i}]`, state: { i, map: { ...map }, highlight: [map[complement], i], found: true } });
       return steps;
     }
-    steps.push({ stepType: "store",      description: `${complement} not in map — store map[${nums[i]}]=${i}`,           state: { i, map: { ...map, [nums[i]]: i }, highlight: [i], found: false } });
-    map[nums[i]] = i;
+    steps.push({ stepType: "store",      description: `${complement} not in map — store map[${arr[i]}]=${i}`,           state: { i, map: { ...map, [arr[i]]: i }, highlight: [i], found: false } });
+    map[arr[i]] = i;
   }
   return steps;
 }
@@ -161,8 +172,18 @@ export function generateClimbingStairsSteps({ n }) {
   return steps;
 }
 
+/** Max length for max-subarray visualization (per-step highlight clones → Θ(n²) on all-positive input). */
+export const MAX_MAX_SUBARRAY_LEN = 256;
+
 export function generateMaxSubarraySteps({ nums }) {
   if (!nums || !nums.length) return [];
+  if (nums.length > MAX_MAX_SUBARRAY_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${nums.length} exceeds visualization cap of ${MAX_MAX_SUBARRAY_LEN}. Use a smaller array.`,
+      state: { i: -1, currentSum: 0, maxSum: 0, start: 0, highlight: [], done: true, capped: true },
+    }];
+  }
   const steps = [];
   let currentSum = nums[0], maxSum = nums[0], start = 0;
   steps.push({ stepType: "init", description: `currentSum = maxSum = nums[0] = ${nums[0]}`, state: { i: 0, currentSum, maxSum, start, highlight: [0], done: false } });
@@ -1013,10 +1034,20 @@ function minHeapPop(heap) {
   return top;
 }
 
+/** Max length for top-k visualization (per-unique heap step clones nums + count → Θ(n²)). */
+export const MAX_TOP_K_LEN = 256;
+
 export function generateTopKFrequentSteps(input) {
   const nums = input?.nums ?? [];
   const k = Math.max(0, Number(input?.k) ?? 0);
   const steps = [];
+  if (nums.length > MAX_TOP_K_LEN) {
+    return [{
+      stepType: "done",
+      description: `Array length ${nums.length} exceeds visualization cap of ${MAX_TOP_K_LEN}. Use a smaller array.`,
+      state: { nums: [], k, count: {}, heap: [], res: [], done: true, capped: true },
+    }];
+  }
   if (!nums.length || k <= 0) {
     steps.push({ stepType: "init", description: "Enter nums and k", state: { nums: [], k: 0, count: {}, heap: [], res: [], phase: "init" } });
     steps.push({ stepType: "done", description: "Done", state: { nums: [], k: 0, count: {}, heap: [], res: [], done: true } });
@@ -1309,12 +1340,29 @@ function stubIntervalSteps(input) {
   return steps;
 }
 
+/**
+ * Max interval count for interval visualizations.
+ * Each compare/keep/sweep step clones the full interval list → Θ(n²) retained heap.
+ */
+export const MAX_INTERVAL_VIS_COUNT = 256;
+
+function intervalCapSteps(count, extraState = {}) {
+  return [{
+    stepType: "done",
+    description: `Interval count ${count} exceeds visualization cap of ${MAX_INTERVAL_VIS_COUNT}. Use fewer intervals.`,
+    state: { intervals: [], done: true, capped: true, ...extraState },
+  }];
+}
+
 export function generateNonOverlappingIntervalsSteps(input) {
   const nums = input?.nums || [];
   const pairs = [];
   for (let i = 0; i < nums.length; i += 2)
     if (nums[i] != null && nums[i + 1] != null) pairs.push([Number(nums[i]), Number(nums[i + 1])]);
   const steps = [];
+  if (pairs.length > MAX_INTERVAL_VIS_COUNT) {
+    return intervalCapSteps(pairs.length, { current: -1, lastEnd: null, count: 0, removedIndices: [] });
+  }
   if (pairs.length === 0) {
     steps.push({ stepType: "init", description: "Enter intervals as pairs", state: { intervals: [], current: -1, lastEnd: null, count: 0, removedIndices: [] } });
     steps.push({ stepType: "done", description: "Done", state: { intervals: [], current: -1, lastEnd: null, count: 0, removedIndices: [], done: true } });
@@ -1375,6 +1423,9 @@ export function generateMeetingRoomsSteps(input) {
   for (let i = 0; i < nums.length; i += 2)
     if (nums[i] != null && nums[i + 1] != null) pairs.push([Number(nums[i]), Number(nums[i + 1])]);
   const steps = [];
+  if (pairs.length > MAX_INTERVAL_VIS_COUNT) {
+    return intervalCapSteps(pairs.length, { current: -1, prev: null, overlap: null, canAttend: null });
+  }
   if (pairs.length <= 1) {
     steps.push({ stepType: "sort", description: "Sort intervals by start", state: { intervals: pairs.map(x => [...x]), current: -1, prev: null, overlap: null, canAttend: true } });
     steps.push({ stepType: "done", description: "≤1 interval → return true", state: { intervals: pairs.map(x => [...x]), current: -1, prev: null, overlap: null, canAttend: true, done: true } });
@@ -1428,6 +1479,9 @@ export function generateMeetingRoomsIISteps(input) {
   for (let i = 0; i < nums.length; i += 2)
     if (nums[i] != null && nums[i + 1] != null) pairs.push([Number(nums[i]), Number(nums[i + 1])]);
   const steps = [];
+  if (pairs.length > MAX_INTERVAL_VIS_COUNT) {
+    return intervalCapSteps(pairs.length, { rooms: 0, maxRooms: 0, i: 0, j: 0, highlightIdx: null });
+  }
   if (pairs.length === 0) {
     steps.push({ stepType: "init", description: "No intervals", state: { intervals: [], rooms: 0, maxRooms: 0, i: 0, j: 0, highlightIdx: null, done: true } });
     return steps;
