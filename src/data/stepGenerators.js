@@ -5,6 +5,81 @@ import { ensureCompleteTree } from "../utils/treeFormat.js";
 import { SORTING_STEP_GENERATORS } from "./sortingStepGenerators.js";
 import { BLIND75_MISSING_STEP_GENERATORS } from "./blind75MissingStepGenerators.js";
 
+/**
+ * Max cells for matrix visualizers that clone the full grid on every step.
+ * 60×60 set-matrix-zeroes / spiral-matrix and 70×70 rotate-image OOM a 192 MiB heap.
+ */
+export const MAX_MATRIX_VIS_CELLS = 400;
+
+/**
+ * Max node count for graph visualizers that clone the edge list on every visit/relax step.
+ * Chain graphs at n≈2000–2500 (Bellman–Ford reverse chain at n=250) OOM a 192 MiB heap.
+ */
+export const MAX_GRAPH_VIS_N = 100;
+
+/**
+ * Max total nodes across k lists. Each pop/push clones remaining lists → Θ(N²).
+ * 10 lists × 400 nodes OOMs a 192 MiB heap.
+ */
+export const MAX_MERGE_K_NODES = 256;
+
+function rejectOversizedMatrix(cells) {
+  return [
+    {
+      stepType: "done",
+      description: `Grid of ${cells} cells exceeds visualization cap of ${MAX_MATRIX_VIS_CELLS}. Use a smaller matrix.`,
+      state: {
+        grid: [],
+        highlighted: [],
+        visited: [],
+        current: null,
+        res: [],
+        markerCells: [],
+        phase: null,
+        done: true,
+        capped: true,
+      },
+    },
+  ];
+}
+
+function rejectOversizedGraph(n) {
+  return [
+    {
+      stepType: "done",
+      description: `n = ${n} exceeds visualization cap of ${MAX_GRAPH_VIS_N}. Use a smaller graph.`,
+      state: {
+        n,
+        edges: [],
+        vis: [],
+        dist: [],
+        highlighted: [],
+        done: true,
+        capped: true,
+      },
+    },
+  ];
+}
+
+function rejectOversizedMergeK(total) {
+  return [
+    {
+      stepType: "done",
+      description: `Total list nodes ${total} exceeds visualization cap of ${MAX_MERGE_K_NODES}. Use smaller lists.`,
+      state: { lists: [], heap: [], merged: [], done: true, capped: true },
+    },
+  ];
+}
+
+/** Reject before allocating a huge grid when rows or flattened length already exceed the cap. */
+function oversizedMatrixInput(input) {
+  const rows = Number(input?.rows);
+  const flatLen = Array.isArray(input?.grid) ? input.grid.length : 0;
+  if (Number.isFinite(rows) && rows > MAX_MATRIX_VIS_CELLS) return rows;
+  if (flatLen > MAX_MATRIX_VIS_CELLS) return flatLen;
+  return 0;
+}
+
 export function generateTwoSumSteps({ nums, target }) {
   const steps = [], map = {};
   steps.push({ stepType: "init", description: "Initialize an empty hash map", state: { i: -1, map: {}, highlight: [], found: false } });
@@ -664,6 +739,8 @@ function parseMergeKListsInput(input) {
 
 export function generateMergeKSortedListsSteps(input) {
   const lists = parseMergeKListsInput(input);
+  const totalNodes = lists.reduce((sum, list) => sum + list.length, 0);
+  if (totalNodes > MAX_MERGE_K_NODES) return rejectOversizedMergeK(totalNodes);
   if (lists.length === 0) {
     return [
       { stepType: "init", description: "No lists", state: { lists: [], heap: [], merged: [], done: true } },
@@ -1489,9 +1566,12 @@ export function generateRotateImageSteps(input) {
       { stepType: "done", description: "Done", state: { grid: [], highlighted: [], phase: null, done: true } },
     ];
   }
+  const tooBig = oversizedMatrixInput(input);
+  if (tooBig) return rejectOversizedMatrix(tooBig);
   const grid = buildGrid2D(input.grid, input.rows);
   if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], highlighted: [], phase: null, done: true } }];
   const n = grid.length;
+  if (n * n > MAX_MATRIX_VIS_CELLS) return rejectOversizedMatrix(n * n);
   if (grid[0].length !== n) return [{ stepType: "done", description: "Matrix must be square", state: { grid, highlighted: [], phase: null, done: true } }];
 
   const steps = [];
@@ -1533,10 +1613,13 @@ export function generateSetMatrixZeroesSteps(input) {
       { stepType: "done", description: "Done", state: { grid: [], current: null, phase: null, done: true } },
     ];
   }
+  const tooBig = oversizedMatrixInput(input);
+  if (tooBig) return rejectOversizedMatrix(tooBig);
   const grid = buildGrid2D(input.grid, input.rows);
   if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], current: null, phase: null, done: true } }];
   const R = grid.length;
   const C = grid[0].length;
+  if (R * C > MAX_MATRIX_VIS_CELLS) return rejectOversizedMatrix(R * C);
   const steps = [];
   const m = grid.map(row => row.map(v => Number(v)));
   const markerCells = [];
@@ -1736,10 +1819,13 @@ export function generateSpiralMatrixSteps(input) {
       { stepType: "done", description: "Done", state: { grid: [], visited: [], current: null, res: [], done: true } },
     ];
   }
+  const tooBig = oversizedMatrixInput(input);
+  if (tooBig) return rejectOversizedMatrix(tooBig);
   const grid = buildGrid2D(input.grid, input.rows);
   if (!grid.length) return [{ stepType: "done", description: "Empty grid", state: { grid: [], visited: [], current: null, res: [], done: true } }];
   const R = grid.length;
   const C = grid[0].length;
+  if (R * C > MAX_MATRIX_VIS_CELLS) return rejectOversizedMatrix(R * C);
   const steps = [];
   const visited = grid.map(() => Array(C).fill(false));
   const res = [];
@@ -3348,6 +3434,7 @@ export function generateReorderListSteps(input) {
 
 export function generateNumConnectedComponentsSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildEdgesFromNums(n, input?.nums || []);
   const steps = [];
   if (n <= 0) {
@@ -3387,6 +3474,7 @@ export function generateNumConnectedComponentsSteps(input) {
 
 export function generateBellmanFordSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const raw = Array.isArray(input?.nums) ? input.nums : [];
   const edges = [];
   for (let i = 0; i + 2 < raw.length; i += 3) {
@@ -3481,6 +3569,7 @@ export function generateBellmanFordSteps(input) {
 
 export function generateGraphValidTreeSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildEdgesFromNums(n, input?.nums || []);
   const steps = [];
 
@@ -3567,6 +3656,7 @@ function stubGraphSteps(input) {
 
 export function generateCloneGraphSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 4);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildEdgesFromNums(n, input?.nums || []);
   const steps = [];
   if (n <= 0) {
@@ -4169,6 +4259,7 @@ export function generateDfsGraphSteps(input) {
 
 export function generateDijkstraSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildWeightedEdgesFromNums(n, input?.nums || []);
   const steps = [];
   if (n <= 0) return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], dist: [] } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], dist: [], done: true } }];
@@ -4294,6 +4385,7 @@ export function generateFloydWarshallSteps(input) {
 
 export function generateAStarSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildWeightedEdgesFromNums(n, input?.nums || []);
   const steps = [];
   if (n <= 0) return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], dist: [] } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], dist: [], done: true } }];
