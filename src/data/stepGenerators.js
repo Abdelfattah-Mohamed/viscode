@@ -5,6 +5,49 @@ import { ensureCompleteTree } from "../utils/treeFormat.js";
 import { SORTING_STEP_GENERATORS } from "./sortingStepGenerators.js";
 import { BLIND75_MISSING_STEP_GENERATORS } from "./blind75MissingStepGenerators.js";
 
+/**
+ * Max node count for graph visualizers that clone the edge list on every visit.
+ * Chain graphs at n=3500 (Prim at n=5000) OOM a 192 MiB heap.
+ */
+export const MAX_GRAPH_VIS_N = 100;
+
+/**
+ * Max string count for group-anagrams. Each string deep-copies the growing map
+ * three times (Θ(n²) JSON snapshots). 2000 unique strings OOM a 192 MiB heap.
+ */
+export const MAX_GROUP_ANAGRAMS_LEN = 256;
+
+function rejectOversizedGraph(n) {
+  return [
+    {
+      stepType: "done",
+      description: `n = ${n} exceeds visualization cap of ${MAX_GRAPH_VIS_N}. Use a smaller graph.`,
+      state: {
+        n,
+        edges: [],
+        vis: [],
+        dist: [],
+        highlighted: [],
+        queue: [],
+        mstEdges: [],
+        stack: [],
+        done: true,
+        capped: true,
+      },
+    },
+  ];
+}
+
+function rejectOversizedGroupAnagrams(count) {
+  return [
+    {
+      stepType: "done",
+      description: `${count} strings exceeds visualization cap of ${MAX_GROUP_ANAGRAMS_LEN}. Use a smaller list.`,
+      state: { strs: [], i: -1, s: "", key: "", map: {}, action: null, done: true, capped: true },
+    },
+  ];
+}
+
 export function generateTwoSumSteps({ nums, target }) {
   const steps = [], map = {};
   steps.push({ stepType: "init", description: "Initialize an empty hash map", state: { i: -1, map: {}, highlight: [], found: false } });
@@ -1997,6 +2040,7 @@ export function generateLongestSubstringNoRepeatSteps(input) {
 export function generateGroupAnagramsSteps(input) {
   const raw = input?.s != null ? String(input.s).trim() : "";
   const strs = raw ? raw.split(",").map((x) => x.trim()).filter(Boolean) : [];
+  if (strs.length > MAX_GROUP_ANAGRAMS_LEN) return rejectOversizedGroupAnagrams(strs.length);
   const steps = [];
   const map = {};
 
@@ -4110,6 +4154,7 @@ export function generateCourseScheduleSteps(input) {
 
 export function generateBfsGraphSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildEdgesFromNums(n, input?.nums || []);
   const steps = [];
   if (n <= 0) {
@@ -4143,6 +4188,7 @@ export function generateBfsGraphSteps(input) {
 
 export function generateDfsGraphSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildEdgesFromNums(n, input?.nums || []);
   const steps = [];
   if (n <= 0) return [{ stepType: "init", description: "Enter n and edges", state: { n: 0, edges: [], highlighted: [] } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], highlighted: [], done: true } }];
@@ -4198,6 +4244,7 @@ export function generateDijkstraSteps(input) {
 
 export function generatePrimMstSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildWeightedEdgesFromNums(n, input?.nums || []);
   const steps = [];
   if (n <= 0) return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], mstEdges: [] } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], mstEdges: [], done: true } }];
@@ -4228,6 +4275,7 @@ export function generatePrimMstSteps(input) {
 
 export function generateKruskalSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildWeightedEdgesFromNums(n, input?.nums || []).slice().sort((a, b) => a[2] - b[2]);
   const steps = [];
   if (n <= 0) return [{ stepType: "init", description: "Enter n and weighted edges", state: { n: 0, edges: [], mstEdges: [] } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], mstEdges: [], done: true } }];
@@ -4329,6 +4377,7 @@ export function generateAStarSteps(input) {
 
 export function generateKosarajuSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildEdgesFromNums(n, input?.nums || []);
   const steps = [];
   if (n <= 0) return [{ stepType: "init", description: "Enter n and directed edges", state: { n: 0, edges: [], directed: true } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], directed: true, done: true } }];
@@ -4364,6 +4413,7 @@ export function generateKosarajuSteps(input) {
 
 export function generateTarjanSccSteps(input) {
   const n = Math.max(0, Number(input?.n) ?? 0);
+  if (n > MAX_GRAPH_VIS_N) return rejectOversizedGraph(n);
   const edges = buildEdgesFromNums(n, input?.nums || []);
   const steps = [];
   if (n <= 0) return [{ stepType: "init", description: "Enter n and directed edges", state: { n: 0, edges: [], directed: true } }, { stepType: "done", description: "Done", state: { n: 0, edges: [], directed: true, done: true } }];
