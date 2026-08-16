@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import {
+  STEP_GENERATORS,
+  MAX_REVERSE_LL_LEN,
+  MAX_REORDER_LIST_LEN,
+  MAX_LIS_LEN,
+  MAX_EVAL_RPN_TOKENS,
+} from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
@@ -57,5 +63,85 @@ describe("construct tree steps", () => {
     expect(steps[0].state.root).toEqual([]);
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
+  });
+});
+
+describe("list / LIS / RPN visualizer OOM caps", () => {
+  it("rejects reverse-linked-list lengths that would OOM from per-step reversed clones", () => {
+    const n = MAX_REVERSE_LL_LEN + 1;
+    const steps = STEP_GENERATORS["reverse-linked-list"]({ head: Array.from({ length: n }, (_, i) => i) });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].stepType).toBe("done");
+    expect(steps[0].state.capped).toBe(true);
+    expect(MAX_REVERSE_LL_LEN).toBe(256);
+  });
+
+  it("still visualizes reverse-linked-list at the length cap", () => {
+    const steps = STEP_GENERATORS["reverse-linked-list"]({
+      head: Array.from({ length: MAX_REVERSE_LL_LEN }, (_, i) => i + 1),
+    });
+    expect(steps[0].state.capped).toBeUndefined();
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+    expect(steps[steps.length - 1].state.reversed).toHaveLength(MAX_REVERSE_LL_LEN);
+  });
+
+  it("rejects reorder-list lengths that would OOM from per-step list clones", () => {
+    const n = MAX_REORDER_LIST_LEN + 1;
+    const steps = STEP_GENERATORS["reorder-list"]({ head: Array.from({ length: n }, (_, i) => i) });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].stepType).toBe("done");
+    expect(steps[0].state.capped).toBe(true);
+    expect(MAX_REORDER_LIST_LEN).toBe(256);
+  });
+
+  it("still visualizes reorder-list at the length cap", () => {
+    const steps = STEP_GENERATORS["reorder-list"]({
+      head: Array.from({ length: MAX_REORDER_LIST_LEN }, (_, i) => i + 1),
+    });
+    expect(steps[0].state.capped).toBeUndefined();
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+    expect(steps[steps.length - 1].state.merged).toHaveLength(MAX_REORDER_LIST_LEN);
+  });
+
+  it("rejects LIS arrays that would OOM from per-index nums clones", () => {
+    const n = MAX_LIS_LEN + 1;
+    const steps = STEP_GENERATORS["longest-increasing-subsequence"]({
+      nums: Array.from({ length: n }, (_, i) => i),
+    });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].stepType).toBe("done");
+    expect(steps[0].state.capped).toBe(true);
+    expect(MAX_LIS_LEN).toBe(256);
+  });
+
+  it("still visualizes LIS at the length cap", () => {
+    const steps = STEP_GENERATORS["longest-increasing-subsequence"]({
+      nums: Array.from({ length: MAX_LIS_LEN }, (_, i) => i + 1),
+    });
+    expect(steps[0].state.capped).toBeUndefined();
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+    expect(steps[steps.length - 1].state.tails).toHaveLength(MAX_LIS_LEN);
+  });
+
+  it("rejects eval-rpn token counts that would OOM from per-token clones", () => {
+    const n = MAX_EVAL_RPN_TOKENS + 1;
+    const s = Array.from({ length: n }, (_, i) => String(i)).join(",");
+    const steps = STEP_GENERATORS["eval-rpn"]({ s });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].stepType).toBe("done");
+    expect(steps[0].state.capped).toBe(true);
+    expect(MAX_EVAL_RPN_TOKENS).toBe(256);
+  });
+
+  it("still visualizes eval-rpn at the token cap", () => {
+    const s = Array.from({ length: MAX_EVAL_RPN_TOKENS }, (_, i) => String(i)).join(",");
+    const steps = STEP_GENERATORS["eval-rpn"]({ s });
+    expect(steps[0].state.capped).toBeUndefined();
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+    expect(steps[steps.length - 1].state.stack).toHaveLength(MAX_EVAL_RPN_TOKENS);
   });
 });

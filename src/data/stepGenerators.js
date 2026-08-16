@@ -5,6 +5,83 @@ import { ensureCompleteTree } from "../utils/treeFormat.js";
 import { SORTING_STEP_GENERATORS } from "./sortingStepGenerators.js";
 import { BLIND75_MISSING_STEP_GENERATORS } from "./blind75MissingStepGenerators.js";
 
+/**
+ * Max list length for reverse-linked-list. ~5 steps/node clone the growing
+ * reversed array (Θ(n²)). n=4000 OOMs a 192 MiB heap; n=3000 retains ~180MB.
+ */
+export const MAX_REVERSE_LL_LEN = 256;
+
+/**
+ * Max list length for reorder-list. Find-mid / reverse / merge steps each
+ * clone head + halves (Θ(n²)). n=2500 OOMs a 192 MiB heap; n=2000 retains ~130MB.
+ */
+export const MAX_REORDER_LIST_LEN = 256;
+
+/**
+ * Max nums length for LIS. Three steps per index clone nums + tails (Θ(n²)).
+ * n=2500 OOMs a 192 MiB heap; n=2000 retains ~155MB.
+ */
+export const MAX_LIS_LEN = 256;
+
+/**
+ * Max token count for eval-rpn. Each token clones tokens + stack (Θ(n²)).
+ * 5000 push-only tokens OOM a 192 MiB heap; 3000 retains ~109MB.
+ */
+export const MAX_EVAL_RPN_TOKENS = 256;
+
+function rejectOversizedReverseList(n) {
+  return [
+    {
+      stepType: "done",
+      description: `${n} nodes exceeds visualization cap of ${MAX_REVERSE_LL_LEN}. Use a smaller list.`,
+      state: { head: [], prevIdx: -1, currIdx: -1, nextIdx: -1, reversed: [], done: true, capped: true },
+    },
+  ];
+}
+
+function rejectOversizedReorderList(n) {
+  return [
+    {
+      stepType: "done",
+      description: `${n} nodes exceeds visualization cap of ${MAX_REORDER_LIST_LEN}. Use a smaller list.`,
+      state: {
+        head: [],
+        prevIdx: -1,
+        currIdx: -1,
+        nextIdx: -1,
+        reversed: 0,
+        phase: "done",
+        firstHalf: [],
+        secondHalf: [],
+        reversedSecond: [],
+        merged: [],
+        done: true,
+        capped: true,
+      },
+    },
+  ];
+}
+
+function rejectOversizedLis(n) {
+  return [
+    {
+      stepType: "done",
+      description: `${n} values exceeds visualization cap of ${MAX_LIS_LEN}. Use a smaller array.`,
+      state: { nums: [], tails: [], lisSeq: [], i: -1, pos: -1, extend: false, replace: false, done: true, capped: true },
+    },
+  ];
+}
+
+function rejectOversizedEvalRpn(n) {
+  return [
+    {
+      stepType: "done",
+      description: `${n} tokens exceeds visualization cap of ${MAX_EVAL_RPN_TOKENS}. Use a smaller expression.`,
+      state: { tokens: [], currentIndex: -1, stack: [], action: null, done: true, capped: true },
+    },
+  ];
+}
+
 export function generateTwoSumSteps({ nums, target }) {
   const steps = [], map = {};
   steps.push({ stepType: "init", description: "Initialize an empty hash map", state: { i: -1, map: {}, highlight: [], found: false } });
@@ -554,6 +631,7 @@ export function generateSameTreeSteps({ p, q }) {
 
 export function generateReverseLinkedListSteps({ head }) {
   if (!head || !head.length) return [];
+  if (head.length > MAX_REVERSE_LL_LEN) return rejectOversizedReverseList(head.length);
   const steps = [];
   let prevIdx = -1, currIdx = 0;
   const reversed = [];
@@ -2489,6 +2567,7 @@ function buildWeightedEdgesFromNums(n, nums) {
 export function generateEvalRpnSteps(input) {
   const s = input?.s != null ? String(input.s).trim() : "";
   const tokens = s ? s.split(",").map(t => t.trim()).filter(Boolean) : [];
+  if (tokens.length > MAX_EVAL_RPN_TOKENS) return rejectOversizedEvalRpn(tokens.length);
   const steps = [];
   const stack = [];
 
@@ -2717,6 +2796,7 @@ export function generateLongestCommonSubsequenceSteps(input) {
 
 export function generateLongestIncreasingSubsequenceSteps(input) {
   const nums = Array.isArray(input?.nums) ? input.nums.map(Number) : (input?.nums != null ? [Number(input.nums)] : []);
+  if (nums.length > MAX_LIS_LEN) return rejectOversizedLis(nums.length);
   const steps = [];
   const tails = [];
   const buildOneLisSequence = (arr) => {
@@ -3131,6 +3211,7 @@ export function generateMinStackSteps(input) {
 
 export function generateReorderListSteps(input) {
   const head = Array.isArray(input?.head) ? [...input.head] : [];
+  if (head.length > MAX_REORDER_LIST_LEN) return rejectOversizedReorderList(head.length);
   if (head.length < 2) {
     return [
       { stepType: "init", description: "List too short", state: { head: [...head], prevIdx: -1, currIdx: -1, nextIdx: -1, reversed: 0, phase: "done", done: true } },
