@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { PROBLEMS } from "../data/problems";
-import { STEP_GENERATORS } from "../data/stepGenerators";
+import {
+  STEP_GENERATORS,
+  MAX_MERGE_TWO_LEN,
+  MAX_REMOVE_NTH_LEN,
+  MAX_TREE_VIS_LEN,
+} from "../data/stepGenerators";
 import { SORTING_STEP_GENERATORS } from "../data/sortingStepGenerators";
 import { generateConstructTreeSteps } from "../data/blind75MissingStepGenerators";
 
@@ -58,4 +63,75 @@ describe("construct tree steps", () => {
     expect(steps[1].state.root).toEqual([3]);
     expect(steps[steps.length - 1].state.root).toEqual([3, 9, 20, null, null, 15, 7]);
   });
+});
+
+describe("list / tree visualizer OOM caps", () => {
+  it("rejects merge-two-sorted-lists lengths that would OOM from per-step merged clones", () => {
+    const n = MAX_MERGE_TWO_LEN + 1;
+    const steps = STEP_GENERATORS["merge-two-sorted-lists"]({
+      list1: Array.from({ length: n }, (_, i) => i),
+      list2: [0],
+    });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].stepType).toBe("done");
+    expect(steps[0].state.capped).toBe(true);
+    expect(MAX_MERGE_TWO_LEN).toBe(256);
+  });
+
+  it("still visualizes merge-two-sorted-lists at the length cap", () => {
+    const list1 = Array.from({ length: MAX_MERGE_TWO_LEN }, (_, i) => i * 2);
+    const list2 = Array.from({ length: MAX_MERGE_TWO_LEN }, (_, i) => i * 2 + 1);
+    const steps = STEP_GENERATORS["merge-two-sorted-lists"]({ list1, list2 });
+    expect(steps[0].state.capped).toBeUndefined();
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+    expect(steps[steps.length - 1].state.merged).toHaveLength(MAX_MERGE_TWO_LEN * 2);
+  });
+
+  it("rejects remove-nth-node lengths that would OOM from per-step head clones", () => {
+    const n = MAX_REMOVE_NTH_LEN + 1;
+    const steps = STEP_GENERATORS["remove-nth-node"]({
+      head: Array.from({ length: n }, (_, i) => i),
+      n: 1,
+    });
+    expect(steps).toHaveLength(1);
+    expect(steps[0].stepType).toBe("done");
+    expect(steps[0].state.capped).toBe(true);
+    expect(MAX_REMOVE_NTH_LEN).toBe(256);
+  });
+
+  it("still visualizes remove-nth-node at the length cap", () => {
+    const steps = STEP_GENERATORS["remove-nth-node"]({
+      head: Array.from({ length: MAX_REMOVE_NTH_LEN }, (_, i) => i + 1),
+      n: 1,
+    });
+    expect(steps[0].state.capped).toBeUndefined();
+    expect(steps.length).toBeGreaterThan(1);
+    expect(steps[steps.length - 1].state.done).toBe(true);
+    expect(steps[steps.length - 1].state.head).toHaveLength(MAX_REMOVE_NTH_LEN - 1);
+  });
+
+  it.each(["invert-tree", "serialize-deserialize-btree", "max-depth-tree"])(
+    "rejects %s complete arrays that would OOM from per-node clones",
+    (id) => {
+      const n = MAX_TREE_VIS_LEN + 1;
+      const steps = STEP_GENERATORS[id]({ root: Array.from({ length: n }, (_, i) => i + 1) });
+      expect(steps).toHaveLength(1);
+      expect(steps[0].stepType).toBe("done");
+      expect(steps[0].state.capped).toBe(true);
+      expect(MAX_TREE_VIS_LEN).toBe(256);
+    },
+  );
+
+  it.each(["invert-tree", "serialize-deserialize-btree", "max-depth-tree"])(
+    "still visualizes %s at the complete-array cap",
+    (id) => {
+      const steps = STEP_GENERATORS[id]({
+        root: Array.from({ length: MAX_TREE_VIS_LEN }, (_, i) => i + 1),
+      });
+      expect(steps[0].state.capped).toBeUndefined();
+      expect(steps.length).toBeGreaterThan(1);
+      expect(steps[steps.length - 1].state.done).toBe(true);
+    },
+  );
 });

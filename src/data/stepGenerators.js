@@ -5,6 +5,67 @@ import { ensureCompleteTree } from "../utils/treeFormat.js";
 import { SORTING_STEP_GENERATORS } from "./sortingStepGenerators.js";
 import { BLIND75_MISSING_STEP_GENERATORS } from "./blind75MissingStepGenerators.js";
 
+/**
+ * Max length per list for merge-two-sorted-lists. Each take/append clones
+ * the growing merged array (Θ(n²)). 2500+2500 OOMs a 192 MiB heap;
+ * 2000+2000 retains ~82MB.
+ */
+export const MAX_MERGE_TWO_LEN = 256;
+
+/**
+ * Max list length for remove-nth-node. Each pointer step clones `head`
+ * (Θ(n²)). n=5000 OOMs a 192 MiB heap; n=4000 retains ~129MB.
+ */
+export const MAX_REMOVE_NTH_LEN = 256;
+
+/**
+ * Max complete-array length for invert / serialize / max-depth trees.
+ * Invert clones inverted+swapped ~5×/node (2047 OOMs); serialize clones
+ * the array plus a growing join string (1400 OOMs); max-depth clones
+ * depthMap (2500 OOMs). All measured at a 192 MiB heap.
+ */
+export const MAX_TREE_VIS_LEN = 256;
+
+function rejectOversizedMergeTwo(n) {
+  return [
+    {
+      stepType: "done",
+      description: `${n} nodes exceeds visualization cap of ${MAX_MERGE_TWO_LEN} per list. Use a smaller list.`,
+      state: { i: 0, j: 0, merged: [], list1: [], list2: [], done: true, capped: true },
+    },
+  ];
+}
+
+function rejectOversizedRemoveNth(n) {
+  return [
+    {
+      stepType: "done",
+      description: `${n} nodes exceeds visualization cap of ${MAX_REMOVE_NTH_LEN}. Use a smaller list.`,
+      state: { head: [], slowIdx: -1, fastIdx: -1, done: true, capped: true },
+    },
+  ];
+}
+
+function rejectOversizedTreeVis(n) {
+  return [
+    {
+      stepType: "done",
+      description: `${n} nodes exceeds visualization cap of ${MAX_TREE_VIS_LEN}. Use a smaller tree.`,
+      state: {
+        visiting: -1,
+        swapped: [],
+        inverted: [],
+        serialized: "",
+        rebuilt: [],
+        depthMap: {},
+        maxDepth: 0,
+        done: true,
+        capped: true,
+      },
+    },
+  ];
+}
+
 export function generateTwoSumSteps({ nums, target }) {
   const steps = [], map = {};
   steps.push({ stepType: "init", description: "Initialize an empty hash map", state: { i: -1, map: {}, highlight: [], found: false } });
@@ -438,6 +499,7 @@ export function generateMissingNumberSteps({ nums }) {
 
 export function generateMaxDepthTreeSteps({ root }) {
   const arr = Array.isArray(root) ? root : [];
+  if (arr.length > MAX_TREE_VIS_LEN) return rejectOversizedTreeVis(arr.length);
   const steps = [];
   const depthMap = {};
   let maxDepth = 0;
@@ -474,6 +536,7 @@ export function generateMaxDepthTreeSteps({ root }) {
 
 export function generateInvertTreeSteps({ root }) {
   const arr = Array.isArray(root) ? root : [];
+  if (arr.length > MAX_TREE_VIS_LEN) return rejectOversizedTreeVis(arr.length);
   if (!arr.length || arr[0] === null) {
     return [{ stepType: "base", description: "Tree is empty → nothing to invert", state: { visiting: -1, swapped: [], inverted: [...arr], done: true } }];
   }
@@ -735,6 +798,9 @@ export function generateMergeKSortedListsSteps(input) {
 export function generateMergeTwoListsSteps({ list1, list2 }) {
   const a = Array.isArray(list1) ? list1 : [];
   const b = Array.isArray(list2) ? list2 : [];
+  if (a.length > MAX_MERGE_TWO_LEN || b.length > MAX_MERGE_TWO_LEN) {
+    return rejectOversizedMergeTwo(Math.max(a.length, b.length));
+  }
   const steps = [];
   const merged = [];
   let i = 0, j = 0;
@@ -2397,7 +2463,9 @@ export function generateCopyListRandomSteps(input) {
 }
 
 export function generateRemoveNthNodeSteps(input) {
-  const head = Array.isArray(input?.head) ? [...input.head] : [];
+  const rawHead = Array.isArray(input?.head) ? input.head : [];
+  if (rawHead.length > MAX_REMOVE_NTH_LEN) return rejectOversizedRemoveNth(rawHead.length);
+  const head = [...rawHead];
   const n = Math.max(0, Number(input?.n) || 0);
   const len = head.length;
 
@@ -3801,6 +3869,7 @@ export function generateLCAOfBSTSteps(input) {
 
 export function generateSerializeDeserializeSteps(input) {
   const arr = Array.isArray(input?.root) ? input.root : [];
+  if (arr.length > MAX_TREE_VIS_LEN) return rejectOversizedTreeVis(arr.length);
   const steps = [];
   const parts = [];
   function serialize(idx) {
