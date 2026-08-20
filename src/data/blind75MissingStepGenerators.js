@@ -44,10 +44,22 @@ function treeNodeToComplete(node) {
   return result;
 }
 
+export const MAX_MIN_WINDOW_LEN = 256;
+
+function rejectOversizedMinWindow(n) {
+  return [{
+    stepType: "error",
+    description: `${n} characters exceeds visualization cap of ${MAX_MIN_WINDOW_LEN}. Use a smaller string.`,
+    state: { s: "", t: "", l: 0, r: -1, need: {}, have: {}, formed: 0, required: 0, bestLen: null, bestWindow: "", done: true },
+  }];
+}
+
 // ── 1. Minimum Window Substring ─────────────────────────────────────────────
 export function generateMinWindowSteps(input) {
   const s = String(input?.s ?? "");
   const t = String(input?.t ?? "");
+  const n = Math.max(s.length, t.length);
+  if (n > MAX_MIN_WINDOW_LEN) return rejectOversizedMinWindow(n);
   const need = {};
   for (const ch of t) need[ch] = (need[ch] || 0) + 1;
   const have = {};
@@ -265,8 +277,32 @@ export function generateMaxPathSumSteps(input) {
   return steps;
 }
 
+export const MAX_TRIE_OPS = 32;
+export const MAX_TRIE_WORD_LEN = 32;
+
+function trieOpWord(raw) {
+  const line = String(raw || "").replace(/\s+/g, " ").trim();
+  const match = line.match(/^(?:insert|addword|search|startswith)\s+(.+)$/i);
+  return match ? match[1].trim() : "";
+}
+
+function rejectOversizedTrie(kind, n) {
+  const cap = kind === "ops" ? MAX_TRIE_OPS : MAX_TRIE_WORD_LEN;
+  const unit = kind === "ops" ? "operations" : "characters";
+  return [{
+    stepType: "error",
+    description: `${n} ${unit} exceeds visualization cap of ${cap}. Use a smaller trie input.`,
+    state: { trie: { ch: "", children: {}, end: false }, op: null, word: "", result: null, path: [], done: true },
+  }];
+}
+
 // ── 7–8. Trie / Word Dictionary ───────────────────────────────────────────
 function trieFromOps(ops, wildcard = false) {
+  if (ops.length > MAX_TRIE_OPS) return rejectOversizedTrie("ops", ops.length);
+  for (const raw of ops) {
+    const word = trieOpWord(raw);
+    if (word.length > MAX_TRIE_WORD_LEN) return rejectOversizedTrie("word", word.length);
+  }
   const root = { ch: "", children: {}, end: false };
   const steps = [];
   const snapshot = () => JSON.parse(JSON.stringify(root));

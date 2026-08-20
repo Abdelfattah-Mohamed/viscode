@@ -67,8 +67,20 @@ export function generateContainsDuplicateSteps({ nums }) {
   return steps;
 }
 
+export const MAX_ANAGRAM_LEN = 256;
+
+function rejectOversizedAnagram(n) {
+  return [{
+    stepType: "error",
+    description: `${n} characters exceeds visualization cap of ${MAX_ANAGRAM_LEN}. Use a smaller string.`,
+    state: { freq: {}, hl_s: -1, hl_t: -1, result: null, done: true },
+  }];
+}
+
 export function generateAnagramSteps({ s, t }) {
   if (!s || !t) return [];
+  const n = Math.max(String(s).length, String(t).length);
+  if (n > MAX_ANAGRAM_LEN) return rejectOversizedAnagram(n);
   const steps = [], freq = {};
   if (s.length !== t.length) {
     steps.push({ stepType: "check_len", description: `len(s)=${s.length} ≠ len(t)=${t.length} → return false`, state: { freq: {}, hl_s: -1, hl_t: -1, result: false } });
@@ -1938,8 +1950,19 @@ function stubWithS(input) {
   return steps;
 }
 
+export const MAX_LONGEST_SUBSTRING_LEN = 256;
+
+function rejectOversizedLongestSubstring(n) {
+  return [{
+    stepType: "error",
+    description: `${n} characters exceeds visualization cap of ${MAX_LONGEST_SUBSTRING_LEN}. Use a smaller string.`,
+    state: { s: "", start: -1, i: -1, last: {}, best: 0, done: true },
+  }];
+}
+
 export function generateLongestSubstringNoRepeatSteps(input) {
   const s = input?.s != null ? String(input.s).trim() : "";
+  if (s.length > MAX_LONGEST_SUBSTRING_LEN) return rejectOversizedLongestSubstring(s.length);
   const steps = [];
   const last = {};
   let start = -1;
@@ -3972,8 +3995,33 @@ export function generateCharacterReplacementSteps(input) {
   return steps;
 }
 
+export const MAX_ENCODE_DECODE_TOKENS = 256;
+
+function countEncodeTokens(s) {
+  let i = 0;
+  let n = 0;
+  while (i < s.length) {
+    const hashIdx = s.indexOf("#", i);
+    if (hashIdx < 0) break;
+    const len = parseInt(s.slice(i, hashIdx), 10) || 0;
+    n += 1;
+    i = hashIdx + 1 + len;
+  }
+  return n;
+}
+
+function rejectOversizedEncodeDecode(n) {
+  return [{
+    stepType: "error",
+    description: `${n} tokens exceeds visualization cap of ${MAX_ENCODE_DECODE_TOKENS}. Use a smaller encoded list.`,
+    state: { s: "", i: 0, res: [], len: null, token: "", done: true },
+  }];
+}
+
 export function generateEncodeDecodeSteps(input) {
   const s = input?.s != null ? String(input.s) : "";
+  const tokenCount = countEncodeTokens(s);
+  if (tokenCount > MAX_ENCODE_DECODE_TOKENS) return rejectOversizedEncodeDecode(tokenCount);
   const steps = [];
   const res = [];
   let i = 0;
@@ -4405,9 +4453,20 @@ export function generateTarjanSccSteps(input) {
   return steps;
 }
 
+export const MAX_UNION_FIND_N = 256;
+
+function rejectOversizedUnionFind(n) {
+  return [{
+    stepType: "error",
+    description: `${n} nodes exceeds visualization cap of ${MAX_UNION_FIND_N}. Use a smaller array.`,
+    state: { nums: [], highlighted: [], done: true },
+  }];
+}
+
 export function generateUnionFindSteps(input) {
   const nums = Array.isArray(input?.nums) ? input.nums.map((x) => Number(x)).filter((x) => !Number.isNaN(x)) : [];
   const n = nums.length || 5;
+  if (n > MAX_UNION_FIND_N) return rejectOversizedUnionFind(n);
   const parent = Array.from({ length: n }, (_, i) => i);
   const steps = [{ stepType: "init", description: `Init parent[i]=i for ${n} nodes`, state: { nums: [...parent], highlighted: [] } }];
   for (let i = 0; i + 1 < n; i += 2) {
